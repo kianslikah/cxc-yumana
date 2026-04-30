@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Proveedores — Mercantil Yumana</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d;--bg2:#141414;--bg3:#1c1c1c;--bg4:#242424;
+  --gold:#d4a843;--gold2:#f0c96a;--gold-dim:rgba(212,168,67,.15);
+  --red:#e05252;--red-bg:rgba(224,82,82,.12);
+  --orange:#e07d2a;--orange-bg:rgba(224,125,42,.12);
+  --yellow:#d4c243;--yellow-bg:rgba(212,194,67,.12);
+  --green:#4caf7d;--green-bg:rgba(76,175,125,.12);
+  --gray:#9a9a9a;--border:rgba(255,255,255,.07);
+  --text:#f0ece4;--muted:#666;--radius:14px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 18px 12px;position:sticky;top:0;z-index:100;}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.logo{font-family:'Playfair Display',serif;font-size:17px;color:var(--gold);}
+.logo span{display:block;font-family:'Outfit',sans-serif;font-size:10px;color:var(--muted);font-weight:500;letter-spacing:2px;text-transform:uppercase;margin-top:1px;}
+.fecha-hoy{font-size:11px;color:var(--muted);font-weight:500;}
+
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+.stat{background:var(--bg3);border-radius:10px;padding:9px 8px;border:1px solid var(--border);text-align:center;}
+.stat .sv{font-size:13px;font-weight:700;line-height:1;}
+.stat .sl{font-size:9px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-top:3px;opacity:.6;}
+.stat.red .sv{color:var(--red);}
+.stat.orange .sv{color:var(--orange);}
+.stat.yellow .sv{color:var(--yellow);}
+.stat.total .sv{color:var(--gold);}
+
+.search-bar{position:relative;}
+.search-bar input{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px 10px 36px;font-size:14px;font-family:'Outfit',sans-serif;color:var(--text);outline:none;}
+.search-bar input:focus{border-color:var(--gold);}
+.search-bar input::placeholder{color:var(--muted);}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;}
+
+.toggle-bar{display:flex;gap:8px;padding:10px 18px 0;}
+.toggle-btn{flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+.toggle-btn.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+
+.content{padding:12px 18px 80px;}
+
+.section-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;padding-left:2px;}
+
+/* FACTURA CARD */
+.fac-card{background:var(--bg2);border-radius:var(--radius);padding:13px 15px;margin-bottom:7px;border:1px solid var(--border);cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.fac-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.fac-card.red::before{background:var(--red);}
+.fac-card.orange::before{background:var(--orange);}
+.fac-card.yellow::before{background:var(--yellow);}
+.fac-card.green::before{background:var(--green);}
+.fac-card.gray::before{background:var(--muted);}
+.fac-card:active{transform:scale(.99);}
+.fac-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.fac-proveedor{font-size:14px;font-weight:700;}
+.fac-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.fac-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;flex-shrink:0;white-space:nowrap;}
+.fac-badge.red{background:var(--red-bg);color:var(--red);}
+.fac-badge.orange{background:var(--orange-bg);color:var(--orange);}
+.fac-badge.yellow{background:var(--yellow-bg);color:var(--yellow);}
+.fac-badge.green{background:var(--green-bg);color:var(--green);}
+.fac-badge.gray{background:rgba(150,150,150,.1);color:var(--gray);}
+.fac-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.fac-num{background:var(--bg3);border-radius:8px;padding:6px 9px;}
+.fac-num .nv{font-size:12px;font-weight:700;}
+.fac-num .nl{font-size:9px;color:var(--muted);font-weight:500;letter-spacing:.3px;text-transform:uppercase;margin-top:1px;}
+.fac-num.saldo .nv{color:var(--red);}
+.fac-num.abonado .nv{color:var(--green);}
+
+/* PROVEEDOR CARD */
+.prov-card{background:var(--bg2);border-radius:var(--radius);padding:13px 15px;margin-bottom:7px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .2s;}
+.prov-card:active{transform:scale(.99);}
+.prov-info h3{font-size:14px;font-weight:700;}
+.prov-info p{font-size:11px;color:var(--muted);margin-top:2px;}
+.prov-right{text-align:right;}
+.prov-deuda{font-size:15px;font-weight:700;color:var(--red);}
+.prov-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* VIEWS */
+.view{display:none;}
+.view.active{display:block;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--gold);cursor:pointer;padding:14px 18px 6px;}
+
+.detail-header{margin:0 18px 12px;background:var(--bg2);border-radius:var(--radius);padding:16px;border:1px solid var(--border);}
+.detail-header h2{font-family:'Playfair Display',serif;font-size:19px;color:var(--gold);margin-bottom:8px;}
+.detail-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.ds{background:var(--bg3);border-radius:10px;padding:9px 11px;}
+.ds .dv{font-size:14px;font-weight:700;}
+.ds .dl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px;}
+.ds.red .dv{color:var(--red);}
+.ds.green .dv{color:var(--green);}
+
+.detail-content{padding:0 18px 80px;}
+
+/* FORMS */
+.form-section{background:var(--bg2);border-radius:var(--radius);padding:15px;margin-bottom:12px;border:1px solid var(--border);}
+.form-section h3{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;}
+.form-section.abono h3{color:var(--green);}
+.form-section.abono{border-color:rgba(76,175,125,.2);}
+.form-section.nueva h3{color:var(--gold);}
+.form-section.nueva{border-color:rgba(212,168,67,.2);}
+.form-section.editar h3{color:var(--orange);}
+.form-section.editar{border-color:rgba(224,125,42,.2);}
+
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fg.full{grid-column:1/-1;}
+.fg label{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);}
+.fg input,.fg select{background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;font-family:'Outfit',sans-serif;color:var(--text);outline:none;width:100%;-webkit-appearance:none;}
+.fg input:focus,.fg select:focus{border-color:var(--gold);}
+.fg select option{background:var(--bg3);}
+
+.btn{width:100%;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;margin-top:9px;letter-spacing:.3px;transition:all .2s;}
+.btn:active{transform:scale(.98);}
+.btn.green{background:var(--green);color:#fff;}
+.btn.gold{background:var(--gold);color:#000;}
+.btn.red{background:var(--red);color:#fff;}
+.btn.orange{background:var(--orange);color:#fff;}
+
+.fac-row{background:var(--bg2);border-radius:10px;padding:11px 13px;margin-bottom:6px;border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:all .2s;}
+.fac-row:active{transform:scale(.99);}
+.fac-row-left h4{font-size:13px;font-weight:600;}
+.fac-row-left p{font-size:11px;color:var(--muted);margin-top:1px;}
+.fac-row-right{text-align:right;flex-shrink:0;}
+.fac-row-saldo{font-size:13px;font-weight:700;color:var(--red);}
+.fac-row-dias{font-size:10px;margin-top:2px;}
+
+.add-btn{background:var(--bg2);color:var(--gold);border:1.5px dashed rgba(212,168,67,.3);border-radius:var(--radius);padding:13px;margin-top:8px;cursor:pointer;text-align:center;font-size:13px;font-weight:600;letter-spacing:.8px;}
+
+/* ABONO HISTORY */
+.abono-item{background:var(--bg2);border-radius:10px;padding:11px 13px;margin-bottom:5px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.abono-item .am{font-size:11px;font-weight:700;color:var(--green);}
+.abono-item .ad{font-size:10px;color:var(--muted);margin-top:2px;}
+.abono-item .av{font-size:14px;font-weight:700;color:var(--green);}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:flex-end;justify-content:center;}
+.overlay.show{display:flex;}
+.modal{background:var(--bg2);border-radius:20px 20px 0 0;padding:22px 20px 44px;width:100%;max-width:500px;border-top:1px solid var(--border);}
+.modal h3{font-family:'Playfair Display',serif;font-size:18px;color:var(--gold);margin-bottom:6px;}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5;}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-btns button{padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:'Outfit',sans-serif;}
+.m-cancel{background:var(--bg3);color:var(--text);}
+.m-confirm{background:var(--red);color:white;}
+
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--bg2);color:var(--text);padding:11px 22px;border-radius:30px;font-size:13px;font-weight:600;z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 40px rgba(0,0,0,.5);border:1px solid var(--border);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.s{border-color:var(--green);color:var(--green);}
+.toast.e{border-color:var(--red);color:var(--red);}
+
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+.empty-state .ei{font-size:36px;margin-bottom:10px;}
+.empty-state .et{font-size:15px;font-weight:600;color:var(--text);}
+.empty-state .es{font-size:12px;margin-top:4px;}
+
+@media(max-width:400px){.form-grid{grid-template-columns:1fr;}.fg.full{grid-column:1;}.stats-bar{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<!-- MAIN -->
+<div class="view active" id="vMain">
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">Mercantil Yumana<span>Control de Proveedores</span></div>
+      <div class="fecha-hoy" id="fechaHoy"></div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat red"><div class="sv" id="sVencido">$0</div><div class="sl">🔴 Vencido</div></div>
+      <div class="stat orange"><div class="sv" id="sUrgente">$0</div><div class="sl">🟠 7 días</div></div>
+      <div class="stat yellow"><div class="sv" id="sProximo">$0</div><div class="sl">🟡 15 días</div></div>
+      <div class="stat total"><div class="sv" id="sTotal">$0</div><div class="sl">💰 Total</div></div>
+    </div>
+    <div class="search-bar" style="margin-bottom:8px;">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Buscar proveedor...">
+    </div>
+  </div>
+  <div class="toggle-bar">
+    <button class="toggle-btn active" id="btnVUrg">⚡ Por Urgencia</button>
+    <button class="toggle-btn" id="btnVProv">🏢 Por Proveedor</button>
+  </div>
+  <div class="content">
+    <div id="urgenciaView"></div>
+    <div id="proveedorView" style="display:none"></div>
+  </div>
+</div>
+
+<!-- FAC DETAIL -->
+<div class="view" id="vFacDetail">
+  <div class="back-btn" id="btnBackFac">← Volver</div>
+  <div id="facDetailHeader"></div>
+  <div class="detail-content">
+    <div class="form-section abono">
+      <h3>💰 Registrar Abono</h3>
+      <div class="form-grid">
+        <div class="fg"><label>Fecha</label><input type="date" id="aFecha"></div>
+        <div class="fg"><label>Monto USD</label><input type="number" id="aMonto" placeholder="0.00" step="0.01" min="0"></div>
+        <div class="fg full"><label>Método</label>
+          <select id="aMetodo">
+            <option value="">Seleccionar...</option>
+            <option>Zelle</option><option>Efectivo USD</option><option>Transferencia</option><option>Bolívares</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn green" id="btnDoAbono">✓ Registrar Abono</button>
+    </div>
+    <div id="facAbonosSection"></div>
+    <div class="form-section editar" style="margin-top:16px;">
+      <h3>✏️ Editar Factura</h3>
+      <div class="form-grid">
+        <div class="fg"><label>Fecha Llegada</label><input type="date" id="eLlegada"></div>
+        <div class="fg"><label>Fecha Vencimiento</label><input type="date" id="eVence"></div>
+        <div class="fg"><label>Monto USD</label><input type="number" id="eMonto" placeholder="0.00" step="0.01" min="0"></div>
+        <div class="fg"><label>N° Factura</label><input type="text" id="eNum" placeholder="Opcional"></div>
+        <div class="fg full"><label>Descripción</label><input type="text" id="eDesc" placeholder="Descripción"></div>
+      </div>
+      <button class="btn orange" id="btnDoEditFac">✓ Guardar Cambios</button>
+    </div>
+    <button class="btn red" id="btnDelFac" style="margin-top:8px;opacity:.7;">🗑 Eliminar esta Factura</button>
+  </div>
+</div>
+
+<!-- PROV DETAIL -->
+<div class="view" id="vProvDetail">
+  <div class="back-btn" id="btnBackProv">← Volver</div>
+  <div id="provDetailHeader"></div>
+  <div class="detail-content" id="provDetailContent"></div>
+</div>
+
+<!-- NUEVA FACTURA -->
+<div class="view" id="vNuevaFac">
+  <div class="back-btn" id="btnBackNuevaFac">← Volver</div>
+  <div style="padding:0 18px 80px;">
+    <div class="form-section nueva" style="margin-top:12px;">
+      <h3>📦 Nueva Factura</h3>
+      <div class="form-grid">
+        <div class="fg full"><label>Proveedor</label><input type="text" id="nfProv" placeholder="Ej: SALCAR"></div>
+        <div class="fg"><label>Fecha Llegada</label><input type="date" id="nfLlegada"></div>
+        <div class="fg"><label>Fecha Vencimiento</label><input type="date" id="nfVence"></div>
+        <div class="fg"><label>Monto USD</label><input type="number" id="nfMonto" placeholder="0.00" step="0.01" min="0"></div>
+        <div class="fg"><label>N° Factura (opcional)</label><input type="text" id="nfNum" placeholder="001234"></div>
+        <div class="fg full"><label>Descripción (opcional)</label><input type="text" id="nfDesc" placeholder="Ej: Split 24000 BTU x5"></div>
+      </div>
+      <button class="btn gold" id="btnDoNuevaFac">+ Agregar Factura</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="delModal">
+  <div class="modal">
+    <h3>¿Eliminar factura?</h3>
+    <p id="delModalMsg">Esta acción no se puede deshacer.</p>
+    <div class="modal-btns">
+      <button class="m-cancel" id="btnCancelDel">Cancelar</button>
+      <button class="m-confirm" id="btnConfirmDel">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+const FB={apiKey:"AIzaSyCtlqcPLPTs2W4_DhuRKnyd5AEheeZ3A4Y",authDomain:"mercantil-yumana.firebaseapp.com",projectId:"mercantil-yumana",storageBucket:"mercantil-yumana.firebasestorage.app",messagingSenderId:"846497919200",appId:"1:846497919200:web:e38adaeaddda52f1a1a085"};
+const app=initializeApp(FB);
+const db=getFirestore(app);
+const ref=doc(db,"proveedores","main");
+
+// DATOS CORRECTOS DEL EXCEL (fechas convertidas correctamente)
+const INIT=[
+  {id:"nero",proveedor:"NERO",facturas:[
+    {id:"f1",llegada:"2026-02-11",vence:"2026-04-12",monto:1171.2,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"gregorio-sc",proveedor:"GREGORIO SAN CRISTOBAL",facturas:[
+    {id:"f1",llegada:"2026-03-27",vence:"2026-04-17",monto:378.2,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"coronil",proveedor:"CORONIL",facturas:[
+    {id:"f1",llegada:"2026-03-24",vence:"2026-04-24",monto:3339.36,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-16",vence:"2026-05-16",monto:8085,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-04-21",vence:"2026-05-21",monto:1685.16,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"fm-adjam",proveedor:"FM ADJAM",facturas:[
+    {id:"f1",llegada:"2026-03-27",vence:"2026-04-27",monto:1440,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-15",vence:"2026-04-28",monto:448,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"dismatven",proveedor:"DISMATVEN",facturas:[
+    {id:"f1",llegada:"2026-03-31",vence:"2026-04-30",monto:315,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"newkool",proveedor:"NEWKOOL",facturas:[
+    {id:"f1",llegada:"2026-03-02",vence:"2026-05-02",monto:7689.33,abonado:1162,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-03-13",vence:"2026-05-13",monto:3012.86,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-04-09",vence:"2026-06-09",monto:2280,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f4",llegada:"2026-04-28",vence:"2026-06-28",monto:18744.29,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"salcar",proveedor:"SALCAR",facturas:[
+    {id:"f1",llegada:"2026-03-18",vence:"2026-05-03",monto:15233.95,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-07",vence:"2026-05-22",monto:12056.45,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-04-17",vence:"2026-06-02",monto:12377,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f4",llegada:"2026-04-21",vence:"2026-06-05",monto:10034.32,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f5",llegada:"2026-04-23",vence:"2026-06-08",monto:16865.06,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"jaguar",proveedor:"JAGUAR",facturas:[
+    {id:"f1",llegada:"2026-03-04",vence:"2026-05-04",monto:21522,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-03-06",vence:"2026-05-06",monto:15480,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-03-30",vence:"2026-05-30",monto:19440,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"sam",proveedor:"SAM",facturas:[
+    {id:"f1",llegada:"2026-03-04",vence:"2026-05-04",monto:59725,abonado:46364,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-03-21",vence:"2026-05-21",monto:11970,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-04-22",vence:"2026-06-22",monto:12293.9,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"says",proveedor:"SAYS",facturas:[
+    {id:"f1",llegada:"2026-04-06",vence:"2026-05-06",monto:11636.88,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-13",vence:"2026-05-13",monto:15068,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"mystic",proveedor:"MYSTIC",facturas:[
+    {id:"f1",llegada:"2026-04-06",vence:"2026-05-06",monto:1479,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-08",vence:"2026-05-08",monto:253.89,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-04-21",vence:"2026-05-21",monto:5298.53,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"ciro-sanchez",proveedor:"CIRO SANCHEZ",facturas:[
+    {id:"f1",llegada:"2026-04-09",vence:"2026-05-06",monto:19309.15,abonado:18615.55,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-14",vence:"2026-05-14",monto:1648.22,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-04-22",vence:"2026-05-19",monto:11926.54,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"manaplas",proveedor:"MANAPLAS",facturas:[
+    {id:"f1",llegada:"2026-04-15",vence:"2026-05-06",monto:3213.23,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"gtronic",proveedor:"GTRONIC",facturas:[
+    {id:"f1",llegada:"2026-04-08",vence:"2026-05-08",monto:15640,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-22",vence:"2026-05-22",monto:4799.88,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-04-29",vence:"2026-05-29",monto:7451.67,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"gplus",proveedor:"GPLUS / TCL",facturas:[
+    {id:"f1",llegada:"2026-04-08",vence:"2026-05-08",monto:9059.86,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-20",vence:"2026-05-20",monto:2399.92,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-04-24",vence:"2026-06-04",monto:44697.48,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f4",llegada:"2026-04-28",vence:"2026-06-08",monto:3799.8,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"omega",proveedor:"OMEGA",facturas:[
+    {id:"f1",llegada:"2026-04-08",vence:"2026-05-08",monto:5448.8,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"gassan-jammul",proveedor:"GASSAN JAMMUL CAMAS",facturas:[
+    {id:"f1",llegada:"2026-04-09",vence:"2026-05-09",monto:4150,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"vivamax",proveedor:"VIVAMAX",facturas:[
+    {id:"f1",llegada:"2026-04-10",vence:"2026-05-10",monto:31630,abonado:11361.5,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-18",vence:"2026-05-18",monto:6320,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-04-22",vence:"2026-05-22",monto:38355,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"frigilux",proveedor:"FRIGILUX",facturas:[
+    {id:"f1",llegada:"2026-04-13",vence:"2026-05-13",monto:14900.48,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-22",vence:"2026-05-22",monto:2346.5,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"luminstar",proveedor:"LUMINSTAR",facturas:[
+    {id:"f1",llegada:"2026-04-13",vence:"2026-05-13",monto:1658.07,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"mlplus",proveedor:"MLPLUS",facturas:[
+    {id:"f1",llegada:"2026-04-15",vence:"2026-05-15",monto:2986.77,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-20",vence:"2026-05-20",monto:595.2,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"gdeluxe",proveedor:"GDELUXE",facturas:[
+    {id:"f1",llegada:"2026-04-16",vence:"2026-05-16",monto:16303.5,abonado:3844.45,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"contihome",proveedor:"CONTIHOME",facturas:[
+    {id:"f1",llegada:"2026-04-17",vence:"2026-05-17",monto:2614.15,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"doral",proveedor:"DORAL",facturas:[
+    {id:"f1",llegada:"2026-04-18",vence:"2026-05-18",monto:11878.9,abonado:3410.97,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"tio-jaime",proveedor:"TIO JAIME MUEBLES",facturas:[
+    {id:"f1",llegada:"2026-04-18",vence:"2026-05-18",monto:9199,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"aiwa",proveedor:"AIWA",facturas:[
+    {id:"f1",llegada:"2026-03-20",vence:"2026-05-20",monto:6462,abonado:5248,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-21",vence:"2026-06-21",monto:28358,abonado:0,num:"",desc:"",abonos:[]},
+    {id:"f3",llegada:"2026-04-22",vence:"2026-06-22",monto:5300,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"sj-electronic",proveedor:"SJ ELECTRONIC",facturas:[
+    {id:"f1",llegada:"2026-04-11",vence:"2026-05-21",monto:11144.13,abonado:414.72,num:"",desc:"",abonos:[]},
+    {id:"f2",llegada:"2026-04-16",vence:"2026-05-26",monto:22576.23,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"starwhite",proveedor:"STARWHITE",facturas:[
+    {id:"f1",llegada:"2026-04-21",vence:"2026-05-21",monto:2960.58,abonado:920.96,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"incolbox",proveedor:"INCOLBOX",facturas:[
+    {id:"f1",llegada:"2026-04-22",vence:"2026-05-22",monto:9155.43,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"fativa-home",proveedor:"FATIVA HOME",facturas:[
+    {id:"f1",llegada:"2026-03-24",vence:"2026-05-24",monto:7288.75,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+  {id:"latinflex",proveedor:"LATINFLEX",facturas:[
+    {id:"f1",llegada:"2026-03-10",vence:"2026-06-10",monto:4071.12,abonado:0,num:"",desc:"",abonos:[]}
+  ]},
+];
+
+let D=[],curFacId=null,curProvId=null,curFromProv=false,delPending=null,currentMainView='urgencia',searchQ='';
+
+async function load(){
+  try{
+    const snap=await getDoc(ref);
+    if(snap.exists()&&snap.data().proveedores) D=snap.data().proveedores;
+    else{D=JSON.parse(JSON.stringify(INIT));await save();}
+  }catch(e){
+    try{const s=localStorage.getItem('prov_v2');D=s?JSON.parse(s):JSON.parse(JSON.stringify(INIT));}
+    catch(e2){D=JSON.parse(JSON.stringify(INIT));}
+    toast('Sin conexión - datos locales','e');
+  }
+  init();
+}
+
+async function save(){
+  try{await setDoc(ref,{proveedores:D});try{localStorage.setItem('prov_v2',JSON.stringify(D));}catch(e){}}
+  catch(e){try{localStorage.setItem('prov_v2',JSON.stringify(D));}catch(e2){}}
+}
+
+const fmt=n=>'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtDate=d=>{if(!d)return'—';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;};
+const today=()=>new Date().toISOString().split('T')[0];
+const gid=()=>'id_'+Date.now()+'_'+Math.random().toString(36).substr(2,5);
+
+function diasRestantes(vence){
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const v=new Date(vence+'T00:00:00');
+  return Math.round((v-hoy)/86400000);
+}
+
+function colorClass(dias){
+  if(dias<0)return'red';
+  if(dias<=7)return'orange';
+  if(dias<=15)return'yellow';
+  if(dias<=30)return'green';
+  return'gray';
+}
+
+function badgeText(dias){
+  if(dias<0)return`VENCIDA ${Math.abs(dias)}d`;
+  if(dias===0)return'VENCE HOY';
+  if(dias<=7)return`URGENTE ${dias}d`;
+  if(dias<=15)return`PRÓXIMA ${dias}d`;
+  if(dias<=30)return`EN PLAZO ${dias}d`;
+  return`OK ${dias}d`;
+}
+
+function toast(msg,t='s'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className=`toast ${t} show`;
+  setTimeout(()=>el.className='toast',2800);
+}
+
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function allFacturas(){
+  const arr=[];
+  D.forEach(p=>{
+    p.facturas.forEach(f=>{
+      const saldo=+(f.monto-f.abonado).toFixed(2);
+      if(saldo>0.005) arr.push({...f,proveedorId:p.id,proveedor:p.proveedor,saldo,dias:diasRestantes(f.vence)});
+    });
+  });
+  return arr.sort((a,b)=>a.dias-b.dias);
+}
+
+function updateStats(){
+  const facs=allFacturas();
+  const vencido=facs.filter(f=>f.dias<0).reduce((s,f)=>s+f.saldo,0);
+  const urgente=facs.filter(f=>f.dias>=0&&f.dias<=7).reduce((s,f)=>s+f.saldo,0);
+  const proximo=facs.filter(f=>f.dias>7&&f.dias<=15).reduce((s,f)=>s+f.saldo,0);
+  const total=facs.reduce((s,f)=>s+f.saldo,0);
+  document.getElementById('sVencido').textContent=vencido>0?fmt(vencido):'$0';
+  document.getElementById('sUrgente').textContent=urgente>0?fmt(urgente):'$0';
+  document.getElementById('sProximo').textContent=proximo>0?fmt(proximo):'$0';
+  document.getElementById('sTotal').textContent=fmt(total);
+}
+
+function renderUrgencia(){
+  let facs=allFacturas();
+  if(searchQ) facs=facs.filter(f=>f.proveedor.toLowerCase().includes(searchQ));
+  const groups={red:[],orange:[],yellow:[],green:[],gray:[]};
+  facs.forEach(f=>groups[colorClass(f.dias)].push(f));
+  const labels={red:'🔴 VENCIDAS',orange:'🟠 URGENTE — vence en 7 días',yellow:'🟡 PRÓXIMAS — vence en 15 días',green:'🟢 EN PLAZO — vence en 30 días',gray:'⚪ OK — más de 30 días'};
+  let html='';
+  ['red','orange','yellow','green','gray'].forEach(color=>{
+    if(!groups[color].length)return;
+    html+=`<div class="section-label">${labels[color]}</div>`;
+    groups[color].forEach(f=>{
+      html+=`<div class="fac-card ${color}" data-facid="${f.id}" data-provid="${f.proveedorId}">
+        <div class="fac-top">
+          <div><div class="fac-proveedor">${f.proveedor}</div><div class="fac-desc">${f.desc||'Sin descripción'}${f.num?' · #'+f.num:''} · Vence ${fmtDate(f.vence)}</div></div>
+          <div class="fac-badge ${color}">${badgeText(f.dias)}</div>
+        </div>
+        <div class="fac-nums">
+          <div class="fac-num"><div class="nv">${fmt(f.monto)}</div><div class="nl">Monto</div></div>
+          <div class="fac-num abonado"><div class="nv">${fmt(f.abonado)}</div><div class="nl">Abonado</div></div>
+          <div class="fac-num saldo"><div class="nv">${fmt(f.saldo)}</div><div class="nl">Saldo</div></div>
+        </div>
+      </div>`;
+    });
+  });
+  if(!facs.length) html=`<div class="empty-state"><div class="ei">✅</div><div class="et">${searchQ?'Sin resultados':'Sin deudas pendientes'}</div><div class="es">${searchQ?'Prueba con otro nombre':''}</div></div>`;
+  document.getElementById('urgenciaView').innerHTML=html;
+  document.querySelectorAll('.fac-card').forEach(card=>{
+    card.addEventListener('click',()=>goFacDetail(card.dataset.facid,card.dataset.provid,false));
+  });
+}
+
+function renderProveedores(){
+  let provs=D.map(p=>{
+    const totalDeuda=p.facturas.reduce((s,f)=>s+(f.monto-f.abonado>0?+(f.monto-f.abonado).toFixed(2):0),0);
+    const facsPend=p.facturas.filter(f=>f.monto-f.abonado>0.005);
+    const minDias=facsPend.length?Math.min(...facsPend.map(f=>diasRestantes(f.vence))):999;
+    return{...p,totalDeuda,facsPendN:facsPend.length,minDias};
+  }).filter(p=>p.totalDeuda>0);
+  if(searchQ) provs=provs.filter(p=>p.proveedor.toLowerCase().includes(searchQ));
+  provs.sort((a,b)=>a.minDias-b.minDias);
+  const colorMap={red:'var(--red)',orange:'var(--orange)',yellow:'var(--yellow)',green:'var(--green)',gray:'var(--muted)'};
+  let html='';
+  provs.forEach(p=>{
+    const color=colorClass(p.minDias);
+    html+=`<div class="prov-card" data-provid="${p.id}" style="border-left:3px solid ${colorMap[color]};">
+      <div class="prov-info"><h3>${p.proveedor}</h3><p>${p.facsPendN} factura${p.facsPendN!==1?'s':''} · ${p.minDias<0?'VENCIDA':p.minDias+'d próx.'}</p></div>
+      <div class="prov-right"><div class="prov-deuda">${fmt(p.totalDeuda)}</div><div class="prov-sub">PENDIENTE</div></div>
+    </div>`;
+  });
+  if(!provs.length) html=`<div class="empty-state"><div class="ei">✅</div><div class="et">${searchQ?'Sin resultados':'Sin deudas pendientes'}</div></div>`;
+  html+=`<div class="add-btn" id="btnNuevaFacMain">+ Nueva Factura</div>`;
+  document.getElementById('proveedorView').innerHTML=html;
+  document.querySelectorAll('.prov-card').forEach(card=>{
+    card.addEventListener('click',()=>goProvDetail(card.dataset.provid));
+  });
+  document.getElementById('btnNuevaFacMain').addEventListener('click',()=>goNuevaFac(null));
+}
+
+function setMainView(v){
+  currentMainView=v;
+  document.getElementById('btnVUrg').classList.toggle('active',v==='urgencia');
+  document.getElementById('btnVProv').classList.toggle('active',v==='proveedor');
+  document.getElementById('urgenciaView').style.display=v==='urgencia'?'block':'none';
+  document.getElementById('proveedorView').style.display=v==='proveedor'?'block':'none';
+}
+
+function goFacDetail(facId,provId,fromProv){
+  curFacId=facId;curProvId=provId;curFromProv=fromProv;
+  const p=D.find(x=>x.id===provId);
+  const f=p.facturas.find(x=>x.id===facId);
+  const saldo=+(f.monto-f.abonado).toFixed(2);
+  const dias=diasRestantes(f.vence);
+  const color=colorClass(dias);
+  const colorMap={red:'var(--red)',orange:'var(--orange)',yellow:'var(--yellow)',green:'var(--green)',gray:'var(--muted)'};
+
+  document.getElementById('facDetailHeader').innerHTML=`
+    <div class="detail-header">
+      <h2>${p.proveedor}</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="font-size:11px;background:${colorMap[color]}22;color:${colorMap[color]};padding:3px 10px;border-radius:20px;font-weight:700;">${badgeText(dias)}</span>
+        <span style="font-size:11px;color:var(--muted);">Vence: ${fmtDate(f.vence)}</span>
+        <span style="font-size:11px;color:var(--muted);">Llegó: ${fmtDate(f.llegada)}</span>
+      </div>
+      <div class="detail-stats">
+        <div class="ds"><div class="dv">${fmt(f.monto)}</div><div class="dl">Monto</div></div>
+        <div class="ds green"><div class="dv" id="dAbonado">${fmt(f.abonado)}</div><div class="dl">Abonado</div></div>
+        <div class="ds red"><div class="dv" id="dSaldo">${fmt(saldo)}</div><div class="dl">Saldo</div></div>
+      </div>
+    </div>`;
+
+  // Fill abono form
+  document.getElementById('aFecha').value=today();
+  document.getElementById('aMonto').value='';
+  document.getElementById('aMetodo').value='';
+
+  // Fill edit form
+  document.getElementById('eLlegada').value=f.llegada||'';
+  document.getElementById('eVence').value=f.vence||'';
+  document.getElementById('eMonto').value=f.monto;
+  document.getElementById('eNum').value=f.num||'';
+  document.getElementById('eDesc').value=f.desc||'';
+
+  renderAbonosSection(f);
+  showView('vFacDetail');
+}
+
+function renderAbonosSection(f){
+  const abonos=f.abonos||[];
+  let html='';
+  if(abonos.length){
+    html=`<div class="section-label" style="margin-top:16px;">Historial de abonos</div>`;
+    [...abonos].reverse().forEach(a=>{
+      html+=`<div class="abono-item">
+        <div><div class="am">${a.metodo}</div><div class="ad">${fmtDate(a.fecha)}</div></div>
+        <div class="av">${fmt(a.monto)}</div>
+      </div>`;
+    });
+  }
+  document.getElementById('facAbonosSection').innerHTML=html;
+}
+
+function goProvDetail(provId){
+  curProvId=provId;
+  const p=D.find(x=>x.id===provId);
+  const totalDeuda=p.facturas.reduce((s,f)=>s+(f.monto-f.abonado>0?+(f.monto-f.abonado).toFixed(2):0),0);
+  const totalMonto=p.facturas.reduce((s,f)=>s+f.monto,0);
+  const totalAbonado=p.facturas.reduce((s,f)=>s+f.abonado,0);
+
+  document.getElementById('provDetailHeader').innerHTML=`
+    <div class="detail-header">
+      <h2>${p.proveedor}</h2>
+      <div class="detail-stats">
+        <div class="ds"><div class="dv">${fmt(totalMonto)}</div><div class="dl">Total</div></div>
+        <div class="ds green"><div class="dv">${fmt(totalAbonado)}</div><div class="dl">Abonado</div></div>
+        <div class="ds red"><div class="dv">${fmt(totalDeuda)}</div><div class="dl">Deuda</div></div>
+      </div>
+    </div>`;
+
+  const sorted=[...p.facturas].sort((a,b)=>diasRestantes(a.vence)-diasRestantes(b.vence));
+  const colorMap={red:'var(--red)',orange:'var(--orange)',yellow:'var(--yellow)',green:'var(--green)',gray:'var(--muted)'};
+  let html=`<div class="section-label">Facturas</div>`;
+  sorted.forEach(f=>{
+    const saldo=+(f.monto-f.abonado).toFixed(2);
+    const dias=diasRestantes(f.vence);
+    const color=colorClass(dias);
+    const isPagada=saldo<=0.005;
+    html+=`<div class="fac-row" data-facid="${f.id}" data-provid="${p.id}" style="${isPagada?'opacity:.45;':''}">
+      <div class="fac-row-left">
+        <h4>${f.desc||'Sin descripción'}${f.num?' #'+f.num:''}</h4>
+        <p>Vence ${fmtDate(f.vence)} · ${fmt(f.monto)}</p>
+      </div>
+      <div class="fac-row-right">
+        <div class="fac-row-saldo" style="${isPagada?'color:var(--green);':''}">${isPagada?'PAGADA':fmt(saldo)}</div>
+        <div class="fac-row-dias" style="color:${isPagada?'var(--green)':colorMap[color]}">${isPagada?'✅':badgeText(dias)}</div>
+      </div>
+    </div>`;
+  });
+  html+=`<div class="add-btn" id="btnNuevaFacProv" style="margin-top:12px;">+ Agregar Factura a ${p.proveedor}</div>`;
+  document.getElementById('provDetailContent').innerHTML=html;
+
+  document.querySelectorAll('#provDetailContent .fac-row').forEach(row=>{
+    row.addEventListener('click',()=>goFacDetail(row.dataset.facid,row.dataset.provid,true));
+  });
+  document.getElementById('btnNuevaFacProv').addEventListener('click',()=>goNuevaFac(provId));
+  showView('vProvDetail');
+}
+
+function goNuevaFac(provId){
+  document.getElementById('nfLlegada').value=today();
+  document.getElementById('nfVence').value='';
+  document.getElementById('nfMonto').value='';
+  document.getElementById('nfNum').value='';
+  document.getElementById('nfDesc').value='';
+  if(provId){
+    const p=D.find(x=>x.id===provId);
+    document.getElementById('nfProv').value=p.proveedor;
+    document.getElementById('nfProv').readOnly=true;
+  }else{
+    document.getElementById('nfProv').value='';
+    document.getElementById('nfProv').readOnly=false;
+  }
+  showView('vNuevaFac');
+}
+
+// ACTIONS
+function doAbono(){
+  const fecha=document.getElementById('aFecha').value;
+  const monto=parseFloat(document.getElementById('aMonto').value);
+  const metodo=document.getElementById('aMetodo').value;
+  if(!fecha){toast('Ingresa la fecha','e');return;}
+  if(!monto||monto<=0){toast('Ingresa un monto válido','e');return;}
+  if(!metodo){toast('Selecciona el método','e');return;}
+  const p=D.find(x=>x.id===curProvId);
+  const f=p.facturas.find(x=>x.id===curFacId);
+  const saldo=+(f.monto-f.abonado).toFixed(2);
+  if(monto>saldo+0.01){toast(`El abono supera el saldo (${fmt(saldo)})`,'e');return;}
+  f.abonado=+(f.abonado+monto).toFixed(2);
+  if(!f.abonos)f.abonos=[];
+  f.abonos.push({id:gid(),fecha,monto,metodo});
+  save();
+  toast(`✓ Abono de ${fmt(monto)} registrado`,'s');
+  document.getElementById('aMonto').value='';
+  document.getElementById('aMetodo').value='';
+  document.getElementById('dAbonado').textContent=fmt(f.abonado);
+  document.getElementById('dSaldo').textContent=fmt(+(f.monto-f.abonado).toFixed(2));
+  renderAbonosSection(f);
+  updateStats();renderUrgencia();renderProveedores();
+}
+
+function doEditFac(){
+  const llegada=document.getElementById('eLlegada').value;
+  const vence=document.getElementById('eVence').value;
+  const monto=parseFloat(document.getElementById('eMonto').value);
+  const num=document.getElementById('eNum').value.trim();
+  const desc=document.getElementById('eDesc').value.trim();
+  if(!vence){toast('Ingresa la fecha de vencimiento','e');return;}
+  if(!monto||monto<=0){toast('Ingresa un monto válido','e');return;}
+  const p=D.find(x=>x.id===curProvId);
+  const fIdx=p.facturas.findIndex(x=>x.id===curFacId);
+  p.facturas[fIdx]={...p.facturas[fIdx],llegada,vence,monto,num,desc};
+  save();
+  toast('✓ Factura actualizada','s');
+  updateStats();renderUrgencia();renderProveedores();
+  goFacDetail(curFacId,curProvId,curFromProv);
+}
+
+function doNuevaFac(){
+  const provNombre=document.getElementById('nfProv').value.trim().toUpperCase();
+  const llegada=document.getElementById('nfLlegada').value;
+  const vence=document.getElementById('nfVence').value;
+  const monto=parseFloat(document.getElementById('nfMonto').value);
+  const num=document.getElementById('nfNum').value.trim();
+  const desc=document.getElementById('nfDesc').value.trim();
+  if(!provNombre){toast('Ingresa el proveedor','e');return;}
+  if(!vence){toast('Ingresa la fecha de vencimiento','e');return;}
+  if(!monto||monto<=0){toast('Ingresa un monto válido','e');return;}
+  let p=D.find(x=>x.proveedor===provNombre);
+  if(!p){p={id:'p_'+Date.now(),proveedor:provNombre,facturas:[]};D.push(p);}
+  p.facturas.push({id:gid(),llegada,vence,monto,abonado:0,num,desc,abonos:[]});
+  save();
+  toast(`✓ Factura de ${fmt(monto)} agregada`,'s');
+  updateStats();renderUrgencia();renderProveedores();
+  showView('vMain');
+}
+
+function askDelFac(){
+  const p=D.find(x=>x.id===curProvId);
+  const f=p.facturas.find(x=>x.id===curFacId);
+  document.getElementById('delModalMsg').textContent=`Se eliminará la factura de ${p.proveedor} por ${fmt(f.monto)}. Esta acción no se puede deshacer.`;
+  delPending={provId:curProvId,facId:curFacId};
+  document.getElementById('delModal').classList.add('show');
+}
+
+function confirmDel(){
+  const p=D.find(x=>x.id===delPending.provId);
+  p.facturas=p.facturas.filter(x=>x.id!==delPending.facId);
+  save();toast('Factura eliminada','s');
+  document.getElementById('delModal').classList.remove('show');
+  updateStats();renderUrgencia();renderProveedores();
+  if(curFromProv)goProvDetail(delPending.provId);
+  else showView('vMain');
+  delPending=null;
+}
+
+function init(){
+  const hoy=new Date();
+  document.getElementById('fechaHoy').textContent=hoy.toLocaleDateString('es-VE',{day:'2-digit',month:'short',year:'numeric'});
+  updateStats();renderUrgencia();renderProveedores();
+}
+
+// EVENT LISTENERS
+document.getElementById('btnVUrg').addEventListener('click',()=>setMainView('urgencia'));
+document.getElementById('btnVProv').addEventListener('click',()=>setMainView('proveedor'));
+document.getElementById('searchInput').addEventListener('input',function(){
+  searchQ=this.value.trim().toLowerCase();
+  renderUrgencia();renderProveedores();
+});
+document.getElementById('btnBackFac').addEventListener('click',()=>{
+  if(curFromProv)goProvDetail(curProvId);else showView('vMain');
+});
+document.getElementById('btnBackProv').addEventListener('click',()=>showView('vMain'));
+document.getElementById('btnBackNuevaFac').addEventListener('click',()=>{
+  if(curProvId&&document.getElementById('nfProv').readOnly)goProvDetail(curProvId);
+  else showView('vMain');
+});
+document.getElementById('btnDoAbono').addEventListener('click',doAbono);
+document.getElementById('btnDoEditFac').addEventListener('click',doEditFac);
+document.getElementById('btnDoNuevaFac').addEventListener('click',doNuevaFac);
+document.getElementById('btnDelFac').addEventListener('click',askDelFac);
+document.getElementById('btnCancelDel').addEventListener('click',()=>document.getElementById('delModal').classList.remove('show'));
+document.getElementById('btnConfirmDel').addEventListener('click',confirmDel);
+
+load();
+</script>
+</body>
+</html>
