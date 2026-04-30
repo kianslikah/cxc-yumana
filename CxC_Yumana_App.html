@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Cuentas por Cobrar — Mercantil Yumana</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--dark:#0f0f1a;--dark2:#1a1a2e;--blue:#2c3e6b;--gold:#c9a84c;--red:#e74c3c;--red-bg:#fff0ef;--green:#27ae60;--green-bg:#efffef;--gray:#f8f9fa;--border:#e8e0d0;--text:#1a1a2e;--muted:#888;--radius:12px;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'DM Sans',sans-serif;background:#f4f1ec;color:var(--text);min-height:100vh;}
+.app-header{background:var(--dark2);padding:18px 20px 14px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,.3);}
+.app-header-inner{max-width:800px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
+.app-logo{font-family:'DM Serif Display',serif;font-size:18px;color:var(--gold);}
+.app-logo span{color:#fff;font-size:11px;display:block;font-family:'DM Sans',sans-serif;letter-spacing:2px;text-transform:uppercase;opacity:.6;margin-top:1px;}
+.total-badge{background:var(--red);color:white;font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;}
+.view{display:none;max-width:800px;margin:0 auto;padding:20px 16px 60px;}
+.view.active{display:block;}
+.client-card{background:white;border-radius:var(--radius);padding:16px 18px;margin-bottom:10px;cursor:pointer;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.04);transition:all .2s;}
+.client-card:active{transform:scale(.99);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.client-info h3{font-size:15px;font-weight:600;margin-bottom:3px;}
+.client-info p{font-size:12px;color:var(--muted);}
+.client-saldo .amount{font-size:17px;font-weight:700;color:var(--red);text-align:right;}
+.client-saldo .label{font-size:10px;color:var(--muted);text-align:right;text-transform:uppercase;letter-spacing:1px;}
+.client-saldo.ok .amount{color:var(--green);}
+.add-client-btn{background:var(--dark2);color:var(--gold);border:2px dashed rgba(201,168,76,.4);border-radius:var(--radius);padding:16px;margin-top:4px;cursor:pointer;text-align:center;font-size:14px;font-weight:600;letter-spacing:1px;transition:all .2s;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--blue);cursor:pointer;margin-bottom:18px;padding:8px 0;}
+.client-header{background:var(--dark2);border-radius:var(--radius);padding:20px;margin-bottom:18px;color:white;}
+.client-header h2{font-family:'DM Serif Display',serif;font-size:20px;color:var(--gold);margin-bottom:3px;}
+.client-header p{font-size:12px;opacity:.6;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;}
+.stat-box{background:rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;}
+.stat-box .val{font-size:15px;font-weight:700;}
+.stat-box .lbl{font-size:10px;opacity:.5;text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.stat-box.s .val{color:#ff8a80;}
+.stat-box.a .val{color:#a5d6a7;}
+.form-card{background:white;border-radius:var(--radius);padding:18px;margin-bottom:18px;border:2px solid var(--green);box-shadow:0 4px 16px rgba(39,174,96,.1);}
+.form-card h3{font-size:14px;font-weight:700;color:var(--green);margin-bottom:14px;}
+.form-card.fac{border-color:var(--red);box-shadow:0 4px 16px rgba(231,76,60,.1);}
+.form-card.fac h3{color:var(--red);}
+.form-card.nc{border-color:var(--gold);box-shadow:0 4px 16px rgba(201,168,76,.1);}
+.form-card.nc h3{color:#7D6000;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg.full{grid-column:1/-1;}
+.fg label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.fg input,.fg select{border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--text);background:white;-webkit-appearance:none;outline:none;width:100%;}
+.fg input:focus,.fg select:focus{border-color:var(--green);}
+.form-card.fac .fg input:focus,.form-card.fac .fg select:focus{border-color:var(--red);}
+.upload-area{border:2px dashed var(--border);border-radius:8px;padding:14px;text-align:center;cursor:pointer;position:relative;overflow:hidden;}
+.upload-area .ico{font-size:26px;margin-bottom:4px;}
+.upload-area p{font-size:12px;color:var(--muted);}
+.upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.photo-prev{width:100%;border-radius:8px;max-height:110px;object-fit:cover;margin-top:8px;}
+.btn{width:100%;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:12px;transition:all .2s;color:white;}
+.btn:active{transform:scale(.98);}
+.btn.green{background:var(--green);}
+.btn.red{background:var(--red);}
+.btn.dark{background:var(--dark2);color:var(--gold);}
+.sec-title{font-size:13px;font-weight:700;color:var(--dark2);margin:18px 0 8px;text-transform:uppercase;letter-spacing:1px;}
+.fac-item{background:white;border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);}
+.fac-item.ok{opacity:.55;}
+.fac-item .fi-info h4{font-size:13px;font-weight:600;}
+.fac-item .fi-info p{font-size:11px;color:var(--muted);margin-top:2px;}
+.fac-item .fi-right{display:flex;align-items:center;gap:8px;}
+.fac-saldo{font-size:15px;font-weight:700;color:var(--red);}
+.fac-foto-thumb{width:38px;height:32px;border-radius:6px;object-fit:cover;cursor:pointer;border:1px solid var(--border);}
+.badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:1px;color:white;}
+.badge.pag{background:var(--green);}
+.badge.pen{background:var(--red);}
+.abono-item{background:white;border-radius:10px;padding:12px 14px;margin-bottom:6px;border-left:4px solid var(--green);display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.abo-left{flex:1;}
+.abo-tipo{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:2px;}
+.abo-desc{font-size:13px;margin-bottom:2px;}
+.abo-meta{font-size:11px;color:var(--muted);}
+.abo-right{text-align:right;flex-shrink:0;}
+.abo-amount{font-size:16px;font-weight:700;color:var(--green);}
+.btn-del{background:var(--red-bg);color:var(--red);border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px;display:block;margin-left:auto;}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--dark2);color:white;padding:12px 24px;border-radius:30px;font-size:14px;font-weight:500;z-index:9999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 30px rgba(0,0,0,.3);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.s{background:var(--green);}
+.toast.e{background:var(--red);}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center;}
+.overlay.show{display:flex;}
+.modal{background:white;border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:500px;}
+.modal h3{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:8px;}
+.modal p{font-size:14px;color:var(--muted);margin-bottom:20px;}
+.modal-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.modal-btns button{padding:14px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;}
+.m-cancel{background:var(--gray);color:var(--text);}
+.m-del{background:var(--red);color:white;}
+.photo-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:300;align-items:center;justify-content:center;}
+.photo-overlay.show{display:flex;}
+.photo-overlay img{max-width:95vw;max-height:90vh;border-radius:10px;object-fit:contain;}
+.photo-close{position:absolute;top:18px;right:18px;background:white;border:none;border-radius:50%;width:34px;height:34px;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.fac-detail-card{background:white;border-radius:var(--radius);overflow:hidden;margin-bottom:16px;border:1px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.06);}
+.fac-detail-header{background:var(--dark2);padding:18px 20px;}
+.fac-detail-header h2{font-family:'DM Serif Display',serif;font-size:18px;color:var(--gold);margin-bottom:3px;}
+.fac-detail-header p{font-size:12px;opacity:.6;color:white;}
+.fac-detail-body{padding:18px 20px;}
+.fac-detail-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.fac-detail-row:last-child{border-bottom:none;}
+.fac-detail-row .lbl{font-size:12px;color:var(--muted);font-weight:500;}
+.fac-detail-row .val{font-size:14px;font-weight:600;text-align:right;}
+.fac-detail-row .val.red{color:var(--red);}
+.fac-detail-row .val.green{color:var(--green);}
+.fac-foto-full{width:100%;border-radius:8px;cursor:pointer;margin-top:14px;max-height:200px;object-fit:cover;}
+@media(max-width:480px){.form-grid{grid-template-columns:1fr;}.fg.full{grid-column:1;}}
+</style>
+</head>
+<body>
+<div class="app-header">
+  <div class="app-header-inner">
+    <div class="app-logo">Mercantil Yumana<span>Cuentas por Cobrar</span></div>
+    <div class="total-badge" id="hTotal">$0</div>
+  </div>
+</div>
+
+<!-- LIST -->
+<div class="view active" id="vList">
+  <p style="font-size:13px;color:var(--muted);margin-bottom:14px;margin-top:2px;">Toca un cliente para ver su cuenta</p>
+  <div id="cList"></div>
+  <div class="add-client-btn" onclick="goNewClient()">+ Agregar Cliente Nuevo</div>
+</div>
+
+<!-- DETAIL -->
+<div class="view" id="vDetail">
+  <div class="back-btn" onclick="goList()">← Volver</div>
+  <div id="dHeader"></div>
+
+  <div class="form-card">
+    <h3>💰 Registrar Abono</h3>
+    <div class="form-grid">
+      <div class="fg"><label>Fecha</label><input type="date" id="aFecha"></div>
+      <div class="fg"><label>Monto USD</label><input type="number" id="aMonto" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="fg"><label>Método de pago</label>
+        <select id="aMetodo">
+          <option value="">Seleccionar...</option>
+          <option value="Zelle">Zelle</option>
+          <option value="Efectivo">Efectivo USD</option>
+          <option value="Bolívares">Bolívares</option>
+        </select>
+      </div>
+      <div class="fg"><label>Descripción (opcional)</label><input type="text" id="aDesc" placeholder="Ej: Abono parcial"></div>
+    </div>
+    <button class="btn green" onclick="doAbono()">✓ Cargar Abono</button>
+  </div>
+
+  <div class="sec-title">📦 Facturas</div>
+  <div id="dFacs"></div>
+
+  <div class="form-card fac">
+    <h3>📦 Agregar Nueva Factura</h3>
+    <div class="form-grid">
+      <div class="fg"><label>Fecha</label><input type="date" id="fFecha"></div>
+      <div class="fg"><label>Monto USD</label><input type="number" id="fMonto" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="fg full"><label>Descripción</label><input type="text" id="fDesc" placeholder="Ej: Entrega semana 28 Abril"></div>
+      <div class="fg full">
+        <label>Foto de factura (opcional)</label>
+        <div class="upload-area"><div class="ico">📷</div><p>Cámara o galería</p><input type="file" accept="image/*" id="fFotoIn" onchange="prevFoto(this,'fPrev')"></div>
+        <img id="fPrev" class="photo-prev" style="display:none">
+      </div>
+    </div>
+    <button class="btn red" onclick="doFac()">+ Agregar Factura</button>
+  </div>
+
+  <div class="sec-title" id="aboTtl" style="display:none">💰 Historial de Abonos</div>
+  <div id="dAbonos"></div>
+</div>
+
+<!-- NEW CLIENT -->
+<div class="view" id="vNC">
+  <div class="back-btn" onclick="goList()">← Volver</div>
+  <div class="form-card nc">
+    <h3>👤 Nuevo Cliente</h3>
+    <div class="form-grid">
+      <div class="fg full"><label>Nombre</label><input type="text" id="ncN" placeholder="Ej: JUAN PÉREZ — BARINAS"></div>
+      <div class="fg full"><label>Ubicación</label><input type="text" id="ncU" placeholder="Ej: Barinas"></div>
+      <div class="fg"><label>Plazo de crédito</label>
+        <select id="ncP"><option value="30">30 días</option><option value="60">60 días</option><option value="15">15 días</option></select>
+      </div>
+    </div>
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+      <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px;">Primera Factura (opcional)</p>
+      <div class="form-grid">
+        <div class="fg"><label>Fecha</label><input type="date" id="ncFF"></div>
+        <div class="fg"><label>Monto USD</label><input type="number" id="ncFM" placeholder="0.00" step="0.01" min="0"></div>
+        <div class="fg full"><label>Descripción</label><input type="text" id="ncFD" placeholder="Ej: Primera entrega"></div>
+        <div class="fg full">
+          <label>Foto (opcional)</label>
+          <div class="upload-area"><div class="ico">📷</div><p>Cámara o galería</p><input type="file" accept="image/*" id="ncFI" onchange="prevFoto(this,'ncFP')"></div>
+          <img id="ncFP" class="photo-prev" style="display:none">
+        </div>
+      </div>
+    </div>
+    <button class="btn dark" onclick="doNewClient()">✓ Crear Cliente</button>
+  </div>
+</div>
+
+<!-- FACTURA DETAIL VIEW -->
+<div class="view" id="vFac">
+  <div class="back-btn" onclick="goDetailFromFac()">← Volver</div>
+  <div id="facDetailContent"></div>
+
+  <div class="form-card fac" id="facEditCard">
+    <h3>✏️ Editar Factura</h3>
+    <div class="form-grid">
+      <div class="fg"><label>Fecha</label><input type="date" id="eFecha"></div>
+      <div class="fg"><label>Monto USD</label><input type="number" id="eMonto" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="fg full"><label>Descripción</label><input type="text" id="eDesc" placeholder="Descripción de la factura"></div>
+      <div class="fg full">
+        <label>Foto de factura</label>
+        <div class="upload-area"><div class="ico">📷</div><p>Cambiar foto</p><input type="file" accept="image/*" id="eFotoIn" onchange="prevFoto(this,'eFotoPrev')"></div>
+        <img id="eFotoPrev" class="photo-prev" style="display:none">
+      </div>
+    </div>
+    <button class="btn green" onclick="doEditFac()">✓ Guardar Cambios</button>
+    <button class="btn red" style="margin-top:8px;" onclick="askDelFac()">🗑 Eliminar Factura</button>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="overlay" id="delModal">
+  <div class="modal">
+    <h3>¿Eliminar abono?</h3>
+    <p id="delMsg">Este abono será eliminado permanentemente.</p>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="closeDelModal()">Cancelar</button>
+      <button class="m-del" onclick="confirmDel()">Eliminar</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="delFacModal">
+  <div class="modal">
+    <h3>¿Eliminar factura?</h3>
+    <p id="delFacMsg">Esta factura será eliminada permanentemente.</p>
+    <div class="modal-btns">
+      <button class="m-cancel" onclick="closeDelFacModal()">Cancelar</button>
+      <button class="m-del" onclick="confirmDelFac()">Eliminar</button>
+    </div>
+  </div>
+</div>
+<div class="photo-overlay" id="photoOv" onclick="closePhoto()">
+  <button class="photo-close" onclick="closePhoto()">✕</button>
+  <img id="photoImg" src="" alt="">
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+const INIT=[
+  {id:"daniel-fran-socopo",name:"DANIEL Y FRAN — SOCOPÓ",location:"Socopó Coteros",plazo:30,
+   facturas:[{id:"f1",desc:"Deuda acumulada anterior",fecha:null,monto:9624,foto:null},{id:"f2",desc:"Semana 6-10 Abril",fecha:"2026-04-06",monto:2105,foto:null},{id:"f3",desc:"Semana 10-18 Abril",fecha:"2026-04-10",monto:4607,foto:null},{id:"f4",desc:"Semana 19 Abril",fecha:"2026-04-19",monto:1435,foto:null},{id:"f5",desc:"Semana 26 Abril",fecha:"2026-04-26",monto:1988,foto:null}],abonos:[]},
+  {id:"daniel-fran-pedraza",name:"DANIEL Y FRAN — PEDRAZA",location:"Pedraza",plazo:30,
+   facturas:[{id:"f1",desc:"Deuda acumulada anterior",fecha:null,monto:12315,foto:null},{id:"f2",desc:"Entrega 30 Marzo",fecha:"2026-03-30",monto:1950,foto:null},{id:"f3",desc:"Entrega 13 Abril",fecha:"2026-04-13",monto:2225,foto:null},{id:"f4",desc:"Entrega 16 Abril",fecha:"2026-04-16",monto:390,foto:null},{id:"f5",desc:"Entrega 21 Abril",fecha:"2026-04-21",monto:1910,foto:null},{id:"f6",desc:"Entrega 27 Abril",fecha:"2026-04-27",monto:753,foto:null}],abonos:[]},
+  {id:"electrohogar-capitanejo",name:"ELECTROHOGAR CAPITANEJO",location:"Capitanejo",plazo:30,
+   facturas:[{id:"f1",desc:"Entrega 13 Marzo",fecha:"2026-03-13",monto:1461.39,foto:null},{id:"f2",desc:"Entrega 20 Marzo",fecha:"2026-03-20",monto:1530,foto:null},{id:"f3",desc:"Entrega 24 Marzo",fecha:"2026-03-24",monto:480,foto:null},{id:"f4",desc:"Entrega 31 Marzo",fecha:"2026-03-31",monto:2926,foto:null},{id:"f5",desc:"Entrega 07 Abril",fecha:"2026-04-07",monto:3582,foto:null},{id:"f6",desc:"Entrega 21 Abril",fecha:"2026-04-21",monto:2708,foto:null},{id:"f7",desc:"Entrega 28 Abril",fecha:"2026-04-28",monto:3352,foto:null},{id:"f8",desc:"Entrega 29 Abril",fecha:"2026-04-29",monto:1740,foto:null}],abonos:[]},
+  {id:"franklin-pernia",name:"FRANKLIN PERNIA",location:"Socopó Cotero",plazo:30,facturas:[{id:"f1",desc:"Entrega 30 Enero",fecha:"2026-01-30",monto:1265.21,foto:null}],abonos:[]},
+  {id:"carmen-eloisa",name:"CARMEN ELOISA",location:"Santa Bárbara",plazo:30,facturas:[{id:"f1",desc:"Entrega 19 Julio 2025",fecha:"2025-07-19",monto:2500,foto:null}],abonos:[]},
+  {id:"diego-silva",name:"DIEGO SILVA",location:"",plazo:30,facturas:[{id:"f1",desc:"Deuda pendiente",fecha:null,monto:8057,foto:null}],abonos:[]},
+  {id:"sayel-albounay",name:"SAYEL ALBOUNAY",location:"Guasdualito",plazo:60,facturas:[{id:"f1",desc:"Entrega 14 Febrero",fecha:"2026-02-14",monto:23812,foto:null}],abonos:[{id:"a1",fecha:"2026-04-23",monto:13664,metodo:"Transferencia",desc:"Abono registrado"}]},
+  {id:"adriana-mora",name:"ADRIANA MORA",location:"Guayanito",plazo:60,facturas:[{id:"f1",desc:"Facturas pendientes 09 Marzo",fecha:"2026-03-09",monto:3423.26,foto:null},{id:"f2",desc:"Entrega 11 Marzo",fecha:"2026-03-11",monto:107,foto:null},{id:"f3",desc:"Entrega 16 Marzo",fecha:"2026-03-16",monto:320,foto:null},{id:"f4",desc:"Entrega 01 Abril",fecha:"2026-04-01",monto:10154,foto:null},{id:"f5",desc:"Entrega 24 Abril",fecha:"2026-04-24",monto:8067,foto:null}],abonos:[]},
+  {id:"multiinversiones-yessimar",name:"MULTIINVERSIONES YESSIMAR",location:"Canton",plazo:60,facturas:[{id:"f1",desc:"Facturas pendientes 25 Marzo",fecha:"2026-03-25",monto:6217.21,foto:null},{id:"f2",desc:"Entrega 14 Abril",fecha:"2026-04-14",monto:8875,foto:null},{id:"f3",desc:"Entrega 20 Abril",fecha:"2026-04-20",monto:9853,foto:null}],abonos:[]},
+  {id:"daniel-mega-oferta",name:"DANIEL MEGA OFERTA",location:"",plazo:30,facturas:[{id:"f1",desc:"Entrega 29 Abril",fecha:"2026-04-29",monto:7211.28,foto:null}],abonos:[]},
+];
+
+let curFacId=null,pEFoto=null,delFacId=null;
+
+function goFacDetail(facId){
+  curFacId=facId;pEFoto=null;
+  show('vFac');renderFacDetail();
+}
+function goDetailFromFac(){show('vDetail');curFacId=null;}
+
+function renderFacDetail(){
+  const c=C.find(x=>x.id===curId);
+  const f=c.facturas.find(x=>x.id===curFacId);
+  const fs=facSaldos(c);
+  const fWithSaldo=fs.find(x=>x.id===curFacId);
+  const s=fWithSaldo?fWithSaldo.s:f.monto;
+  const pagada=s<=0;
+
+  document.getElementById('facDetailContent').innerHTML=`
+    <div class="fac-detail-card">
+      <div class="fac-detail-header">
+        <h2>${f.desc}</h2>
+        <p>${c.name}</p>
+      </div>
+      <div class="fac-detail-body">
+        <div class="fac-detail-row">
+          <span class="lbl">Fecha de entrega</span>
+          <span class="val">${fd(f.fecha)}</span>
+        </div>
+        <div class="fac-detail-row">
+          <span class="lbl">Monto original</span>
+          <span class="val">${fmt(f.monto)}</span>
+        </div>
+        <div class="fac-detail-row">
+          <span class="lbl">Saldo pendiente</span>
+          <span class="val ${pagada?'green':'red'}">${pagada?'PAGADA':fmt(s)}</span>
+        </div>
+        <div class="fac-detail-row">
+          <span class="lbl">Estado</span>
+          <span class="val"><span class="badge ${pagada?'pag':'pen'}">${pagada?'PAGADA':'PENDIENTE'}</span></span>
+        </div>
+        ${f.foto?`<img src="${f.foto}" class="fac-foto-full" onclick="openPhoto('${f.foto}')" alt="Foto factura"><p style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center;">Toca la foto para ampliarla</p>`:'<p style="font-size:12px;color:var(--muted);margin-top:12px;text-align:center;">Sin foto adjunta</p>'}
+      </div>
+    </div>`;
+
+  // Pre-fill edit form
+  document.getElementById('eFecha').value=f.fecha||today();
+  document.getElementById('eMonto').value=f.monto;
+  document.getElementById('eDesc').value=f.desc;
+  const prev=document.getElementById('eFotoPrev');
+  if(f.foto){prev.src=f.foto;prev.style.display='block';}
+  else{prev.style.display='none';}
+}
+
+function doEditFac(){
+  const fecha=document.getElementById('eFecha').value||null;
+  const monto=parseFloat(document.getElementById('eMonto').value);
+  const desc=document.getElementById('eDesc').value.trim();
+  if(!monto||monto<=0){toast('Ingresa un monto válido','e');return;}
+  if(!desc){toast('Ingresa una descripción','e');return;}
+  const c=C.find(x=>x.id===curId);
+  const fIdx=c.facturas.findIndex(x=>x.id===curFacId);
+  c.facturas[fIdx]={...c.facturas[fIdx],fecha,monto,desc,foto:pEFoto!==null?pEFoto:c.facturas[fIdx].foto};
+  save();toast('✓ Factura actualizada','s');pEFoto=null;renderFacDetail();renderDetail();
+}
+
+function askDelFac(){
+  delFacId=curFacId;
+  const c=C.find(x=>x.id===curId),f=c.facturas.find(x=>x.id===curFacId);
+  document.getElementById('delFacMsg').textContent=`Se eliminará la factura "${f.desc}" de ${fmt(f.monto)}. Esta acción no se puede deshacer.`;
+  document.getElementById('delFacModal').classList.add('show');
+}
+function closeDelFacModal(){document.getElementById('delFacModal').classList.remove('show');delFacId=null;}
+function confirmDelFac(){
+  const c=C.find(x=>x.id===curId);
+  c.facturas=c.facturas.filter(x=>x.id!==delFacId);
+  save();toast('Factura eliminada','s');closeDelFacModal();goDetailFromFac();renderDetail();
+}
+
+let C=[],curId=null,delCId=null,delAId=null,pFoto=null,pNcFoto=null;
+
+// ── FIREBASE ──
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+
+const _fbConfig = {
+  apiKey: "AIzaSyCtlqcPLPTs2W4_DhuRKnyd5AEheeZ3A4Y",
+  authDomain: "mercantil-yumana.firebaseapp.com",
+  projectId: "mercantil-yumana",
+  storageBucket: "mercantil-yumana.firebasestorage.app",
+  messagingSenderId: "846497919200",
+  appId: "1:846497919200:web:e38adaeaddda52f1a1a085"
+};
+const _fbApp = initializeApp(_fbConfig);
+const _db = getFirestore(_fbApp);
+const _ref = doc(_db, "cxc", "main");
+
+async function load(){
+  try{
+    document.getElementById('hTotal').textContent='Cargando...';
+    const snap = await getDoc(_ref);
+    if(snap.exists() && snap.data().clients){
+      C = snap.data().clients;
+    } else {
+      C = JSON.parse(JSON.stringify(INIT));
+      await save();
+    }
+  } catch(e){
+    console.error('Load error:',e);
+    try{const s=localStorage.getItem('cxc_v4');C=s?JSON.parse(s):JSON.parse(JSON.stringify(INIT));}
+    catch(e2){C=JSON.parse(JSON.stringify(INIT));}
+    toast('Sin conexión - datos locales','e');
+  }
+  goList();
+}
+
+async function save(){
+  try{
+    await setDoc(_ref, {clients: C});
+    try{localStorage.setItem('cxc_v4',JSON.stringify(C));}catch(e){}
+  } catch(e){
+    console.error('Save error:',e);
+    try{localStorage.setItem('cxc_v4',JSON.stringify(C));}catch(e2){}
+  }
+}
+function saldo(c){return c.facturas.reduce((s,f)=>s+f.monto,0)-c.abonos.reduce((s,a)=>s+a.monto,0);}
+function facSaldos(c){let r=c.abonos.reduce((s,a)=>s+a.monto,0);return c.facturas.map(f=>{let s=f.monto;if(r>=f.monto){r-=f.monto;s=0;}else if(r>0){s=f.monto-r;r=0;}return{...f,s};});}
+function fmt(n){return'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fd(d){if(!d)return'—';const p=d.split('-');return`${p[2]}/${p[1]}/${p[0]}`;}
+function today(){return new Date().toISOString().split('T')[0];}
+function gid(){return'id_'+Date.now()+'_'+Math.random().toString(36).substr(2,5);}
+
+function toast(msg,t='s'){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast ${t} show`;setTimeout(()=>el.className='toast',2800);}
+
+function show(id){['vList','vDetail','vNC'].forEach(v=>document.getElementById(v).classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+function goList(){curId=null;show('vList');renderList();}
+function goDetail(id){
+  curId=id;show('vDetail');
+  document.getElementById('aFecha').value=today();
+  document.getElementById('fFecha').value=today();
+  ['aMonto','aDesc','fMonto','fDesc'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('aMetodo').value='';
+  document.getElementById('fPrev').style.display='none';
+  pFoto=null;renderDetail();
+}
+function goNewClient(){show('vNC');document.getElementById('ncFF').value=today();['ncN','ncU','ncFM','ncFD'].forEach(i=>document.getElementById(i).value='');document.getElementById('ncFP').style.display='none';pNcFoto=null;}
+
+function renderList(){
+  const total=C.reduce((s,c)=>s+saldo(c),0);
+  document.getElementById('hTotal').textContent=fmt(total);
+  document.getElementById('cList').innerHTML=C.map(c=>{
+    const s=saldo(c),ok=s<=0;
+    return`<div class="client-card" onclick="goDetail('${c.id}')">
+      <div class="client-info"><h3>${c.name}</h3><p>${c.location||'Sin ubicación'} · ${c.plazo} días</p></div>
+      <div class="client-saldo ${ok?'ok':''}"><div class="amount">${fmt(s)}</div><div class="label">${ok?'Al día':'Pendiente'}</div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDetail(){
+  const c=C.find(x=>x.id===curId);if(!c)return;
+  const s=saldo(c),tf=c.facturas.reduce((x,f)=>x+f.monto,0),ta=c.abonos.reduce((x,a)=>x+a.monto,0);
+  const total=C.reduce((x,y)=>x+saldo(y),0);
+  document.getElementById('hTotal').textContent=fmt(total);
+  document.getElementById('dHeader').innerHTML=`
+    <div class="client-header">
+      <h2>${c.name}</h2><p>${c.location||''} · Plazo ${c.plazo} días</p>
+      <div class="stats-row">
+        <div class="stat-box"><div class="val">${fmt(tf)}</div><div class="lbl">Facturado</div></div>
+        <div class="stat-box a"><div class="val">${fmt(ta)}</div><div class="lbl">Abonado</div></div>
+        <div class="stat-box s"><div class="val">${fmt(s)}</div><div class="lbl">Saldo</div></div>
+      </div>
+    </div>`;
+  const fs=facSaldos(c);
+  document.getElementById('dFacs').innerHTML=fs.map(f=>`
+    <div class="fac-item ${f.s<=0?'ok':''}" onclick="goFacDetail('${f.id}')" style="cursor:pointer;">
+      <div class="fi-info"><h4>${f.desc}</h4><p>${fd(f.fecha)} · ${fmt(f.monto)}</p></div>
+      <div class="fi-right">
+        ${f.foto?`<img src="${f.foto}" class="fac-foto-thumb" onclick="event.stopPropagation();openPhoto('${f.foto}')">`:''}
+        ${f.s<=0?`<span class="badge pag">PAGADA</span>`:`<span class="fac-saldo">${fmt(f.s)}</span><span class="badge pen">PEND.</span>`}
+        <span style="color:var(--muted);font-size:18px;margin-left:4px;">›</span>
+      </div>
+    </div>`).join('');
+  const aboTtl=document.getElementById('aboTtl'),dAbonos=document.getElementById('dAbonos');
+  if(!c.abonos.length){aboTtl.style.display='none';dAbonos.innerHTML='';}
+  else{
+    aboTtl.style.display='block';
+    dAbonos.innerHTML=[...c.abonos].reverse().map(a=>`
+      <div class="abono-item">
+        <div class="abo-left">
+          <div class="abo-tipo">💰 ${a.metodo}</div>
+          <div class="abo-desc">${a.desc||'Abono recibido'}</div>
+          <div class="abo-meta">${fd(a.fecha)}</div>
+        </div>
+        <div class="abo-right">
+          <div class="abo-amount">${fmt(a.monto)}</div>
+          <button class="btn-del" onclick="askDel('${a.id}')">🗑 Eliminar</button>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function doAbono(){
+  const fecha=document.getElementById('aFecha').value;
+  const monto=parseFloat(document.getElementById('aMonto').value);
+  const metodo=document.getElementById('aMetodo').value;
+  const desc=document.getElementById('aDesc').value.trim();
+  if(!fecha){toast('Ingresa la fecha','e');return;}
+  if(!monto||monto<=0){toast('Ingresa un monto válido','e');return;}
+  if(!metodo){toast('Selecciona el método de pago','e');return;}
+  const c=C.find(x=>x.id===curId);
+  const s=saldo(c);
+  if(monto>s+0.01){toast(`El abono supera el saldo (${fmt(s)})`,'e');return;}
+  c.abonos.push({id:gid(),fecha,monto,metodo,desc:desc||'Abono recibido'});
+  save();toast(`✓ Abono de ${fmt(monto)} registrado`,'s');
+  ['aMonto','aDesc'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('aMetodo').value='';
+  renderDetail();
+}
+
+function doFac(){
+  const fecha=document.getElementById('fFecha').value||null;
+  const monto=parseFloat(document.getElementById('fMonto').value);
+  const desc=document.getElementById('fDesc').value.trim();
+  if(!monto||monto<=0){toast('Ingresa un monto válido','e');return;}
+  if(!desc){toast('Ingresa una descripción','e');return;}
+  C.find(x=>x.id===curId).facturas.push({id:gid(),desc,fecha,monto,foto:pFoto||null});
+  save();toast(`✓ Factura de ${fmt(monto)} agregada`,'s');
+  ['fMonto','fDesc'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('fPrev').style.display='none';
+  pFoto=null;renderDetail();
+}
+
+function doNewClient(){
+  const nombre=document.getElementById('ncN').value.trim();
+  const ubicacion=document.getElementById('ncU').value.trim();
+  const plazo=parseInt(document.getElementById('ncP').value);
+  if(!nombre){toast('Ingresa el nombre','e');return;}
+  const facturas=[];
+  const fm=parseFloat(document.getElementById('ncFM').value);
+  const fd2=document.getElementById('ncFD').value.trim();
+  const ff=document.getElementById('ncFF').value||null;
+  if(fm>0&&fd2)facturas.push({id:gid(),desc:fd2,fecha:ff,monto:fm,foto:pNcFoto||null});
+  C.push({id:'c_'+Date.now(),name:nombre.toUpperCase(),location:ubicacion,plazo,facturas,abonos:[]});
+  save();toast(`✓ ${nombre} creado`,'s');pNcFoto=null;goList();
+}
+
+function askDel(aid){
+  delAId=aid;delCId=curId;
+  const c=C.find(x=>x.id===curId),a=c.abonos.find(x=>x.id===aid);
+  document.getElementById('delMsg').textContent=`Se eliminará el abono de ${fmt(a.monto)} del ${fd(a.fecha)}.`;
+  document.getElementById('delModal').classList.add('show');
+}
+function closeDelModal(){document.getElementById('delModal').classList.remove('show');delAId=delCId=null;}
+function confirmDel(){
+  C.find(x=>x.id===delCId).abonos=C.find(x=>x.id===delCId).abonos.filter(a=>a.id!==delAId);
+  save();toast('Abono eliminado','s');closeDelModal();renderDetail();
+}
+
+function prevFoto(input,prevId){
+  if(!input.files||!input.files[0])return;
+  const r=new FileReader();
+  r.onload=e=>{
+    if(prevId==='fPrev')pFoto=e.target.result;
+    else if(prevId==='ncFP')pNcFoto=e.target.result;
+    else if(prevId==='eFotoPrev')pEFoto=e.target.result;
+    const p=document.getElementById(prevId);p.src=e.target.result;p.style.display='block';
+  };
+  r.readAsDataURL(input.files[0]);
+}
+function openPhoto(src){document.getElementById('photoImg').src=src;document.getElementById('photoOv').classList.add('show');}
+function closePhoto(){document.getElementById('photoOv').classList.remove('show');}
+
+load();
+</script>
+</body>
+</html>
