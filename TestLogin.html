@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Login Apartados Yumana</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:-apple-system,system-ui,sans-serif;
+  background:#0a0a14;color:#e8e2d4;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.card{
+  background:#13131f;border:1px solid #2a2a44;border-radius:14px;
+  padding:30px;max-width:400px;width:100%;
+}
+h1{color:#c9a84c;font-size:22px;margin-bottom:20px;text-align:center;}
+.status{
+  background:#1b1b2e;padding:10px;border-radius:6px;
+  font-size:12px;color:#888;margin-bottom:20px;
+  font-family:monospace;line-height:1.5;
+  max-height:120px;overflow-y:auto;
+}
+label{display:block;font-size:11px;color:#888;margin-bottom:5px;letter-spacing:1px;}
+input{
+  width:100%;padding:12px;background:#1b1b2e;border:1px solid #2a2a44;
+  color:#e8e2d4;border-radius:8px;font-size:15px;margin-bottom:14px;
+  font-family:inherit;
+}
+button{
+  background:#c9a84c;color:#0a0a14;border:none;padding:14px;
+  width:100%;border-radius:8px;font-weight:700;cursor:pointer;
+  font-size:14px;letter-spacing:1px;text-transform:uppercase;
+  font-family:inherit;
+}
+button:disabled{opacity:0.5;}
+.msg{
+  margin-top:14px;padding:10px;border-radius:6px;font-size:13px;
+  display:none;
+}
+.msg.show{display:block;}
+.msg.error{background:rgba(231,76,60,0.15);color:#ff8a7a;border:1px solid rgba(231,76,60,0.3);}
+.msg.success{background:rgba(39,174,96,0.15);color:#76e08a;border:1px solid rgba(39,174,96,0.3);}
+.app-zone{display:none;}
+.app-zone.show{display:block;}
+.user-info{
+  background:#1b1b2e;padding:16px;border-radius:8px;margin-bottom:14px;
+}
+.user-info b{color:#c9a84c;font-size:18px;}
+.btn-out{
+  background:#e74c3c;color:#fff;margin-top:14px;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>𝓨 Test Login</h1>
+  <div class="status" id="status">Inicializando...</div>
+
+  <div id="loginZone">
+    <label>EMAIL</label>
+    <input type="email" id="email" placeholder="kinanslikah@hotmail.com" autocapitalize="off">
+    <label>CONTRASEÑA</label>
+    <input type="password" id="password" placeholder="••••••••">
+    <button id="btnLogin">Entrar</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="app-zone" id="appZone">
+    <div class="user-info">
+      <small>BIENVENIDO</small><br>
+      <b id="userName">—</b><br>
+      <small id="userRole">—</small>
+    </div>
+    <div id="data" style="font-size:13px;color:#999;"></div>
+    <button class="btn-out" id="btnLogout">Cerrar sesión</button>
+  </div>
+</div>
+
+<script>
+const log = msg => {
+  const s = document.getElementById('status');
+  const t = new Date().toLocaleTimeString();
+  s.innerHTML += `<div>[${t}] ${msg}</div>`;
+  s.scrollTop = s.scrollHeight;
+};
+
+const showMsg = (text, type) => {
+  const m = document.getElementById('msg');
+  m.textContent = text;
+  m.className = `msg show ${type}`;
+};
+
+log('Página cargada');
+
+if (typeof window.supabase === 'undefined') {
+  log('❌ SDK Supabase NO disponible');
+  showMsg('Error: SDK no cargó', 'error');
+} else {
+  log('✓ SDK Supabase disponible');
+}
+
+const sb = window.supabase.createClient(
+  'https://tkkiuxaamdyfbildcvtp.supabase.co',
+  'sb_publishable_oOCXiFi1MaOChwvqiLNSdg_IVfega0X'
+);
+log('✓ Cliente Supabase creado');
+
+// Check session existente
+(async () => {
+  try {
+    log('Verificando sesión...');
+    const { data: { session }, error } = await sb.auth.getSession();
+    if (error) {
+      log('⚠ Error getSession: ' + error.message);
+      return;
+    }
+    if (session) {
+      log('✓ Sesión existente: ' + session.user.email);
+      await loadUserApp(session.user);
+    } else {
+      log('No hay sesión, mostrando login');
+    }
+  } catch(e) {
+    log('❌ Error: ' + e.message);
+  }
+})();
+
+// Login
+document.getElementById('btnLogin').addEventListener('click', async () => {
+  const btn = document.getElementById('btnLogin');
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  if (!email || !password) {
+    showMsg('Llena los dos campos', 'error');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  log('Intentando login con ' + email);
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    log('✓ Login exitoso');
+    showMsg('Login OK!', 'success');
+    await loadUserApp(data.user);
+  } catch(e) {
+    log('❌ Login fallido: ' + e.message);
+    showMsg('Error: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+});
+
+async function loadUserApp(user) {
+  log('Cargando perfil de usuario...');
+  try {
+    const { data, error } = await sb
+      .from('usuarios_app')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    if (error) throw error;
+    log('✓ Perfil cargado: ' + data.nombre + ' (' + data.rol + ')');
+    document.getElementById('userName').textContent = data.nombre;
+    document.getElementById('userRole').textContent = data.rol.toUpperCase();
+    document.getElementById('loginZone').style.display = 'none';
+    document.getElementById('appZone').classList.add('show');
+
+    // Cargar clientes
+    log('Cargando clientes...');
+    const { data: clientes } = await sb.from('clientes').select('*');
+    log('✓ ' + clientes.length + ' clientes encontrados');
+
+    const { data: apartados } = await sb.from('apartados').select('*');
+    log('✓ ' + apartados.length + ' apartados encontrados');
+
+    document.getElementById('data').innerHTML =
+      `📋 ${clientes.length} clientes registrados<br>` +
+      `📦 ${apartados.length} apartados activos<br><br>` +
+      `<b style="color:#76e08a;">¡Todo funciona correctamente!</b>`;
+  } catch(e) {
+    log('❌ Error cargando perfil: ' + e.message);
+    showMsg('Tu usuario no tiene perfil en usuarios_app', 'error');
+  }
+}
+
+document.getElementById('btnLogout').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+</script>
+</body>
+</html>
