@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0e0e1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Apartados Yumana">
+<title>Mercantil Yumana — Apartados &amp; Créditos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0a0a14;
+  --surface:#13131f;
+  --surface-2:#1b1b2e;
+  --surface-3:#252540;
+  --border:#2a2a44;
+  --gold:#c9a84c;
+  --gold-bright:#e6ca7a;
+  --text:#e8e2d4;
+  --text-2:#d0d0e0;
+  --muted:#7a7a8e;
+  --green:#27ae60;
+  --green-soft:#76e08a;
+  --red:#e74c3c;
+  --red-soft:#ff8a7a;
+  --orange:#f39c12;
+  --blue:#3498db;
+  --purple:#9b59b6;
+  --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:500;min-height:100vh;}
+body{
+  background-image:
+    radial-gradient(circle at 20% 0%, rgba(201,168,76,.04) 0%, transparent 40%),
+    radial-gradient(circle at 80% 100%, rgba(155,89,182,.03) 0%, transparent 50%);
+  background-attachment:fixed;
+}
+
+/* ============= LOADING ============= */
+.boot-loader{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  z-index:9999;
+}
+.boot-loader .y{font-family:'DM Serif Display',serif;font-size:48px;color:var(--gold);font-style:italic;}
+.boot-loader .spin{
+  width:32px;height:32px;border:3px solid var(--surface-2);border-top-color:var(--gold);
+  border-radius:50%;animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.boot-loader.hidden{display:none;}
+
+/* ============= LOGIN ============= */
+.login-wrap{
+  display:none;align-items:center;justify-content:center;
+  min-height:100vh;padding:24px;
+}
+.login-wrap.active{display:flex;}
+.login-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:40px 32px;width:100%;max-width:400px;
+  box-shadow:0 30px 60px rgba(0,0,0,.4);
+  position:relative;overflow:hidden;
+}
+.login-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo .y{font-family:'DM Serif Display',serif;font-size:64px;color:var(--gold);line-height:1;font-style:italic;}
+.login-logo .name{font-family:'DM Serif Display',serif;font-size:18px;letter-spacing:1px;margin-top:8px;}
+.login-logo .tag{font-size:10px;letter-spacing:3px;color:var(--muted);margin-top:4px;text-transform:uppercase;}
+.input-group{margin-bottom:14px;}
+.input-group label{
+  display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:6px;font-weight:600;
+}
+.input-group input{
+  width:100%;padding:13px 14px;background:var(--surface-2);
+  border:1px solid var(--border);color:var(--text);
+  border-radius:8px;font-size:15px;font-family:inherit;
+}
+.input-group input:focus{outline:none;border-color:var(--gold);}
+.btn-primary-big{
+  background:var(--gold);color:#0a0a14;border:none;padding:14px;
+  width:100%;border-radius:10px;font-size:14px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;cursor:pointer;
+  font-family:inherit;margin-top:8px;
+}
+.btn-primary-big:active{transform:scale(.98);}
+.btn-primary-big:disabled{opacity:.5;cursor:not-allowed;}
+.login-err{
+  background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);
+  color:var(--red-soft);padding:10px 12px;border-radius:8px;
+  font-size:12px;margin-top:14px;display:none;
+}
+.login-err.show{display:block;}
+
+/* ============= APP HEADER ============= */
+.app-shell{display:none;}
+.app-shell.active{display:block;}
+.app-header{
+  background:linear-gradient(180deg,var(--surface-2),var(--surface));
+  border-bottom:1px solid var(--border);
+  padding:14px 20px;
+  position:sticky;top:0;z-index:50;
+  backdrop-filter:blur(12px);
+}
+.app-header-inner{
+  max-width:1400px;margin:0 auto;
+  display:flex;align-items:center;gap:14px;
+}
+.app-logo{font-family:'DM Serif Display',serif;font-size:18px;color:var(--gold);}
+.app-logo small{
+  display:block;font-family:'DM Sans',sans-serif;font-size:9px;
+  letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:2px;
+}
+.app-user{
+  margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;
+}
+.app-user .av{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#8b6f2e);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Serif Display',serif;font-size:15px;color:#0a0a14;font-weight:700;
+}
+.app-user .info{display:flex;flex-direction:column;}
+.app-user .info b{font-size:13px;}
+.app-user .info span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+.btn-logout{
+  background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);
+  color:var(--red-soft);padding:7px 12px;border-radius:6px;font-size:11px;
+  cursor:pointer;font-family:inherit;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+}
+.live-indicator{
+  display:flex;align-items:center;gap:6px;
+  font-size:10px;letter-spacing:1px;color:var(--green-soft);
+  background:rgba(39,174,96,.08);border:1px solid rgba(39,174,96,.2);
+  padding:5px 10px;border-radius:14px;text-transform:uppercase;font-weight:600;
+}
+.live-indicator .dot{
+  width:6px;height:6px;border-radius:50%;background:var(--green-soft);
+  animation:pulse 1.5s infinite;
+}
+@keyframes pulse{50%{opacity:.3;transform:scale(1.3);}}
+
+/* ============= NAV TABS ============= */
+.app-tabs{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:0 20px;overflow-x:auto;
+  position:sticky;top:62px;z-index:49;
+}
+.app-tabs-inner{
+  max-width:1400px;margin:0 auto;
+  display:flex;gap:4px;
+}
+.tab{
+  background:transparent;border:none;color:var(--muted);
+  padding:14px 18px;font-size:13px;font-weight:600;cursor:pointer;
+  font-family:inherit;letter-spacing:.3px;
+  border-bottom:2px solid transparent;
+  white-space:nowrap;
+  transition:all .15s;
+}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+/* ============= LAYOUT ============= */
+.view{display:none;padding:24px 20px 60px;max-width:1400px;margin:0 auto;}
+.view.active{display:block;}
+.screen-header{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  margin-bottom:24px;gap:14px;flex-wrap:wrap;
+}
+.screen-header h1{font-family:'DM Serif Display',serif;font-size:30px;letter-spacing:-.5px;}
+.screen-header h1 em{color:var(--gold);font-style:italic;font-weight:400;}
+.screen-header .sub{font-size:13px;color:var(--muted);margin-top:4px;}
+.screen-header .actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ============= BUTTONS ============= */
+.btn{
+  font-family:inherit;border:none;padding:11px 18px;border-radius:8px;
+  font-size:12px;font-weight:600;letter-spacing:.5px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;text-transform:uppercase;
+  transition:all .15s;
+}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--gold);color:#0a0a14;}
+.btn-primary:hover{background:var(--gold-bright);}
+.btn-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--surface-3);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-red{background:var(--red);color:#fff;}
+
+/* ============= KPI DASHBOARD ============= */
+.dash-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;margin-bottom:24px;
+}
+.kpi{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;
+}
+.kpi .l{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.kpi .v{font-family:'DM Serif Display',serif;font-size:28px;letter-spacing:-.5px;}
+.kpi.gold .v{color:var(--gold);}
+.kpi.green .v{color:var(--green-soft);}
+.kpi.red .v{color:var(--red-soft);}
+.kpi.blue .v{color:var(--blue);}
+.kpi .delta{font-size:11px;margin-top:6px;color:var(--muted);}
+.kpi .icon{position:absolute;right:14px;top:14px;font-size:22px;opacity:.4;}
+
+/* ============= SECTION ============= */
+.sec-title{
+  font-family:'DM Serif Display',serif;font-size:20px;
+  margin:24px 0 14px;display:flex;align-items:center;gap:12px;
+}
+.sec-title em{color:var(--gold);font-style:italic;}
+.sec-title .count{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  background:var(--surface-2);padding:3px 8px;border-radius:3px;color:var(--muted);letter-spacing:1px;
+}
+
+/* ============= CARDS ============= */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:20px;margin-bottom:14px;
+}
+.card h3{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:14px;}
+.card h3 em{color:var(--gold);font-style:italic;}
+
+/* ============= APARTADO LIST ============= */
+.apartados-list{display:grid;gap:8px;}
+.apartado-row{
+  background:var(--surface);border:1px solid var(--border);
+  border-left:4px solid var(--green);
+  border-radius:10px;padding:14px 18px;
+  display:grid;grid-template-columns:1fr auto auto;gap:14px;
+  align-items:center;cursor:pointer;transition:all .15s;
+}
+.apartado-row:hover{border-color:rgba(201,168,76,.4);transform:translateX(2px);}
+.apartado-row.vencido{border-left-color:var(--red);}
+.apartado-row.porvencer{border-left-color:var(--orange);}
+.apartado-row .info h4{font-size:15px;font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.apartado-row .info p{font-size:12px;color:var(--muted);}
+.apartado-row .info .producto{font-size:13px;color:var(--text-2);margin-top:4px;}
+.apartado-row .progress-mini{
+  width:120px;height:5px;background:var(--surface-3);border-radius:3px;
+  overflow:hidden;margin-top:8px;
+}
+.apartado-row .progress-mini > span{
+  display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-bright));
+  border-radius:3px;
+}
+.apartado-row .saldo{text-align:right;}
+.apartado-row .saldo .v{font-family:'DM Serif Display',serif;font-size:20px;color:var(--gold);}
+.apartado-row .saldo .l{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+.apartado-row .tag{
+  font-size:9px;padding:3px 8px;border-radius:3px;letter-spacing:1px;
+  font-weight:700;text-transform:uppercase;font-family:'JetBrains Mono',monospace;
+}
+.tag-activo{background:rgba(39,174,96,.15);color:var(--green-soft);}
+.tag-vencido{background:rgba(231,76,60,.15);color:var(--red-soft);}
+.tag-porvencer{background:rgba(243,156,18,.15);color:var(--orange);}
+.tag-retirado{background:rgba(155,89,182,.15);color:var(--purple);}
+
+/* ============= CLIENTE LIST ============= */
+.clientes-list{display:grid;gap:8px;}
+.cliente-row{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:14px 18px;
+  display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;
+  align-items:center;cursor:pointer;transition:all .15s;
+}
+.cliente-row:hover{border-color:rgba(201,168,76,.4);}
+.cliente-row .av{
+  width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#8b6f2e);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Serif Display',serif;font-size:18px;color:#0a0a14;font-weight:700;flex-shrink:0;
+}
+.cliente-row .info h4{font-size:15px;font-weight:600;margin-bottom:2px;}
+.cliente-row .info p{font-size:12px;color:var(--muted);}
+.cliente-row .score-chip{
+  font-family:'DM Serif Display',serif;font-size:22px;font-weight:700;width:32px;text-align:center;
+}
+.cliente-row .score-A{color:var(--green-soft);}
+.cliente-row .score-B{color:var(--gold);}
+.cliente-row .score-C{color:var(--orange);}
+.cliente-row .score-D{color:var(--red-soft);}
+.cliente-row .ap-count{
+  font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;text-align:right;
+}
+.cliente-row .ap-count b{display:block;font-size:18px;color:var(--text);font-family:'DM Serif Display',serif;}
+
+/* ============= FORMS ============= */
+.form-card{
+  background:linear-gradient(180deg,rgba(201,168,76,.04),transparent);
+  border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;
+}
+.form-card h3{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:14px;color:var(--gold);}
+.fg{margin-bottom:12px;}
+.fg label{display:block;font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;font-weight:600;}
+.fg input,.fg select,.fg textarea{
+  width:100%;padding:11px 13px;background:var(--surface-2);
+  border:1px solid var(--border);color:var(--text);
+  border-radius:8px;font-size:14px;font-family:inherit;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--gold);}
+.fg.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fg.row-2 > div{display:flex;flex-direction:column;gap:5px;}
+.fg.row-2 > div label{font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-weight:600;}
+.fg-help{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* ============= METODO PAGO ============= */
+.metodos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.met-btn{
+  padding:11px 8px;background:var(--surface-2);border:2px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:11px;cursor:pointer;
+  font-family:inherit;font-weight:600;text-align:center;transition:all .15s;
+}
+.met-btn:active{transform:scale(.97);}
+.met-btn.active{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold);}
+
+/* ============= MODAL ============= */
+.modal-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:200;align-items:center;justify-content:center;padding:20px;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.show{display:flex;}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  max-width:560px;width:100%;max-height:92vh;overflow-y:auto;
+  padding:24px;animation:slideUp .25s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal h2{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:16px;}
+.modal h2 em{color:var(--gold);font-style:italic;}
+.modal .close-modal{
+  position:absolute;top:14px;right:14px;
+  background:var(--surface-2);border:none;color:var(--text);
+  width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;font-family:inherit;
+}
+.modal-actions{display:flex;gap:8px;margin-top:16px;}
+.modal-actions .btn{flex:1;justify-content:center;}
+
+/* ============= SEARCH ============= */
+.search-input{
+  width:100%;padding:14px 14px 14px 44px;
+  background:var(--surface);border:2px solid var(--border);
+  color:var(--text);border-radius:10px;font-size:14px;font-family:inherit;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%237a7a8e' stroke-width='2' viewBox='0 0 24 24'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>");
+  background-repeat:no-repeat;background-position:14px center;
+}
+.search-input:focus{outline:none;border-color:var(--gold);}
+
+/* ============= EMPTY STATE ============= */
+.empty-state{
+  text-align:center;padding:60px 20px;color:var(--muted);
+}
+.empty-state .ico{font-size:48px;margin-bottom:14px;opacity:.4;}
+.empty-state h3{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:6px;color:var(--text);}
+.empty-state p{font-size:13px;max-width:300px;margin:0 auto 16px;line-height:1.5;}
+
+/* ============= DETAIL APARTADO ============= */
+.detail-grid{display:grid;grid-template-columns:1fr 380px;gap:20px;}
+@media (max-width:900px){.detail-grid{grid-template-columns:1fr;}}
+.detail-cliente-banner{
+  background:linear-gradient(135deg,var(--surface),var(--surface-2));
+  border:1px solid var(--border);border-radius:14px;padding:20px;
+  display:flex;align-items:center;gap:16px;margin-bottom:14px;
+}
+.detail-cliente-banner .av{
+  width:60px;height:60px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),#8b6f2e);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Serif Display',serif;font-size:26px;color:#0a0a14;font-weight:700;flex-shrink:0;
+}
+.detail-cliente-banner h2{font-family:'DM Serif Display',serif;font-size:22px;}
+.detail-cliente-banner p{font-size:13px;color:var(--muted);margin-top:3px;}
+.detail-cliente-banner .score-chip{
+  background:rgba(39,174,96,.15);color:var(--green-soft);
+  padding:4px 10px;border-radius:14px;font-size:11px;font-weight:700;
+  margin-top:6px;display:inline-block;letter-spacing:.5px;
+}
+.detail-cliente-banner .right-side{margin-left:auto;text-align:right;}
+.detail-cliente-banner .right-side .saldo{
+  font-family:'DM Serif Display',serif;font-size:32px;color:var(--gold);
+}
+.detail-cliente-banner .right-side .l{font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;}
+
+.summary-box{padding:18px;}
+.summary-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px;}
+.summary-row:last-child{border:none;}
+.summary-row .l{color:var(--muted);}
+.summary-row .v{font-weight:600;}
+.summary-row.total{margin-top:6px;padding-top:12px;border-top:2px solid var(--gold);border-bottom:none;}
+.summary-row.total .v{font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold);}
+
+/* ============= ABONO ITEM ============= */
+.abono-item{
+  background:var(--surface-2);border-radius:8px;padding:11px 14px;
+  margin-bottom:6px;display:grid;grid-template-columns:auto 1fr auto;
+  gap:12px;align-items:center;font-size:12px;
+}
+.abono-item .met-badge{
+  font-size:10px;padding:3px 8px;border-radius:3px;font-weight:600;
+  letter-spacing:.5px;font-family:'JetBrains Mono',monospace;
+}
+.met-zelle{background:rgba(52,152,219,.15);color:var(--blue);}
+.met-usdt{background:rgba(39,174,96,.15);color:var(--green-soft);}
+.met-efe{background:rgba(243,156,18,.15);color:var(--orange);}
+.met-bs{background:rgba(155,89,182,.15);color:var(--purple);}
+.met-transf{background:rgba(52,152,219,.15);color:var(--blue);}
+.met-pm{background:rgba(155,89,182,.15);color:var(--purple);}
+.met-otro{background:rgba(122,122,142,.2);color:var(--muted);}
+.abono-item .info p{font-size:12px;color:var(--text);}
+.abono-item .info span{font-size:10px;color:var(--muted);margin-top:2px;display:block;}
+.abono-item .amt{font-family:'DM Serif Display',serif;font-size:16px;color:var(--green-soft);}
+
+/* ============= PRODUCTO ============= */
+.producto-card{
+  background:var(--surface-2);border-radius:10px;padding:14px;
+  margin-bottom:8px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+}
+.producto-card .ico{
+  width:42px;height:42px;border-radius:8px;background:var(--surface-3);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.producto-card .info h5{font-size:14px;font-weight:600;}
+.producto-card .info p{font-size:11px;color:var(--muted);margin-top:2px;}
+.producto-card .price{font-family:'DM Serif Display',serif;font-size:18px;color:var(--gold);}
+
+/* ============= TOAST ============= */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--surface-2);border:1px solid var(--border);
+  padding:12px 20px;border-radius:10px;font-size:13px;
+  z-index:300;box-shadow:0 8px 30px rgba(0,0,0,.5);
+  display:none;animation:slideUp .3s ease;
+  max-width:90vw;
+}
+.toast.show{display:block;}
+.toast.s{border-color:var(--green);color:var(--green-soft);}
+.toast.e{border-color:var(--red);color:var(--red-soft);}
+.toast.i{border-color:var(--blue);color:#a3c8e8;}
+
+/* ============= RESPONSIVE ============= */
+@media (max-width:700px){
+  .app-tabs{top:60px;}
+  .screen-header h1{font-size:24px;}
+  .kpi .v{font-size:24px;}
+  .apartado-row{grid-template-columns:1fr;}
+  .apartado-row .saldo{text-align:left;}
+  .apartado-row .progress-mini{width:100%;}
+  .cliente-row{grid-template-columns:auto 1fr auto;}
+  .cliente-row .ap-count{display:none;}
+  .detail-cliente-banner{flex-wrap:wrap;}
+  .detail-cliente-banner .right-side{margin-left:0;text-align:left;width:100%;border-top:1px solid var(--border);padding-top:14px;}
+}
+</style>
+</head>
+<body>
+
+<!-- BOOT LOADER -->
+<div class="boot-loader" id="bootLoader">
+  <div class="y">𝓨</div>
+  <div class="spin"></div>
+  <div style="font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">Cargando...</div>
+</div>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="y">𝓨</div>
+      <div class="name">MERCANTIL YUMANA</div>
+      <div class="tag">Apartados &amp; Créditos</div>
+    </div>
+    <form id="loginForm">
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" autocomplete="email" required placeholder="tu@correo.com">
+      </div>
+      <div class="input-group">
+        <label>Contraseña</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn-primary-big" id="btnLogin">Entrar</button>
+      <div class="login-err" id="loginErr"></div>
+    </form>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div class="app-shell" id="appShell">
+  <div class="app-header">
+    <div class="app-header-inner">
+      <div class="app-logo">Mercantil Yumana<small>Apartados &amp; Créditos</small></div>
+      <div class="live-indicator" id="liveBadge" style="display:none;"><span class="dot"></span><span id="liveText">Conectado</span></div>
+      <div class="app-user">
+        <div class="av" id="userAvatar">?</div>
+        <div class="info">
+          <b id="userName">Cargando...</b>
+          <span id="userRole">—</span>
+        </div>
+        <button class="btn-logout" id="btnLogout">Salir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-tabs">
+    <div class="app-tabs-inner">
+      <button class="tab active" data-view="vDashboard">Inicio</button>
+      <button class="tab" data-view="vApartados">📦 Apartados</button>
+      <button class="tab" data-view="vClientes">👤 Clientes</button>
+    </div>
+  </div>
+
+  <!-- VIEW: DASHBOARD -->
+  <div class="view active" id="vDashboard">
+    <div class="screen-header">
+      <div>
+        <h1>Buen día, <em id="dashGreet">—</em></h1>
+        <div class="sub" id="dashDate">—</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btnNewApartadoDash">+ Nuevo Apartado</button>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="kpi gold">
+        <div class="icon">📦</div>
+        <div class="l">Apartados activos</div>
+        <div class="v" id="kpiApActivos">—</div>
+        <div class="delta" id="kpiApActivosSub">cargando...</div>
+      </div>
+      <div class="kpi green">
+        <div class="icon">💰</div>
+        <div class="l">Cobrado hoy</div>
+        <div class="v" id="kpiCobrado">—</div>
+        <div class="delta" id="kpiCobradoSub">cargando...</div>
+      </div>
+      <div class="kpi red">
+        <div class="icon">⏰</div>
+        <div class="l">Por vencer (7d)</div>
+        <div class="v" id="kpiPorVencer">—</div>
+        <div class="delta" id="kpiPorVencerSub">cargando...</div>
+      </div>
+      <div class="kpi blue">
+        <div class="icon">👥</div>
+        <div class="l">Clientes activos</div>
+        <div class="v" id="kpiClientes">—</div>
+        <div class="delta" id="kpiClientesSub">cargando...</div>
+      </div>
+    </div>
+
+    <div class="sec-title">Actividad <em>reciente</em></div>
+    <div id="dashRecientes">
+      <div class="empty-state">
+        <div class="ico">📭</div>
+        <h3>Sin actividad aún</h3>
+        <p>Aquí verás los últimos abonos, nuevos apartados y movimientos.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: APARTADOS -->
+  <div class="view" id="vApartados">
+    <div class="screen-header">
+      <div>
+        <h1>Apartados <em>activos</em></h1>
+        <div class="sub" id="apSubtitle">— apartados</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btnNewApartado">+ Nuevo Apartado</button>
+      </div>
+    </div>
+    <input type="text" class="search-input" id="apSearch" placeholder="Buscar por cliente o producto...">
+    <div style="margin-top:16px;" id="apList">
+      <div class="empty-state">
+        <div class="ico">📦</div>
+        <h3>No hay apartados aún</h3>
+        <p>Crea el primer apartado con el botón "+ Nuevo Apartado"</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: CLIENTES -->
+  <div class="view" id="vClientes">
+    <div class="screen-header">
+      <div>
+        <h1>Directorio de <em>clientes</em></h1>
+        <div class="sub" id="clSubtitle">— clientes registrados</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btnNewCliente">+ Nuevo Cliente</button>
+      </div>
+    </div>
+    <input type="text" class="search-input" id="clSearch" placeholder="Buscar por nombre, cédula o teléfono...">
+    <div style="margin-top:16px;" id="clList">
+      <div class="empty-state">
+        <div class="ico">👤</div>
+        <h3>No hay clientes aún</h3>
+        <p>Registra tu primer cliente con el botón "+ Nuevo Cliente"</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW: DETAIL APARTADO -->
+  <div class="view" id="vDetalleApartado">
+    <div class="screen-header">
+      <div>
+        <button class="btn btn-ghost" id="btnBackFromDetail">← Volver</button>
+      </div>
+    </div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- MODAL: NUEVO CLIENTE -->
+<div class="modal-overlay" id="mNewCliente">
+  <div class="modal" style="position:relative;">
+    <button class="close-modal" data-close="mNewCliente">×</button>
+    <h2>Nuevo <em>Cliente</em></h2>
+    <div class="fg">
+      <label>Nombre completo *</label>
+      <input type="text" id="ncNombre" placeholder="Ej: María González">
+    </div>
+    <div class="fg row-2">
+      <div>
+        <label>Cédula *</label>
+        <input type="text" id="ncCedula" placeholder="V-12345678">
+      </div>
+      <div>
+        <label>Teléfono *</label>
+        <input type="tel" id="ncTelefono" placeholder="0414-1234567">
+      </div>
+    </div>
+    <div class="fg row-2">
+      <div>
+        <label>Ciudad</label>
+        <input type="text" id="ncCiudad" placeholder="Socopó">
+      </div>
+      <div>
+        <label>Email (opcional)</label>
+        <input type="email" id="ncEmail" placeholder="cliente@correo.com">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Dirección (opcional para apartado, obligatoria para crédito)</label>
+      <textarea id="ncDireccion" rows="2" placeholder="Calle principal, sector La Romana, casa #123"></textarea>
+    </div>
+    <div class="fg">
+      <label>Notas</label>
+      <textarea id="ncNotas" rows="2" placeholder="Notas sobre el cliente..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="mNewCliente">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveCliente">Guardar Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NUEVO APARTADO -->
+<div class="modal-overlay" id="mNewApartado">
+  <div class="modal" style="position:relative;">
+    <button class="close-modal" data-close="mNewApartado">×</button>
+    <h2>Nuevo <em>Apartado</em></h2>
+    <div class="fg">
+      <label>Cliente *</label>
+      <select id="naCliente">
+        <option value="">-- Selecciona o crea un cliente --</option>
+      </select>
+      <div class="fg-help">¿No está? <a href="#" id="naCrearCliente" style="color:var(--gold);">Crear cliente nuevo</a></div>
+    </div>
+    <div class="fg">
+      <label>Producto / descripción *</label>
+      <input type="text" id="naProducto" placeholder="Ej: Aire LG 18000 BTU Dual Inverter">
+    </div>
+    <div class="fg row-2">
+      <div>
+        <label>Marca y modelo</label>
+        <input type="text" id="naMarcaModelo" placeholder="LG VR182H7">
+      </div>
+      <div>
+        <label>Precio total USD *</label>
+        <input type="number" id="naPrecio" step="0.01" min="0" placeholder="560.00">
+      </div>
+    </div>
+    <div class="fg row-2">
+      <div>
+        <label>Abono inicial USD</label>
+        <input type="number" id="naAbonoInicial" step="0.01" min="0" placeholder="0.00">
+      </div>
+      <div>
+        <label>Fecha límite *</label>
+        <input type="date" id="naFechaLimite">
+      </div>
+    </div>
+    <div class="fg" id="naMetodoWrap" style="display:none;">
+      <label>Método de pago del abono inicial</label>
+      <div class="metodos-grid" id="naMetodos">
+        <button type="button" class="met-btn" data-m="Efectivo USD">💵 Efectivo</button>
+        <button type="button" class="met-btn" data-m="Zelle">💳 Zelle</button>
+        <button type="button" class="met-btn" data-m="USDT">💰 USDT</button>
+        <button type="button" class="met-btn" data-m="Transferencia">🏦 Transfer.</button>
+        <button type="button" class="met-btn" data-m="Pago Movil">📱 Pago Móvil</button>
+        <button type="button" class="met-btn" data-m="Bolivares">💴 Bolívares</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Notas (opcional)</label>
+      <textarea id="naNotas" rows="2" placeholder="Color blanco, garantía 1 año, etc..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="mNewApartado">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveApartado">Crear Apartado</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: REGISTRAR ABONO -->
+<div class="modal-overlay" id="mAbono">
+  <div class="modal" style="position:relative;">
+    <button class="close-modal" data-close="mAbono">×</button>
+    <h2>Registrar <em>Abono</em></h2>
+    <div id="abonoCliente" style="background:var(--surface-2);padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:13px;color:var(--text-2);">
+      Cliente: <b>—</b>
+    </div>
+    <div class="fg row-2">
+      <div>
+        <label>Monto USD *</label>
+        <input type="number" id="abMonto" step="0.01" min="0" placeholder="0.00" style="font-size:18px;font-weight:700;">
+      </div>
+      <div>
+        <label>Fecha</label>
+        <input type="date" id="abFecha">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Método de pago *</label>
+      <div class="metodos-grid" id="abMetodos">
+        <button type="button" class="met-btn" data-m="Efectivo USD">💵 Efectivo</button>
+        <button type="button" class="met-btn" data-m="Zelle">💳 Zelle</button>
+        <button type="button" class="met-btn" data-m="USDT">💰 USDT</button>
+        <button type="button" class="met-btn" data-m="Transferencia">🏦 Transfer.</button>
+        <button type="button" class="met-btn" data-m="Pago Movil">📱 Pago Móvil</button>
+        <button type="button" class="met-btn" data-m="Bolivares">💴 Bolívares</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Referencia / Nº operación (opcional)</label>
+      <input type="text" id="abReferencia" placeholder="Ej: Operación 1234567">
+    </div>
+    <div class="fg">
+      <label>Notas</label>
+      <textarea id="abNotas" rows="2" placeholder="Pagó vía cuenta de..., etc."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="mAbono">Cancelar</button>
+      <button class="btn btn-green" id="btnSaveAbono">✓ Guardar Abono</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN SUPABASE
+// ============================================================
+const SUPABASE_URL = 'https://tkkiuxaamdyfbildcvtp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oOCXiFi1MaOChwvqiLNSdg_IVfega0X';
+
+// Verificar que el SDK cargó
+if (typeof window.supabase === 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('bootLoader').innerHTML = `
+      <div style="text-align:center;padding:20px;color:#ff8a7a;font-family:sans-serif;">
+        <div style="font-size:48px;margin-bottom:14px;">⚠️</div>
+        <div style="font-size:18px;margin-bottom:8px;">No se cargó el SDK de Supabase</div>
+        <div style="font-size:12px;color:#7a7a8e;margin-bottom:20px;">Revisa tu conexión a internet</div>
+        <button onclick="location.reload()" style="background:#c9a84c;color:#0a0a14;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;">Recargar</button>
+      </div>`;
+  });
+  throw new Error('Supabase SDK no cargó');
+}
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
+let currentUser = null;
+let currentUserApp = null; // datos de usuarios_app
+let CLIENTES = [];
+let APARTADOS = [];
+let ABONOS = [];
+let PRODUCTOS = [];
+let currentApartadoId = null;
+let selectedMetodoAbono = null;
+let selectedMetodoInicial = null;
+
+// ============================================================
+// UTILIDADES
+// ============================================================
+const fmt = n => '$' + Math.abs(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtDate = d => {
+  if(!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('es-VE',{day:'2-digit',month:'2-digit',year:'numeric'});
+};
+const today = () => new Date().toISOString().split('T')[0];
+const daysBetween = (d1, d2) => {
+  const t1 = new Date(d1).getTime();
+  const t2 = new Date(d2).getTime();
+  return Math.floor((t2-t1)/86400000);
+};
+const initials = (name) => {
+  if(!name) return '?';
+  const p = name.trim().split(/\s+/);
+  return (p[0]?.[0]||'') + (p[1]?.[0]||'');
+};
+
+function toast(msg, t='s'){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${t} show`;
+  setTimeout(()=>el.className='toast', 3500);
+}
+
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.classList.toggle('active', t.dataset.view === id);
+  });
+  window.scrollTo(0,0);
+}
+
+function showModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.querySelectorAll('[data-close]').forEach(b=>{
+  b.addEventListener('click', ()=>closeModal(b.dataset.close));
+});
+
+// ============================================================
+// AUTH
+// ============================================================
+async function init(){
+  // Timeout de seguridad: si en 8 seg no responde Supabase, mostrar login igual
+  let timeoutFallback = setTimeout(() => {
+    console.warn('Timeout esperando Supabase. Mostrando login.');
+    document.getElementById('bootLoader').classList.add('hidden');
+    document.getElementById('loginWrap').classList.add('active');
+  }, 8000);
+
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    clearTimeout(timeoutFallback);
+    if (error) {
+      console.error('Error getSession:', error);
+      document.getElementById('bootLoader').classList.add('hidden');
+      document.getElementById('loginWrap').classList.add('active');
+      document.getElementById('loginErr').textContent = 'Error de conexión: ' + error.message;
+      document.getElementById('loginErr').classList.add('show');
+      return;
+    }
+    if (session) {
+      await onLoginSuccess(session.user);
+    } else {
+      document.getElementById('bootLoader').classList.add('hidden');
+      document.getElementById('loginWrap').classList.add('active');
+    }
+  } catch(e) {
+    clearTimeout(timeoutFallback);
+    console.error('Error init:', e);
+    document.getElementById('bootLoader').classList.add('hidden');
+    document.getElementById('loginWrap').classList.add('active');
+    document.getElementById('loginErr').textContent = 'No se pudo conectar al servidor: ' + e.message;
+    document.getElementById('loginErr').classList.add('show');
+  }
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') {
+      location.reload();
+    }
+  });
+}
+
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('btnLogin');
+  const err = document.getElementById('loginErr');
+  err.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    await onLoginSuccess(data.user);
+  } catch(e) {
+    err.textContent = 'Email o contraseña incorrectos. Intenta de nuevo.';
+    err.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+});
+
+async function onLoginSuccess(user){
+  currentUser = user;
+  // Obtener datos del usuario en usuarios_app
+  const { data, error } = await supabase
+    .from('usuarios_app')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (error || !data) {
+    toast('Error: tu usuario no está registrado en usuarios_app. Avisa al admin.','e');
+    document.getElementById('bootLoader').classList.add('hidden');
+    document.getElementById('loginWrap').classList.add('active');
+    document.getElementById('loginErr').textContent = 'Tu usuario existe pero no tiene perfil asignado. Contacta al administrador.';
+    document.getElementById('loginErr').classList.add('show');
+    await supabase.auth.signOut();
+    return;
+  }
+
+  currentUserApp = data;
+
+  // UI usuario
+  document.getElementById('userName').textContent = data.nombre;
+  document.getElementById('userRole').textContent = data.rol;
+  document.getElementById('userAvatar').textContent = initials(data.nombre);
+  document.getElementById('dashGreet').textContent = data.nombre.split(' ')[0];
+  document.getElementById('dashDate').textContent = new Date().toLocaleDateString('es-VE', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+  // Mostrar app
+  document.getElementById('bootLoader').classList.add('hidden');
+  document.getElementById('loginWrap').classList.remove('active');
+  document.getElementById('appShell').classList.add('active');
+
+  // Cargar datos
+  await loadAllData();
+
+  // Suscribirse a realtime
+  subscribeRealtime();
+}
+
+document.getElementById('btnLogout').addEventListener('click', async ()=>{
+  if (!confirm('¿Cerrar sesión?')) return;
+  await supabase.auth.signOut();
+});
+
+// ============================================================
+// CARGAR DATOS
+// ============================================================
+async function loadAllData(){
+  try {
+    const [cli, ap, abo, prod] = await Promise.all([
+      supabase.from('clientes').select('*').order('nombre'),
+      supabase.from('apartados').select('*').order('created_at', {ascending:false}),
+      supabase.from('abonos').select('*').order('fecha', {ascending:false}),
+      supabase.from('productos_apartado').select('*'),
+    ]);
+    CLIENTES = cli.data || [];
+    APARTADOS = ap.data || [];
+    ABONOS = abo.data || [];
+    PRODUCTOS = prod.data || [];
+    renderAll();
+  } catch(e) {
+    console.error(e);
+    toast('Error cargando datos. Verifica tu conexión.','e');
+  }
+}
+
+function renderAll(){
+  renderDashboard();
+  renderApartadosList();
+  renderClientesList();
+  populateClientesSelect();
+}
+
+// ============================================================
+// REALTIME
+// ============================================================
+function subscribeRealtime(){
+  document.getElementById('liveBadge').style.display = 'inline-flex';
+
+  const tables = ['clientes','apartados','abonos','productos_apartado'];
+  tables.forEach(table => {
+    supabase
+      .channel(`rt-${table}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table }, async payload => {
+        console.log(`Realtime ${table}:`, payload);
+        await loadAllData();
+        if (payload.eventType === 'INSERT' && payload.new) {
+          // Notificar si fue otro usuario quien creó
+          const who = payload.new.registrado_por || payload.new.created_by;
+          if (who && who !== currentUser?.id) {
+            toast(`🔄 Actualización en tiempo real: ${table}`,'i');
+          }
+        }
+      })
+      .subscribe();
+  });
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard(){
+  // KPIs
+  const activos = APARTADOS.filter(a => a.estado === 'activo');
+  document.getElementById('kpiApActivos').textContent = activos.length;
+  const totalPendiente = activos.reduce((s,a) => s + (parseFloat(a.monto_total) - parseFloat(a.monto_abonado||0)), 0);
+  document.getElementById('kpiApActivosSub').textContent = `${fmt(totalPendiente)} por cobrar`;
+
+  // Cobrado hoy
+  const hoy = today();
+  const abonosHoy = ABONOS.filter(a => a.fecha === hoy);
+  const cobradoHoy = abonosHoy.reduce((s,a) => s + parseFloat(a.monto||0), 0);
+  document.getElementById('kpiCobrado').textContent = fmt(cobradoHoy);
+  document.getElementById('kpiCobradoSub').textContent = `${abonosHoy.length} abono${abonosHoy.length===1?'':'s'}`;
+
+  // Por vencer 7 días
+  const limite7 = new Date(Date.now() + 7*86400000).toISOString().split('T')[0];
+  const porVencer = activos.filter(a => a.fecha_limite <= limite7);
+  document.getElementById('kpiPorVencer').textContent = porVencer.length;
+  const enRiesgo = porVencer.reduce((s,a) => s + (parseFloat(a.monto_total) - parseFloat(a.monto_abonado||0)), 0);
+  document.getElementById('kpiPorVencerSub').textContent = `${fmt(enRiesgo)} en riesgo`;
+
+  // Clientes
+  document.getElementById('kpiClientes').textContent = CLIENTES.length;
+  document.getElementById('kpiClientesSub').textContent = `${activos.length} con apartado activo`;
+
+  // Actividad reciente
+  const recientes = [...ABONOS].sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
+  const contRec = document.getElementById('dashRecientes');
+  if (recientes.length === 0) {
+    contRec.innerHTML = `
+      <div class="empty-state">
+        <div class="ico">📭</div>
+        <h3>Sin actividad aún</h3>
+        <p>Aquí verás los últimos abonos y movimientos.</p>
+      </div>`;
+    return;
+  }
+
+  contRec.innerHTML = recientes.map(a => {
+    const ap = APARTADOS.find(x => x.id === a.apartado_id);
+    const cli = ap ? CLIENTES.find(c => c.id === ap.cliente_id) : null;
+    const metClass = methodCssClass(a.metodo);
+    return `
+      <div class="abono-item" style="margin-bottom:8px;">
+        <div class="met-badge ${metClass}">${a.metodo}</div>
+        <div class="info">
+          <p><b>${cli ? cli.nombre : '?'}</b> abonó al apartado #${ap?.numero||'—'}</p>
+          <span>${fmtDate(a.fecha)} · ${a.notas || ''}</span>
+        </div>
+        <div class="amt">${fmt(a.monto)}</div>
+      </div>`;
+  }).join('');
+}
+
+function methodCssClass(metodo){
+  const m = (metodo||'').toLowerCase();
+  if (m.includes('zelle')) return 'met-zelle';
+  if (m.includes('usdt')) return 'met-usdt';
+  if (m.includes('efectivo')) return 'met-efe';
+  if (m.includes('bolivar') || m.includes('bs')) return 'met-bs';
+  if (m.includes('transfer')) return 'met-transf';
+  if (m.includes('movil') || m.includes('móvil')) return 'met-pm';
+  return 'met-otro';
+}
+
+// ============================================================
+// APARTADOS - LISTADO
+// ============================================================
+function renderApartadosList(){
+  const search = (document.getElementById('apSearch').value || '').toLowerCase().trim();
+  let list = APARTADOS.filter(a => a.estado === 'activo' || a.estado === 'vencido');
+
+  if (search) {
+    list = list.filter(a => {
+      const cli = CLIENTES.find(c => c.id === a.cliente_id);
+      const prods = PRODUCTOS.filter(p => p.apartado_id === a.id);
+      const txt = [
+        cli?.nombre || '',
+        cli?.cedula || '',
+        ...prods.map(p => p.descripcion)
+      ].join(' ').toLowerCase();
+      return txt.includes(search);
+    });
+  }
+
+  document.getElementById('apSubtitle').textContent =
+    `${list.length} apartado${list.length===1?'':'s'} · ${fmt(list.reduce((s,a) => s + (parseFloat(a.monto_total) - parseFloat(a.monto_abonado||0)), 0))} por cobrar`;
+
+  const cont = document.getElementById('apList');
+  if (list.length === 0) {
+    cont.innerHTML = `
+      <div class="empty-state">
+        <div class="ico">📦</div>
+        <h3>No hay apartados ${search ? 'con esa búsqueda' : 'aún'}</h3>
+        <p>${search ? 'Prueba con otra palabra' : 'Crea el primer apartado con el botón "+ Nuevo Apartado"'}</p>
+      </div>`;
+    return;
+  }
+
+  cont.innerHTML = `<div class="apartados-list">${list.map(a => renderApartadoRow(a)).join('')}</div>`;
+  cont.querySelectorAll('.apartado-row').forEach(el => {
+    el.addEventListener('click', () => goDetailApartado(el.dataset.id));
+  });
+}
+
+function renderApartadoRow(a){
+  const cli = CLIENTES.find(c => c.id === a.cliente_id);
+  const prods = PRODUCTOS.filter(p => p.apartado_id === a.id);
+  const productoTexto = prods.length === 0 ? 'Sin productos'
+    : prods.length === 1 ? prods[0].descripcion
+    : `${prods[0].descripcion} +${prods.length-1} más`;
+
+  const saldo = parseFloat(a.monto_total) - parseFloat(a.monto_abonado||0);
+  const pct = parseFloat(a.monto_total) > 0 ? (parseFloat(a.monto_abonado||0) / parseFloat(a.monto_total)) * 100 : 0;
+  const dias = daysBetween(today(), a.fecha_limite);
+  let rowClass = '';
+  let tagHtml = '';
+  if (dias < 0) {
+    rowClass = 'vencido';
+    tagHtml = `<span class="tag tag-vencido">VENCIDO ${Math.abs(dias)}D</span>`;
+  } else if (dias <= 7) {
+    rowClass = 'porvencer';
+    tagHtml = `<span class="tag tag-porvencer">VENCE ${dias}D</span>`;
+  } else {
+    tagHtml = `<span class="tag tag-activo">ACTIVO</span>`;
+  }
+
+  return `
+    <div class="apartado-row ${rowClass}" data-id="${a.id}">
+      <div class="info">
+        <h4>${cli?.nombre || '— sin cliente —'} ${tagHtml}</h4>
+        <p>Apartado #${a.numero} · ${cli?.cedula || ''} ${cli?.telefono ? '· '+cli.telefono : ''}</p>
+        <p class="producto">${productoTexto}</p>
+        <div class="progress-mini"><span style="width:${Math.min(pct,100)}%;"></span></div>
+      </div>
+      <div class="saldo">
+        <div class="v">${fmt(saldo)}</div>
+        <div class="l">por cobrar</div>
+      </div>
+      <div style="color:var(--muted);font-size:11px;text-align:right;">
+        ${dias>=0 ? dias+'d restantes' : Math.abs(dias)+'d vencido'}
+      </div>
+    </div>`;
+}
+
+document.getElementById('apSearch').addEventListener('input', renderApartadosList);
+
+// ============================================================
+// CLIENTES - LISTADO
+// ============================================================
+function renderClientesList(){
+  const search = (document.getElementById('clSearch').value || '').toLowerCase().trim();
+  let list = [...CLIENTES];
+  if (search) {
+    list = list.filter(c => {
+      const t = [c.nombre, c.cedula, c.telefono, c.ciudad].filter(Boolean).join(' ').toLowerCase();
+      return t.includes(search);
+    });
+  }
+  document.getElementById('clSubtitle').textContent = `${list.length} cliente${list.length===1?'':'s'} registrados`;
+
+  const cont = document.getElementById('clList');
+  if (list.length === 0) {
+    cont.innerHTML = `
+      <div class="empty-state">
+        <div class="ico">👤</div>
+        <h3>No hay clientes ${search ? 'con esa búsqueda' : 'aún'}</h3>
+        <p>${search ? 'Prueba con otra palabra' : 'Registra tu primer cliente con el botón "+ Nuevo Cliente"'}</p>
+      </div>`;
+    return;
+  }
+
+  cont.innerHTML = `<div class="clientes-list">${list.map(c => {
+    const aps = APARTADOS.filter(a => a.cliente_id === c.id && a.estado === 'activo');
+    return `
+      <div class="cliente-row">
+        <div class="av">${initials(c.nombre)}</div>
+        <div class="info">
+          <h4>${c.nombre}</h4>
+          <p>${c.cedula || '—'}${c.telefono ? ' · '+c.telefono : ''}${c.ciudad ? ' · '+c.ciudad : ''}</p>
+        </div>
+        <div class="score-chip score-${c.score}">${c.score}</div>
+        <div class="ap-count">
+          <b>${aps.length}</b>
+          apartados
+        </div>
+      </div>`;
+  }).join('')}</div>`;
+}
+
+document.getElementById('clSearch').addEventListener('input', renderClientesList);
+
+function populateClientesSelect(){
+  const sel = document.getElementById('naCliente');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">-- Selecciona o crea un cliente --</option>'
+    + CLIENTES.map(c => `<option value="${c.id}">${c.nombre} · ${c.cedula||'sin cédula'}</option>`).join('');
+  sel.value = current;
+}
+
+// ============================================================
+// CREAR CLIENTE
+// ============================================================
+document.getElementById('btnNewCliente').addEventListener('click', () => {
+  ['ncNombre','ncCedula','ncTelefono','ncCiudad','ncEmail','ncDireccion','ncNotas'].forEach(id => document.getElementById(id).value = '');
+  showModal('mNewCliente');
+});
+
+document.getElementById('btnSaveCliente').addEventListener('click', async () => {
+  const nombre = document.getElementById('ncNombre').value.trim();
+  const cedula = document.getElementById('ncCedula').value.trim();
+  const telefono = document.getElementById('ncTelefono').value.trim();
+  if (!nombre) return toast('Ingresa el nombre del cliente','e');
+  if (!cedula) return toast('Ingresa la cédula','e');
+  if (!telefono) return toast('Ingresa el teléfono','e');
+
+  const newCli = {
+    nombre,
+    cedula,
+    telefono,
+    ciudad: document.getElementById('ncCiudad').value.trim() || null,
+    email: document.getElementById('ncEmail').value.trim() || null,
+    direccion: document.getElementById('ncDireccion').value.trim() || null,
+    notas: document.getElementById('ncNotas').value.trim() || null,
+    created_by: currentUserApp.id
+  };
+
+  try {
+    const { data, error } = await supabase.from('clientes').insert(newCli).select().single();
+    if (error) throw error;
+    closeModal('mNewCliente');
+    toast(`✓ Cliente "${nombre}" creado`,'s');
+    await loadAllData();
+    // Si veníamos del modal de apartado, seleccionar este cliente
+    if (window._returnToApartado) {
+      window._returnToApartado = false;
+      document.getElementById('naCliente').value = data.id;
+      showModal('mNewApartado');
+    }
+  } catch(e) {
+    console.error(e);
+    if (e.message?.includes('duplicate') || e.code === '23505') {
+      toast('Ya existe un cliente con esa cédula','e');
+    } else {
+      toast('Error guardando cliente: ' + e.message,'e');
+    }
+  }
+});
+
+// ============================================================
+// CREAR APARTADO
+// ============================================================
+function openNewApartado(){
+  ['naProducto','naMarcaModelo','naPrecio','naAbonoInicial','naNotas'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('naCliente').value = '';
+  // Fecha límite default: hoy + 30 días
+  const f = new Date(Date.now() + 30*86400000);
+  document.getElementById('naFechaLimite').value = f.toISOString().split('T')[0];
+  document.getElementById('naMetodoWrap').style.display = 'none';
+  document.querySelectorAll('#naMetodos .met-btn').forEach(b => b.classList.remove('active'));
+  selectedMetodoInicial = null;
+  showModal('mNewApartado');
+}
+document.getElementById('btnNewApartado').addEventListener('click', openNewApartado);
+document.getElementById('btnNewApartadoDash').addEventListener('click', openNewApartado);
+
+document.getElementById('naCrearCliente').addEventListener('click', e => {
+  e.preventDefault();
+  closeModal('mNewApartado');
+  window._returnToApartado = true;
+  document.getElementById('btnNewCliente').click();
+});
+
+document.getElementById('naAbonoInicial').addEventListener('input', e => {
+  const v = parseFloat(e.target.value) || 0;
+  document.getElementById('naMetodoWrap').style.display = v > 0 ? 'block' : 'none';
+});
+
+document.querySelectorAll('#naMetodos .met-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#naMetodos .met-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    selectedMetodoInicial = b.dataset.m;
+  });
+});
+
+document.getElementById('btnSaveApartado').addEventListener('click', async () => {
+  const cliente_id = document.getElementById('naCliente').value;
+  const producto = document.getElementById('naProducto').value.trim();
+  const marca = document.getElementById('naMarcaModelo').value.trim();
+  const precio = parseFloat(document.getElementById('naPrecio').value);
+  const abonoInicial = parseFloat(document.getElementById('naAbonoInicial').value) || 0;
+  const fechaLimite = document.getElementById('naFechaLimite').value;
+  const notas = document.getElementById('naNotas').value.trim();
+
+  if (!cliente_id) return toast('Selecciona o crea un cliente','e');
+  if (!producto) return toast('Describe el producto','e');
+  if (!precio || precio <= 0) return toast('Ingresa el precio total','e');
+  if (!fechaLimite) return toast('Selecciona la fecha límite','e');
+  if (abonoInicial > 0 && !selectedMetodoInicial) return toast('Selecciona método del abono inicial','e');
+  if (abonoInicial > precio) return toast('El abono no puede ser mayor al precio total','e');
+
+  try {
+    // Insertar apartado
+    const { data: ap, error: e1 } = await supabase.from('apartados').insert({
+      cliente_id,
+      monto_total: precio,
+      fecha_limite: fechaLimite,
+      notas: notas || null,
+      created_by: currentUserApp.id,
+      estado: 'activo'
+    }).select().single();
+    if (e1) throw e1;
+
+    // Insertar producto
+    const { error: e2 } = await supabase.from('productos_apartado').insert({
+      apartado_id: ap.id,
+      descripcion: producto,
+      marca_modelo: marca || null,
+      cantidad: 1,
+      precio_unitario: precio
+    });
+    if (e2) throw e2;
+
+    // Si hubo abono inicial
+    if (abonoInicial > 0) {
+      const { error: e3 } = await supabase.from('abonos').insert({
+        apartado_id: ap.id,
+        fecha: today(),
+        monto: abonoInicial,
+        metodo: selectedMetodoInicial,
+        notas: 'Abono inicial al crear apartado',
+        registrado_por: currentUserApp.id,
+        confirmado: true,
+        fecha_confirmacion: new Date().toISOString()
+      });
+      if (e3) throw e3;
+    }
+
+    closeModal('mNewApartado');
+    toast(`✓ Apartado #${ap.numero} creado`,'s');
+    await loadAllData();
+  } catch(e) {
+    console.error(e);
+    toast('Error: ' + e.message, 'e');
+  }
+});
+
+// ============================================================
+// DETALLE APARTADO
+// ============================================================
+function goDetailApartado(id){
+  currentApartadoId = id;
+  showView('vDetalleApartado');
+  renderDetailApartado();
+}
+
+document.getElementById('btnBackFromDetail').addEventListener('click', () => {
+  currentApartadoId = null;
+  showView('vApartados');
+});
+
+function renderDetailApartado(){
+  const a = APARTADOS.find(x => x.id === currentApartadoId);
+  if (!a) {
+    showView('vApartados');
+    return;
+  }
+  const cli = CLIENTES.find(c => c.id === a.cliente_id);
+  const prods = PRODUCTOS.filter(p => p.apartado_id === a.id);
+  const abos = ABONOS.filter(x => x.apartado_id === a.id).sort((x,y) => new Date(y.fecha) - new Date(x.fecha));
+
+  const saldo = parseFloat(a.monto_total) - parseFloat(a.monto_abonado||0);
+  const pct = parseFloat(a.monto_total) > 0 ? (parseFloat(a.monto_abonado||0) / parseFloat(a.monto_total)) * 100 : 0;
+  const dias = daysBetween(today(), a.fecha_limite);
+  const vencido = dias < 0;
+
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-cliente-banner">
+      <div class="av">${initials(cli?.nombre)}</div>
+      <div>
+        <h2>${cli?.nombre || '— sin cliente —'}</h2>
+        <p>${cli?.cedula || ''} ${cli?.telefono ? '· '+cli.telefono : ''} ${cli?.ciudad ? '· '+cli.ciudad : ''}</p>
+        <span class="score-chip">⭐ Score ${cli?.score || 'B'}</span>
+      </div>
+      <div class="right-side">
+        <div class="saldo">${fmt(saldo)}</div>
+        <div class="l">por cobrar de ${fmt(a.monto_total)}</div>
+        <div style="font-size:11px;color:${vencido?'var(--red-soft)':'var(--muted)'};margin-top:6px;">
+          ${vencido ? '⚠ Venció hace '+Math.abs(dias)+' días' : 'Vence en '+dias+' días · '+fmtDate(a.fecha_limite)}
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div>
+        <div class="card">
+          <h3>Productos <em>apartados</em></h3>
+          ${prods.length === 0 ? '<p style="color:var(--muted);font-size:13px;">Sin productos</p>' : prods.map(p => `
+            <div class="producto-card">
+              <div class="ico">📦</div>
+              <div class="info">
+                <h5>${p.descripcion}</h5>
+                ${p.marca_modelo ? `<p>${p.marca_modelo}</p>` : ''}
+              </div>
+              <div class="price">${fmt(p.precio_unitario)}</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="card">
+          <h3>Historial de <em>abonos</em> <span style="font-size:12px;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:500;font-style:normal;">(${abos.length})</span></h3>
+          ${abos.length === 0 ? '<p style="color:var(--muted);font-size:13px;">Aún no hay abonos registrados</p>' : abos.map(ab => {
+            const u = null; // podría buscarse el usuario que registró
+            return `
+              <div class="abono-item">
+                <div class="met-badge ${methodCssClass(ab.metodo)}">${ab.metodo}</div>
+                <div class="info">
+                  <p>${ab.notas || 'Abono recibido'}</p>
+                  <span>${fmtDate(ab.fecha)} ${ab.referencia ? '· Ref: '+ab.referencia : ''}</span>
+                </div>
+                <div class="amt">${fmt(ab.monto)}</div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div>
+        <div class="card summary-box">
+          <h3>Resumen</h3>
+          <div class="summary-row"><span class="l">Apartado #</span><span class="v">${a.numero}</span></div>
+          <div class="summary-row"><span class="l">Fecha inicio</span><span class="v">${fmtDate(a.fecha_inicio)}</span></div>
+          <div class="summary-row"><span class="l">Fecha límite</span><span class="v">${fmtDate(a.fecha_limite)}</span></div>
+          <div class="summary-row"><span class="l">Total apartado</span><span class="v">${fmt(a.monto_total)}</span></div>
+          <div class="summary-row"><span class="l">Total abonado</span><span class="v" style="color:var(--green-soft);">${fmt(a.monto_abonado)}</span></div>
+          <div class="summary-row"><span class="l">% pagado</span><span class="v">${pct.toFixed(0)}%</span></div>
+          <div class="summary-row total"><span class="l">Saldo</span><span class="v">${fmt(saldo)}</span></div>
+          <button class="btn btn-green" style="width:100%;justify-content:center;margin-top:16px;padding:14px;" id="btnOpenAbono">💰 Registrar Abono</button>
+        </div>
+
+        ${a.notas ? `
+        <div class="card">
+          <h3>Notas</h3>
+          <p style="font-size:13px;color:var(--text-2);line-height:1.5;">${a.notas}</p>
+        </div>` : ''}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('btnOpenAbono').addEventListener('click', openAbono);
+}
+
+// ============================================================
+// REGISTRAR ABONO
+// ============================================================
+function openAbono(){
+  const a = APARTADOS.find(x => x.id === currentApartadoId);
+  if (!a) return;
+  const cli = CLIENTES.find(c => c.id === a.cliente_id);
+  const saldo = parseFloat(a.monto_total) - parseFloat(a.monto_abonado||0);
+
+  document.getElementById('abonoCliente').innerHTML = `
+    Cliente: <b>${cli?.nombre || '?'}</b><br>
+    <span style="font-size:11px;color:var(--muted);">Apartado #${a.numero} · Saldo actual: <b style="color:var(--gold);">${fmt(saldo)}</b></span>
+  `;
+  document.getElementById('abMonto').value = '';
+  document.getElementById('abFecha').value = today();
+  document.getElementById('abReferencia').value = '';
+  document.getElementById('abNotas').value = '';
+  document.querySelectorAll('#abMetodos .met-btn').forEach(b => b.classList.remove('active'));
+  selectedMetodoAbono = null;
+  showModal('mAbono');
+}
+
+document.querySelectorAll('#abMetodos .met-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#abMetodos .met-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    selectedMetodoAbono = b.dataset.m;
+  });
+});
+
+document.getElementById('btnSaveAbono').addEventListener('click', async () => {
+  const monto = parseFloat(document.getElementById('abMonto').value);
+  const fecha = document.getElementById('abFecha').value;
+  if (!monto || monto <= 0) return toast('Ingresa un monto válido','e');
+  if (!fecha) return toast('Selecciona la fecha','e');
+  if (!selectedMetodoAbono) return toast('Selecciona el método de pago','e');
+
+  try {
+    const { error } = await supabase.from('abonos').insert({
+      apartado_id: currentApartadoId,
+      fecha,
+      monto,
+      metodo: selectedMetodoAbono,
+      referencia: document.getElementById('abReferencia').value.trim() || null,
+      notas: document.getElementById('abNotas').value.trim() || null,
+      registrado_por: currentUserApp.id,
+      confirmado: true,
+      fecha_confirmacion: new Date().toISOString()
+    });
+    if (error) throw error;
+    closeModal('mAbono');
+    toast(`✓ Abono de ${fmt(monto)} registrado`,'s');
+    await loadAllData();
+    renderDetailApartado();
+  } catch(e) {
+    console.error(e);
+    toast('Error: ' + e.message,'e');
+  }
+});
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => showView(t.dataset.view));
+});
+
+// ============================================================
+// INIT
+// ============================================================
+init();
+</script>
+
+</body>
+</html>
