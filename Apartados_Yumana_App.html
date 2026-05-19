@@ -1,0 +1,2448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0a0a14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yumana">
+<link rel="manifest" href="manifest_apartados.json">
+<title>Mercantil Yumana — Apartados</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#0a0a14; --surface:#13131f; --surface-2:#1b1b2e; --surface-3:#252540;
+  --border:#2a2a44; --gold:#c9a84c; --gold-bright:#e6ca7a;
+  --text:#e8e2d4; --text-2:#d0d0e0; --muted:#7a7a8e;
+  --green:#27ae60; --green-soft:#76e08a;
+  --red:#e74c3c; --red-soft:#ff8a7a;
+  --orange:#f39c12; --blue:#3498db; --purple:#9b59b6;
+}
+html,body{
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system, system-ui, 'Helvetica Neue', sans-serif;
+  min-height:100vh;
+}
+
+/* ============== LOGIN ============== */
+.login-screen{
+  display:flex; align-items:center; justify-content:center;
+  min-height:100vh; padding:20px;
+}
+.login-screen.hidden{display:none;}
+.login-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:32px 24px; width:100%; max-width:380px;
+  box-shadow:0 20px 50px rgba(0,0,0,0.4);
+}
+.login-card .y{
+  text-align:center; font-size:56px; color:var(--gold);
+  font-weight:bold; font-style:italic; line-height:1;
+  font-family:Georgia, serif;
+}
+.login-card .brand{
+  text-align:center; font-size:14px; letter-spacing:2px;
+  margin-top:10px; color:var(--text);
+}
+.login-card .tag{
+  text-align:center; font-size:10px; letter-spacing:3px;
+  color:var(--muted); margin-top:4px; margin-bottom:24px;
+}
+.login-card label{
+  display:block; font-size:10px; letter-spacing:2px;
+  color:var(--muted); margin-bottom:6px; font-weight:600;
+}
+.login-card input{
+  width:100%; padding:13px 14px; background:var(--surface-2);
+  border:1px solid var(--border); color:var(--text);
+  border-radius:8px; font-size:15px; margin-bottom:14px;
+  font-family:inherit;
+}
+.login-card input:focus{outline:none; border-color:var(--gold);}
+.btn-primary-big{
+  background:var(--gold); color:#0a0a14; border:none;
+  padding:14px; width:100%; border-radius:8px;
+  font-size:13px; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; cursor:pointer; font-family:inherit;
+}
+.btn-primary-big:disabled{opacity:0.5;}
+.login-error{
+  background:rgba(231,76,60,0.1); color:var(--red-soft);
+  border:1px solid rgba(231,76,60,0.3);
+  padding:10px 12px; border-radius:6px;
+  font-size:12px; margin-top:14px; display:none;
+}
+.login-error.show{display:block;}
+
+/* ============== APP SHELL ============== */
+.app-shell{display:none;}
+.app-shell.active{display:block;}
+
+.app-header{
+  background:var(--surface-2); border-bottom:1px solid var(--border);
+  padding:12px 16px; position:sticky; top:0; z-index:50;
+}
+.app-header-inner{
+  display:flex; align-items:center; gap:12px;
+  max-width:1400px; margin:0 auto;
+}
+.app-brand{font-size:15px; font-weight:700; color:var(--gold);}
+.app-brand small{
+  display:block; font-size:9px; letter-spacing:1.5px;
+  color:var(--muted); font-weight:500; margin-top:1px;
+}
+.user-chip{
+  margin-left:auto; display:flex; align-items:center; gap:8px;
+  font-size:12px;
+}
+.user-chip .av{
+  width:30px; height:30px; border-radius:50%;
+  background:linear-gradient(135deg, var(--gold), #8b6f2e);
+  color:#0a0a14; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px;
+}
+.user-chip .info b{display:block; font-size:12px;}
+.user-chip .info span{font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase;}
+.btn-out{
+  background:rgba(231,76,60,0.1); border:1px solid rgba(231,76,60,0.3);
+  color:var(--red-soft); padding:6px 10px; border-radius:5px;
+  font-size:10px; cursor:pointer; font-family:inherit; font-weight:600;
+  text-transform:uppercase; letter-spacing:0.5px;
+}
+
+.app-tabs{
+  background:var(--surface); border-bottom:1px solid var(--border);
+  padding:0 16px; overflow-x:auto; position:sticky; top:55px; z-index:49;
+}
+.app-tabs-inner{
+  display:flex; gap:4px; max-width:1400px; margin:0 auto;
+}
+.tab{
+  background:none; border:none; color:var(--muted);
+  padding:12px 14px; font-size:13px; font-weight:600;
+  cursor:pointer; font-family:inherit;
+  border-bottom:2px solid transparent; white-space:nowrap;
+}
+.tab.active{color:var(--gold); border-bottom-color:var(--gold);}
+
+/* LIVE DOT */
+.live-dot{
+  display:inline-flex; align-items:center; gap:5px; font-size:9px; letter-spacing:1px;
+  color:var(--green-soft); padding:3px 8px; border-radius:10px;
+  background:rgba(39,174,96,0.1); border:1px solid rgba(39,174,96,0.2);
+  margin-left:8px; text-transform:uppercase; font-weight:600;
+}
+.live-dot.off{color:var(--muted); background:transparent; border-color:var(--border);}
+.live-dot .d{width:6px; height:6px; border-radius:50%; background:var(--green-soft); animation:pulse 1.5s infinite;}
+.live-dot.off .d{background:var(--muted); animation:none;}
+@keyframes pulse{50%{opacity:0.3; transform:scale(1.3);}}
+
+/* ACTION BUTTONS */
+.btn-icon{
+  background:var(--surface-2); border:1px solid var(--border);
+  color:var(--text); width:32px; height:32px; border-radius:6px;
+  display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:13px; padding:0; font-family:inherit;
+}
+.btn-icon.danger{color:var(--red-soft); border-color:rgba(231,76,60,0.3);}
+.row-actions{display:flex; gap:4px; flex-shrink:0;}
+.btn-red{background:var(--red); color:#fff;}
+
+/* CONFIRM DIALOG */
+.confirm-dialog{max-width:380px; text-align:center; padding:24px 20px;}
+.confirm-dialog .icon-warn{font-size:48px; margin-bottom:12px;}
+.confirm-dialog h2{margin-bottom:8px; text-align:center;}
+.confirm-dialog p{font-size:13px; color:var(--text-2); margin-bottom:18px; line-height:1.5;}
+.confirm-dialog .what{
+  background:var(--surface-2); padding:10px; border-radius:6px;
+  font-size:12px; color:var(--gold); margin-bottom:14px;
+  word-break:break-word;
+}
+
+/* PRODUCT LIST EN MODAL */
+.prod-list{display:flex; flex-direction:column; gap:6px; margin-bottom:6px;}
+.prod-item{
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:6px; padding:8px;
+  display:grid; grid-template-columns:1fr auto auto;
+  gap:6px; align-items:start;
+}
+.prod-item .prod-fields{display:grid; gap:4px;}
+.prod-item input{
+  background:var(--bg); border:1px solid var(--border);
+  color:var(--text); padding:7px 9px; border-radius:5px;
+  font-size:13px; font-family:inherit; width:100%;
+}
+.prod-item input:focus{outline:none; border-color:var(--gold);}
+.prod-item .prod-price{
+  width:90px;
+}
+.prod-item .prod-remove{
+  background:rgba(231,76,60,0.1); border:1px solid rgba(231,76,60,0.3);
+  color:var(--red-soft); width:28px; height:28px; border-radius:5px;
+  cursor:pointer; font-size:12px; padding:0; font-family:inherit;
+}
+.prod-item .prod-remove:disabled{opacity:0.3; cursor:not-allowed;}
+
+@media (max-width:600px){
+  .prod-item{grid-template-columns:1fr auto;}
+  .prod-item .prod-price{width:100%; grid-column:1 / -1;}
+  .prod-item .prod-remove{grid-column:2; grid-row:1;}
+}
+
+/* ============== VIEWS ============== */
+.view{display:none; padding:20px 16px 40px; max-width:1400px; margin:0 auto;}
+.view.active{display:block;}
+
+.screen-header{
+  display:flex; justify-content:space-between; align-items:flex-end;
+  margin-bottom:20px; gap:12px; flex-wrap:wrap;
+}
+.screen-header h1{
+  font-size:24px; font-weight:700; letter-spacing:-0.5px;
+}
+.screen-header h1 em{color:var(--gold); font-style:italic; font-weight:500;}
+.screen-header .sub{font-size:12px; color:var(--muted); margin-top:3px;}
+
+.btn{
+  font-family:inherit; border:none; padding:10px 16px; border-radius:7px;
+  font-size:12px; font-weight:600; letter-spacing:0.5px;
+  cursor:pointer; display:inline-flex; align-items:center; gap:5px;
+  text-transform:uppercase;
+}
+.btn-primary{background:var(--gold); color:#0a0a14;}
+.btn-ghost{background:var(--surface-2); color:var(--text); border:1px solid var(--border);}
+.btn-green{background:var(--green); color:#fff;}
+
+/* ============== KPIs ============== */
+.dash-grid{
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+  gap:12px; margin-bottom:24px;
+}
+.kpi{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:16px 18px; position:relative;
+}
+.kpi .l{font-size:9px; letter-spacing:1.5px; color:var(--muted); margin-bottom:6px; text-transform:uppercase;}
+.kpi .v{font-size:24px; font-weight:700;}
+.kpi.gold .v{color:var(--gold);}
+.kpi.green .v{color:var(--green-soft);}
+.kpi.red .v{color:var(--red-soft);}
+.kpi.blue .v{color:var(--blue);}
+.kpi .sub{font-size:11px; color:var(--muted); margin-top:4px;}
+
+.sec-title{
+  font-size:16px; font-weight:700; margin:20px 0 12px;
+  display:flex; align-items:center; gap:10px;
+}
+.sec-title em{color:var(--gold); font-style:italic; font-weight:500;}
+
+/* ============== CARDS ============== */
+.card{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:16px; margin-bottom:12px;
+}
+
+/* ============== LISTAS ============== */
+.search-input{
+  width:100%; padding:12px 14px 12px 40px;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text); border-radius:8px; font-size:14px;
+  font-family:inherit; margin-bottom:14px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%237a7a8e' stroke-width='2' viewBox='0 0 24 24'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>");
+  background-repeat:no-repeat; background-position:13px center;
+}
+.search-input:focus{outline:none; border-color:var(--gold);}
+
+.row-list{display:flex; flex-direction:column; gap:8px;}
+
+.apartado-row{
+  background:var(--surface); border:1px solid var(--border);
+  border-left:4px solid var(--green); border-radius:8px;
+  padding:14px 16px;
+  display:grid; grid-template-columns:1fr auto auto; gap:12px;
+  align-items:center;
+}
+.apartado-row .main-area{cursor:pointer;}
+.apartado-row.vencido{border-left-color:var(--red);}
+.apartado-row.porvencer{border-left-color:var(--orange);}
+.apartado-row h4{font-size:14px; font-weight:600; margin-bottom:3px;}
+.apartado-row p{font-size:11px; color:var(--muted); margin-bottom:6px;}
+.apartado-row .producto{font-size:12px; color:var(--text-2); margin-bottom:6px;}
+.apartado-row .progress-mini{
+  width:100%; max-width:200px; height:4px; background:var(--surface-3);
+  border-radius:2px; overflow:hidden;
+}
+.apartado-row .progress-mini > span{
+  display:block; height:100%;
+  background:linear-gradient(90deg, var(--gold), var(--gold-bright));
+}
+.apartado-row .saldo{text-align:right;}
+.apartado-row .saldo .v{font-size:18px; font-weight:700; color:var(--gold);}
+.apartado-row .saldo .l{font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
+.tag{
+  font-size:9px; padding:2px 6px; border-radius:3px;
+  font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
+  display:inline-block; margin-left:6px;
+}
+.tag-activo{background:rgba(39,174,96,0.15); color:var(--green-soft);}
+.tag-vencido{background:rgba(231,76,60,0.15); color:var(--red-soft);}
+.tag-porvencer{background:rgba(243,156,18,0.15); color:var(--orange);}
+
+.cliente-row{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:12px 14px;
+  display:grid; grid-template-columns:auto 1fr auto auto; gap:12px;
+  align-items:center;
+}
+.cliente-row .av{
+  width:38px; height:38px; border-radius:50%;
+  background:linear-gradient(135deg, var(--gold), #8b6f2e);
+  color:#0a0a14; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px;
+}
+.cliente-row h4{font-size:14px; font-weight:600;}
+.cliente-row p{font-size:11px; color:var(--muted); margin-top:2px;}
+.cliente-row .score{
+  font-size:20px; font-weight:700; width:30px; text-align:center;
+}
+.score-A{color:var(--green-soft);}
+.score-B{color:var(--gold);}
+.score-C{color:var(--orange);}
+.score-D{color:var(--red-soft);}
+
+/* ============== EMPTY ============== */
+.empty-state{
+  text-align:center; padding:40px 20px; color:var(--muted);
+}
+.empty-state .ico{font-size:40px; margin-bottom:12px; opacity:0.5;}
+.empty-state h3{font-size:16px; color:var(--text); margin-bottom:4px;}
+.empty-state p{font-size:12px;}
+
+/* ============== MODAL ============== */
+.modal-overlay{
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7);
+  z-index:200; align-items:center; justify-content:center; padding:16px;
+}
+.modal-overlay.show{display:flex;}
+.modal{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; max-width:520px; width:100%;
+  max-height:92vh; overflow-y:auto; padding:20px;
+  position:relative;
+}
+.modal h2{font-size:18px; font-weight:700; margin-bottom:14px;}
+.modal h2 em{color:var(--gold); font-style:italic;}
+.close-btn{
+  position:absolute; top:12px; right:12px;
+  background:var(--surface-2); border:none; color:var(--text);
+  width:30px; height:30px; border-radius:50%; cursor:pointer;
+  font-size:15px;
+}
+.fg{margin-bottom:10px;}
+.fg label{display:block; font-size:10px; letter-spacing:1px; color:var(--muted); margin-bottom:4px; text-transform:uppercase; font-weight:600;}
+.fg input, .fg select, .fg textarea{
+  width:100%; padding:10px 12px; background:var(--surface-2);
+  border:1px solid var(--border); color:var(--text);
+  border-radius:6px; font-size:14px; font-family:inherit;
+}
+.fg input:focus, .fg select:focus, .fg textarea:focus{outline:none; border-color:var(--gold);}
+.fg.row-2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.fg-help{font-size:11px; color:var(--muted); margin-top:4px;}
+
+.metodos-grid{
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:6px;
+}
+.met-btn{
+  padding:9px 6px; background:var(--surface-2);
+  border:2px solid var(--border); border-radius:6px;
+  color:var(--text); font-size:10px; cursor:pointer;
+  font-family:inherit; font-weight:600;
+}
+.met-btn.active{background:rgba(201,168,76,0.15); border-color:var(--gold); color:var(--gold);}
+
+.modal-actions{display:flex; gap:8px; margin-top:14px;}
+.modal-actions .btn{flex:1; justify-content:center;}
+
+/* ============== DETAIL ============== */
+.detail-banner{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:18px;
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.detail-banner .av-big{
+  width:54px; height:54px; border-radius:50%;
+  background:linear-gradient(135deg, var(--gold), #8b6f2e);
+  color:#0a0a14; font-weight:700; font-size:22px;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.detail-banner h2{font-size:18px; font-weight:700;}
+.detail-banner p{font-size:12px; color:var(--muted); margin-top:2px;}
+.detail-banner .right-side{margin-left:auto; text-align:right;}
+.detail-banner .right-side .v{font-size:26px; font-weight:700; color:var(--gold);}
+.detail-banner .right-side .l{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
+.summary-row{
+  display:flex; justify-content:space-between; padding:6px 0;
+  border-bottom:1px dashed var(--border); font-size:12px;
+}
+.summary-row .l{color:var(--muted);}
+.summary-row .v{font-weight:600;}
+.summary-row.total{margin-top:6px; padding-top:10px; border-top:2px solid var(--gold); border-bottom:none;}
+.summary-row.total .v{font-size:18px; color:var(--gold);}
+
+.abono-item{
+  background:var(--surface-2); border-radius:6px; padding:10px 12px;
+  margin-bottom:5px; display:grid; grid-template-columns:auto 1fr auto;
+  gap:10px; align-items:center; font-size:12px;
+}
+.met-badge{
+  font-size:9px; padding:2px 6px; border-radius:3px;
+  font-weight:600; letter-spacing:0.5px;
+}
+.met-zelle, .met-transf{background:rgba(52,152,219,0.15); color:var(--blue);}
+.met-usdt{background:rgba(39,174,96,0.15); color:var(--green-soft);}
+.met-efe{background:rgba(243,156,18,0.15); color:var(--orange);}
+.met-bs, .met-pm{background:rgba(155,89,182,0.15); color:var(--purple);}
+.met-otro{background:rgba(122,122,142,0.2); color:var(--muted);}
+.abono-item .amt{font-size:14px; font-weight:700; color:var(--green-soft);}
+
+.producto-card{
+  background:var(--surface-2); border-radius:8px; padding:12px;
+  margin-bottom:6px; display:grid; grid-template-columns:auto 1fr auto;
+  gap:10px; align-items:center;
+}
+.producto-card .ico{
+  width:36px; height:36px; border-radius:6px; background:var(--surface-3);
+  display:flex; align-items:center; justify-content:center; font-size:16px;
+}
+.producto-card h5{font-size:13px; font-weight:600;}
+.producto-card p{font-size:10px; color:var(--muted); margin-top:1px;}
+.producto-card .price{font-size:14px; font-weight:700; color:var(--gold);}
+
+/* ============== TOAST ============== */
+.toast{
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  background:var(--surface-2); border:1px solid var(--border);
+  padding:11px 18px; border-radius:8px; font-size:12px;
+  z-index:300; display:none; max-width:88vw;
+}
+.toast.show{display:block;}
+.toast.s{border-color:var(--green); color:var(--green-soft);}
+.toast.e{border-color:var(--red); color:var(--red-soft);}
+.toast.i{border-color:var(--blue); color:#a3c8e8;}
+
+/* ============== STATUS ============== */
+.status-log{
+  background:#1b1b2e; padding:10px; border-radius:6px;
+  font-size:11px; color:#888; font-family:monospace;
+  line-height:1.5; max-height:100px; overflow-y:auto;
+  margin-bottom:14px; word-break:break-word;
+}
+
+@media (max-width:600px){
+  .apartado-row{grid-template-columns:1fr;}
+  .apartado-row .saldo{text-align:left;}
+  .detail-banner{flex-direction:column; align-items:flex-start;}
+  .detail-banner .right-side{margin-left:0; text-align:left; width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== LOGIN SCREEN ====== -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="y">y</div>
+    <div class="brand">MERCANTIL YUMANA</div>
+    <div class="tag">APARTADOS &amp; CRÉDITOS</div>
+    <div class="status-log" id="statusLog"></div>
+    <label>EMAIL</label>
+    <input type="email" id="email" autocomplete="email" autocapitalize="off" placeholder="tu@correo.com">
+    <label>CONTRASEÑA</label>
+    <input type="password" id="password" autocomplete="current-password" placeholder="••••••••">
+    <button class="btn-primary-big" id="btnLogin">Entrar</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ====== APP SHELL ====== -->
+<div class="app-shell" id="appShell">
+  <div class="app-header">
+    <div class="app-header-inner">
+      <div class="app-brand">Mercantil Yumana<small>APARTADOS Y CRÉDITOS</small></div>
+      <div class="live-dot off" id="liveDot"><span class="d"></span><span id="liveText">CONECTANDO</span></div>
+      <div class="user-chip">
+        <div class="av" id="userAvatar">?</div>
+        <div class="info">
+          <b id="userName">—</b>
+          <span id="userRole">—</span>
+        </div>
+        <button class="btn-out" id="btnLogout">Salir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-tabs">
+    <div class="app-tabs-inner">
+      <button class="tab active" data-view="vDashboard">Inicio</button>
+      <button class="tab" data-view="vApartados">📦 Apartados</button>
+      <button class="tab" data-view="vCreditos">💳 Créditos</button>
+      <button class="tab" data-view="vClientes">👤 Clientes</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="view active" id="vDashboard">
+    <div class="screen-header">
+      <div>
+        <h1>Hola, <em id="dashGreet">—</em></h1>
+        <div class="sub" id="dashDate">—</div>
+      </div>
+      <div>
+        <button class="btn btn-primary" id="btnNewApDash">+ Nuevo Apartado</button>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="kpi gold">
+        <div class="l">📦 Apartados activos</div>
+        <div class="v" id="kpiAct">—</div>
+        <div class="sub" id="kpiActSub">—</div>
+      </div>
+      <div class="kpi green">
+        <div class="l">💰 Cobrado hoy</div>
+        <div class="v" id="kpiHoy">—</div>
+        <div class="sub" id="kpiHoySub">—</div>
+      </div>
+      <div class="kpi red">
+        <div class="l">⏰ Por vencer (7d)</div>
+        <div class="v" id="kpiVen">—</div>
+        <div class="sub" id="kpiVenSub">—</div>
+      </div>
+      <div class="kpi blue">
+        <div class="l">👥 Clientes</div>
+        <div class="v" id="kpiCli">—</div>
+        <div class="sub" id="kpiCliSub">—</div>
+      </div>
+    </div>
+
+    <div class="sec-title">Actividad <em>reciente</em></div>
+    <div id="dashRecientes"></div>
+  </div>
+
+  <!-- APARTADOS -->
+  <div class="view" id="vApartados">
+    <div class="screen-header">
+      <div>
+        <h1>Apartados <em>activos</em></h1>
+        <div class="sub" id="apSub">—</div>
+      </div>
+      <div>
+        <button class="btn btn-primary" id="btnNewAp">+ Nuevo</button>
+      </div>
+    </div>
+    <input type="text" class="search-input" id="apSearch" placeholder="Buscar por cliente o producto...">
+    <div id="apList"></div>
+  </div>
+
+  <!-- CRÉDITOS -->
+  <div class="view" id="vCreditos">
+    <div class="screen-header">
+      <div>
+        <h1>Créditos <em>activos</em></h1>
+        <div class="sub" id="crSub">—</div>
+      </div>
+      <div>
+        <button class="btn btn-primary" id="btnNewCr">+ Nuevo</button>
+      </div>
+    </div>
+    <input type="text" class="search-input" id="crSearch" placeholder="Buscar por cliente o producto...">
+    <div id="crList"></div>
+  </div>
+
+  <!-- CLIENTES -->
+  <div class="view" id="vClientes">
+    <div class="screen-header">
+      <div>
+        <h1>Directorio de <em>clientes</em></h1>
+        <div class="sub" id="clSub">—</div>
+      </div>
+      <div>
+        <button class="btn btn-primary" id="btnNewCli">+ Nuevo</button>
+      </div>
+    </div>
+    <input type="text" class="search-input" id="clSearch" placeholder="Buscar por nombre, cédula o teléfono...">
+    <div id="clList"></div>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="view" id="vDetail">
+    <button class="btn btn-ghost" id="btnBack">← Volver</button>
+    <div id="detailContent" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<!-- ====== MODAL NUEVO CLIENTE ====== -->
+<div class="modal-overlay" id="mNewCli">
+  <div class="modal">
+    <button class="close-btn" data-close="mNewCli">×</button>
+    <h2 id="mClienteTitle">Nuevo <em>Cliente</em></h2>
+    <div class="fg">
+      <label>Nombre completo *</label>
+      <input type="text" id="ncNombre" placeholder="María González">
+    </div>
+    <div class="fg row-2">
+      <div>
+        <label>Cédula *</label>
+        <input type="text" id="ncCedula" placeholder="V-12345678">
+      </div>
+      <div>
+        <label>Teléfono *</label>
+        <input type="tel" id="ncTelefono" placeholder="0414-1234567">
+      </div>
+    </div>
+    <div class="fg row-2">
+      <div>
+        <label>Ciudad</label>
+        <input type="text" id="ncCiudad" placeholder="Socopó">
+      </div>
+      <div>
+        <label>Email (opcional)</label>
+        <input type="email" id="ncEmail" autocapitalize="off">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Dirección (opcional)</label>
+      <textarea id="ncDireccion" rows="2"></textarea>
+    </div>
+    <div class="fg">
+      <label>Notas</label>
+      <textarea id="ncNotas" rows="2"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="mNewCli">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveCli">Guardar Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MODAL NUEVO APARTADO ====== -->
+<div class="modal-overlay" id="mNewAp">
+  <div class="modal">
+    <button class="close-btn" data-close="mNewAp">×</button>
+    <h2 id="mApartadoTitle">Nuevo <em>Apartado</em></h2>
+    <div class="fg">
+      <label>Cliente *</label>
+      <select id="naCliente">
+        <option value="">-- Selecciona un cliente --</option>
+      </select>
+      <div class="fg-help">¿No está? <a href="#" id="naCrearCli" style="color:var(--gold);">Crear cliente nuevo</a></div>
+    </div>
+
+    <div class="fg">
+      <label>Productos *</label>
+      <div id="naProductosList" class="prod-list"></div>
+      <button type="button" id="btnAddProd" class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:6px;font-size:11px;padding:8px;">+ Agregar otro producto</button>
+      <div class="fg-help" style="text-align:right;margin-top:6px;">
+        Total productos: <b id="naTotalProds" style="color:var(--gold);font-size:14px;">$0.00</b>
+      </div>
+    </div>
+
+    <div class="fg row-2">
+      <div>
+        <label>Abono inicial USD</label>
+        <input type="number" id="naInicial" step="0.01" min="0" placeholder="0.00">
+      </div>
+      <div>
+        <label>Fecha límite *</label>
+        <input type="date" id="naFecha">
+      </div>
+    </div>
+    <div class="fg" id="naMetWrap" style="display:none;">
+      <label>Método del abono inicial</label>
+      <div class="metodos-grid" id="naMetGrid">
+        <button type="button" class="met-btn" data-m="Efectivo USD">💵 Efectivo</button>
+        <button type="button" class="met-btn" data-m="Zelle">💳 Zelle</button>
+        <button type="button" class="met-btn" data-m="USDT">💰 USDT</button>
+        <button type="button" class="met-btn" data-m="Transferencia">🏦 Transfer</button>
+        <button type="button" class="met-btn" data-m="Pago Movil">📱 P.Móvil</button>
+        <button type="button" class="met-btn" data-m="Bolivares">💴 Bs.</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Notas</label>
+      <textarea id="naNotas" rows="2"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="mNewAp">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveAp">Crear Apartado</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MODAL NUEVO CRÉDITO ====== -->
+<div class="modal-overlay" id="mNewCr">
+  <div class="modal">
+    <button class="close-btn" data-close="mNewCr">×</button>
+    <h2 id="mCreditoTitle">Nuevo <em>Crédito</em></h2>
+    <div class="fg">
+      <label>Cliente *</label>
+      <select id="ncrCliente">
+        <option value="">-- Selecciona un cliente --</option>
+      </select>
+      <div class="fg-help">¿No está? <a href="#" id="ncrCrearCli" style="color:var(--gold);">Crear cliente nuevo</a></div>
+    </div>
+
+    <div class="fg">
+      <label>Productos entregados *</label>
+      <div id="ncrProductosList" class="prod-list"></div>
+      <button type="button" id="btnAddProdCr" class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:6px;font-size:11px;padding:8px;">+ Agregar otro producto</button>
+      <div class="fg-help" style="text-align:right;margin-top:6px;">
+        Total productos: <b id="ncrTotalProds" style="color:var(--gold);font-size:14px;">$0.00</b>
+      </div>
+    </div>
+
+    <div class="fg row-2">
+      <div>
+        <label>Abono inicial USD</label>
+        <input type="number" id="ncrInicial" step="0.01" min="0" placeholder="0.00">
+      </div>
+      <div>
+        <label>Fecha límite de pago *</label>
+        <input type="date" id="ncrFecha">
+      </div>
+    </div>
+    <div class="fg" id="ncrMetWrap" style="display:none;">
+      <label>Método del abono inicial</label>
+      <div class="metodos-grid" id="ncrMetGrid">
+        <button type="button" class="met-btn" data-m="Efectivo USD">💵 Efectivo</button>
+        <button type="button" class="met-btn" data-m="Zelle">💳 Zelle</button>
+        <button type="button" class="met-btn" data-m="USDT">💰 USDT</button>
+        <button type="button" class="met-btn" data-m="Transferencia">🏦 Transfer</button>
+        <button type="button" class="met-btn" data-m="Pago Movil">📱 P.Móvil</button>
+        <button type="button" class="met-btn" data-m="Bolivares">💴 Bs.</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Dirección de entrega/cobranza *</label>
+      <textarea id="ncrDireccion" rows="2" placeholder="Casa de la cliente. Ej: Av. Principal #45, Socopó"></textarea>
+      <div class="fg-help">Importante para cobranza posterior</div>
+    </div>
+    <div class="fg">
+      <label>Notas</label>
+      <textarea id="ncrNotas" rows="2"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="mNewCr">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveCr">Crear Crédito</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MODAL ABONO ====== -->
+<div class="modal-overlay" id="mAbono">
+  <div class="modal">
+    <button class="close-btn" data-close="mAbono">×</button>
+    <h2>Registrar <em>Abono</em></h2>
+    <div id="abInfo" style="background:var(--surface-2); padding:10px 12px; border-radius:6px; margin-bottom:12px; font-size:12px;"></div>
+    <div class="fg row-2">
+      <div>
+        <label>Monto USD *</label>
+        <input type="number" id="abMonto" step="0.01" min="0" style="font-size:17px; font-weight:700;">
+      </div>
+      <div>
+        <label>Fecha</label>
+        <input type="date" id="abFecha">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Método de pago *</label>
+      <div class="metodos-grid" id="abMetGrid">
+        <button type="button" class="met-btn" data-m="Efectivo USD">💵 Efectivo</button>
+        <button type="button" class="met-btn" data-m="Zelle">💳 Zelle</button>
+        <button type="button" class="met-btn" data-m="USDT">💰 USDT</button>
+        <button type="button" class="met-btn" data-m="Transferencia">🏦 Transfer</button>
+        <button type="button" class="met-btn" data-m="Pago Movil">📱 P.Móvil</button>
+        <button type="button" class="met-btn" data-m="Bolivares">💴 Bs.</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>Referencia / Nº operación</label>
+      <input type="text" id="abRef">
+    </div>
+    <div class="fg">
+      <label>Notas</label>
+      <textarea id="abNotas" rows="2"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="mAbono">Cancelar</button>
+      <button class="btn btn-green" id="btnSaveAb">✓ Guardar Abono</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MODAL CONFIRMACIÓN ====== -->
+<div class="modal-overlay" id="mConfirm">
+  <div class="modal confirm-dialog">
+    <div class="icon-warn">⚠️</div>
+    <h2 id="confirmTitle">¿Estás seguro?</h2>
+    <p id="confirmMsg">Esta acción no se puede deshacer</p>
+    <div class="what" id="confirmWhat"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="mConfirm">Cancelar</button>
+      <button class="btn btn-red" id="btnConfirmYes">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+// =================================================================
+// CONFIGURACIÓN
+// =================================================================
+const SUPABASE_URL = 'https://tkkiuxaamdyfbildcvtp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oOCXiFi1MaOChwvqiLNSdg_IVfega0X';
+
+// =================================================================
+// LOG VISIBLE EN LOGIN
+// =================================================================
+function log(msg) {
+  console.log('[App]', msg);
+  var s = document.getElementById('statusLog');
+  if (s) {
+    var t = new Date().toLocaleTimeString();
+    s.innerHTML += '<div>[' + t + '] ' + msg + '</div>';
+    s.scrollTop = s.scrollHeight;
+  }
+}
+
+log('Página cargada');
+
+// =================================================================
+// VERIFICAR SDK
+// =================================================================
+if (typeof window.supabase === 'undefined') {
+  log('❌ ERROR: SDK Supabase NO cargó. Verifica tu conexión.');
+  document.getElementById('btnLogin').disabled = true;
+}
+
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+log('✓ Cliente Supabase creado');
+
+// =================================================================
+// ESTADO GLOBAL
+// =================================================================
+var currentUser = null;
+var currentUserApp = null;
+var CLIENTES = [];
+var APARTADOS = [];
+var ABONOS = [];
+var PRODUCTOS = [];
+var currentApartadoId = null;
+var currentCreditoId = null;
+var currentClienteId = null;
+var selMetInicial = null;
+var selMetAbono = null;
+var editingClienteId = null;
+var editingApartadoId = null;
+var editingCreditoId = null;
+var confirmCallback = null;
+var realtimeChannels = [];
+var naProds = [];  // productos del modal apartado
+var ncrProds = []; // productos del modal credito
+var abContext = 'apartado'; // 'apartado' o 'credito' para modal de abono
+var CREDITOS = [];
+
+// =================================================================
+// UTILS
+// =================================================================
+function fmt(n) {
+  return '$' + (Math.abs(Number(n) || 0)).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  var dt = new Date(d);
+  return dt.toLocaleDateString('es-VE', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+function daysBetween(d1, d2) {
+  return Math.floor((new Date(d2).getTime() - new Date(d1).getTime()) / 86400000);
+}
+function initials(name) {
+  if (!name) return '?';
+  var p = name.trim().split(/\s+/);
+  return ((p[0] && p[0][0]) || '') + ((p[1] && p[1][0]) || '');
+}
+function toast(msg, t) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + (t || 's') + ' show';
+  setTimeout(function() { el.className = 'toast'; }, 3500);
+}
+function showView(id) {
+  var views = document.querySelectorAll('.view');
+  for (var i = 0; i < views.length; i++) views[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  var tabs = document.querySelectorAll('.tab');
+  for (var j = 0; j < tabs.length; j++) {
+    if (tabs[j].dataset.view === id) tabs[j].classList.add('active');
+    else tabs[j].classList.remove('active');
+  }
+  window.scrollTo(0, 0);
+}
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// Cerrar modales
+var closeBtns = document.querySelectorAll('[data-close]');
+for (var k = 0; k < closeBtns.length; k++) {
+  closeBtns[k].addEventListener('click', function() {
+    closeModal(this.dataset.close);
+  });
+}
+
+// =================================================================
+// LOGIN
+// =================================================================
+async function checkSession() {
+  try {
+    log('Verificando sesión...');
+    var result = await sb.auth.getSession();
+    var session = result.data && result.data.session;
+    if (session) {
+      log('✓ Sesión existente: ' + session.user.email);
+      await onLogin(session.user);
+    } else {
+      log('No hay sesión, mostrando login');
+    }
+  } catch (e) {
+    log('❌ Error: ' + e.message);
+  }
+}
+
+document.getElementById('btnLogin').addEventListener('click', async function() {
+  var btn = this;
+  var email = document.getElementById('email').value.trim().toLowerCase();
+  var password = document.getElementById('password').value;
+  if (!email || !password) {
+    document.getElementById('loginError').textContent = 'Llena los dos campos';
+    document.getElementById('loginError').classList.add('show');
+    return;
+  }
+  document.getElementById('loginError').classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  log('Login con ' + email);
+  try {
+    var result = await sb.auth.signInWithPassword({email: email, password: password});
+    if (result.error) throw result.error;
+    log('✓ Login OK');
+    await onLogin(result.data.user);
+  } catch (e) {
+    log('❌ Login fallido: ' + e.message);
+    document.getElementById('loginError').textContent = 'Email o contraseña incorrectos';
+    document.getElementById('loginError').classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+});
+
+async function onLogin(user) {
+  currentUser = user;
+  log('Cargando perfil...');
+  try {
+    var result = await sb.from('usuarios_app').select('*').eq('id', user.id).single();
+    if (result.error) throw result.error;
+    currentUserApp = result.data;
+    log('✓ Perfil: ' + currentUserApp.nombre + ' (' + currentUserApp.rol + ')');
+    initUI();
+    await loadData();
+    subscribeRealtime();
+  } catch (e) {
+    log('❌ Error perfil: ' + e.message);
+    document.getElementById('loginError').textContent = 'Tu usuario no tiene perfil. Avisa al admin.';
+    document.getElementById('loginError').classList.add('show');
+    await sb.auth.signOut();
+  }
+}
+
+function subscribeRealtime() {
+  var tables = ['clientes','apartados','abonos','productos_apartado','creditos'];
+  tables.forEach(function(table){
+    var ch = sb.channel('rt-' + table)
+      .on('postgres_changes', {event: '*', schema: 'public', table: table}, function(){
+        log('🔄 Cambio detectado en ' + table);
+        loadData();
+      })
+      .subscribe(function(status){
+        if (status === 'SUBSCRIBED') {
+          document.getElementById('liveDot').classList.remove('off');
+          document.getElementById('liveText').textContent = 'EN VIVO';
+        }
+      });
+    realtimeChannels.push(ch);
+  });
+}
+
+function initUI() {
+  document.getElementById('userName').textContent = currentUserApp.nombre;
+  document.getElementById('userRole').textContent = currentUserApp.rol;
+  document.getElementById('userAvatar').textContent = initials(currentUserApp.nombre);
+  document.getElementById('dashGreet').textContent = currentUserApp.nombre.split(' ')[0];
+  document.getElementById('dashDate').textContent = new Date().toLocaleDateString('es-VE', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appShell').classList.add('active');
+}
+
+document.getElementById('btnLogout').addEventListener('click', async function() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  await sb.auth.signOut();
+  location.reload();
+});
+
+// =================================================================
+// CARGAR DATOS
+// =================================================================
+async function loadData() {
+  log('Cargando datos...');
+  try {
+    var r1 = await sb.from('clientes').select('*').order('nombre');
+    var r2 = await sb.from('apartados').select('*').order('created_at', {ascending: false});
+    var r3 = await sb.from('abonos').select('*').order('fecha', {ascending: false});
+    var r4 = await sb.from('productos_apartado').select('*');
+    var r5 = await sb.from('creditos').select('*').order('created_at', {ascending: false});
+    CLIENTES = r1.data || [];
+    APARTADOS = r2.data || [];
+    ABONOS = r3.data || [];
+    PRODUCTOS = r4.data || [];
+    CREDITOS = r5.data || [];
+    log('✓ ' + CLIENTES.length + ' clientes, ' + APARTADOS.length + ' apartados, ' + CREDITOS.length + ' créditos, ' + ABONOS.length + ' abonos');
+    renderAll();
+    if (currentApartadoId && document.getElementById('vDetail').classList.contains('active')) {
+      renderDetail();
+    }
+    if (currentCreditoId && document.getElementById('vDetail').classList.contains('active')) {
+      renderDetailCredito();
+    }
+  } catch (e) {
+    log('❌ Error cargando: ' + e.message);
+    toast('Error cargando datos', 'e');
+  }
+}
+
+function renderAll() {
+  renderDashboard();
+  renderApartados();
+  renderCreditos();
+  renderClientes();
+  populateClientesSelect();
+}
+
+// =================================================================
+// DASHBOARD
+// =================================================================
+function renderDashboard() {
+  var actAp = APARTADOS.filter(function(a){return a.estado === 'activo';});
+  var actCr = CREDITOS.filter(function(c){return c.estado === 'activo';});
+  var totalAct = actAp.length + actCr.length;
+  document.getElementById('kpiAct').textContent = totalAct;
+  var pendAp = actAp.reduce(function(s,a){return s + (parseFloat(a.monto_total) - parseFloat(a.monto_abonado || 0));}, 0);
+  var pendCr = actCr.reduce(function(s,c){return s + (parseFloat(c.monto_total) - parseFloat(c.monto_pagado || 0));}, 0);
+  document.getElementById('kpiActSub').textContent = fmt(pendAp + pendCr) + ' (' + actAp.length + ' apart · ' + actCr.length + ' créd)';
+
+  var h = today();
+  var hoyAb = ABONOS.filter(function(a){return a.fecha === h;});
+  var hoySum = hoyAb.reduce(function(s,a){return s + parseFloat(a.monto || 0);}, 0);
+  document.getElementById('kpiHoy').textContent = fmt(hoySum);
+  document.getElementById('kpiHoySub').textContent = hoyAb.length + ' pago' + (hoyAb.length === 1 ? '' : 's');
+
+  var lim7 = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  var pvAp = actAp.filter(function(a){return a.fecha_limite <= lim7;});
+  var pvCr = actCr.filter(function(c){return c.fecha_limite <= lim7;});
+  var pvTot = pvAp.length + pvCr.length;
+  document.getElementById('kpiVen').textContent = pvTot;
+  var risk = pvAp.reduce(function(s,a){return s + (parseFloat(a.monto_total) - parseFloat(a.monto_abonado || 0));}, 0) +
+             pvCr.reduce(function(s,c){return s + (parseFloat(c.monto_total) - parseFloat(c.monto_pagado || 0));}, 0);
+  document.getElementById('kpiVenSub').textContent = fmt(risk) + ' en riesgo';
+
+  document.getElementById('kpiCli').textContent = CLIENTES.length;
+  document.getElementById('kpiCliSub').textContent = totalAct + ' con cuenta activa';
+
+  var rec = ABONOS.slice(0, 8);
+  var cont = document.getElementById('dashRecientes');
+  if (rec.length === 0) {
+    cont.innerHTML = '<div class="empty-state"><div class="ico">📭</div><h3>Sin actividad aún</h3><p>Los pagos recientes aparecerán aquí</p></div>';
+    return;
+  }
+  cont.innerHTML = rec.map(function(a){
+    var obj, cli, label, num;
+    if (a.credito_id) {
+      obj = CREDITOS.find(function(x){return x.id === a.credito_id;});
+      label = 'crédito';
+    } else {
+      obj = APARTADOS.find(function(x){return x.id === a.apartado_id;});
+      label = 'apartado';
+    }
+    cli = obj ? CLIENTES.find(function(c){return c.id === obj.cliente_id;}) : null;
+    num = obj ? obj.numero : '—';
+    return '<div class="abono-item">' +
+      '<div class="met-badge ' + metClass(a.metodo) + '">' + a.metodo + '</div>' +
+      '<div><b>' + (cli ? cli.nombre : '?') + '</b> pagó al ' + label + ' #' + num + '<br><span style="font-size:10px;color:var(--muted);">' + fmtDate(a.fecha) + '</span></div>' +
+      '<div class="amt">' + fmt(a.monto) + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function metClass(m) {
+  m = (m || '').toLowerCase();
+  if (m.indexOf('zelle') >= 0) return 'met-zelle';
+  if (m.indexOf('usdt') >= 0) return 'met-usdt';
+  if (m.indexOf('efectivo') >= 0) return 'met-efe';
+  if (m.indexOf('bolivar') >= 0 || m === 'bs') return 'met-bs';
+  if (m.indexOf('transfer') >= 0) return 'met-transf';
+  if (m.indexOf('movil') >= 0 || m.indexOf('móvil') >= 0) return 'met-pm';
+  return 'met-otro';
+}
+
+// =================================================================
+// APARTADOS
+// =================================================================
+function renderApartados() {
+  var search = (document.getElementById('apSearch').value || '').toLowerCase().trim();
+  var list = APARTADOS.filter(function(a){return a.estado === 'activo' || a.estado === 'vencido';});
+  if (search) {
+    list = list.filter(function(a){
+      var cli = CLIENTES.find(function(c){return c.id === a.cliente_id;});
+      var prods = PRODUCTOS.filter(function(p){return p.apartado_id === a.id;});
+      var txt = ((cli && cli.nombre) || '') + ' ' + ((cli && cli.cedula) || '') + ' ' +
+        prods.map(function(p){return p.descripcion;}).join(' ');
+      return txt.toLowerCase().indexOf(search) >= 0;
+    });
+  }
+  document.getElementById('apSub').textContent = list.length + ' apartado' + (list.length === 1 ? '' : 's');
+
+  var cont = document.getElementById('apList');
+  if (list.length === 0) {
+    cont.innerHTML = '<div class="empty-state"><div class="ico">📦</div><h3>No hay apartados</h3><p>Crea el primero con el botón "+ Nuevo"</p></div>';
+    return;
+  }
+  var isAdmin = currentUserApp && currentUserApp.rol === 'admin';
+  cont.innerHTML = '<div class="row-list">' + list.map(function(a){return renderApartadoRow(a, isAdmin);}).join('') + '</div>';
+
+  var areas = cont.querySelectorAll('.apartado-row .main-area');
+  for (var i = 0; i < areas.length; i++) {
+    (function(el){
+      el.addEventListener('click', function(){
+        var row = el.closest('.apartado-row');
+        goDetail(row.dataset.id);
+      });
+    })(areas[i]);
+  }
+
+  var editBtns = cont.querySelectorAll('[data-edit-ap]');
+  for (var j = 0; j < editBtns.length; j++) {
+    (function(b){
+      b.addEventListener('click', function(e){
+        e.stopPropagation();
+        openEditApartado(b.dataset.editAp);
+      });
+    })(editBtns[j]);
+  }
+
+  var delBtns = cont.querySelectorAll('[data-del-ap]');
+  for (var d = 0; d < delBtns.length; d++) {
+    (function(b){
+      b.addEventListener('click', function(e){
+        e.stopPropagation();
+        deleteApartado(b.dataset.delAp);
+      });
+    })(delBtns[d]);
+  }
+}
+
+function renderApartadoRow(a, isAdmin) {
+  var cli = CLIENTES.find(function(c){return c.id === a.cliente_id;});
+  var prods = PRODUCTOS.filter(function(p){return p.apartado_id === a.id;});
+  var pTxt = prods.length === 0 ? 'Sin productos' :
+    prods.length === 1 ? prods[0].descripcion :
+    prods[0].descripcion + ' +' + (prods.length - 1) + ' más';
+  var saldo = parseFloat(a.monto_total) - parseFloat(a.monto_abonado || 0);
+  var pct = parseFloat(a.monto_total) > 0 ? (parseFloat(a.monto_abonado || 0) / parseFloat(a.monto_total)) * 100 : 0;
+  var dias = daysBetween(today(), a.fecha_limite);
+  var rowClass = '';
+  var tag = '';
+  if (dias < 0) { rowClass = 'vencido'; tag = '<span class="tag tag-vencido">VENCIDO ' + Math.abs(dias) + 'D</span>'; }
+  else if (dias <= 7) { rowClass = 'porvencer'; tag = '<span class="tag tag-porvencer">VENCE ' + dias + 'D</span>'; }
+  else { tag = '<span class="tag tag-activo">ACTIVO</span>'; }
+
+  var actions = '<div class="row-actions">' +
+    '<button class="btn-icon" data-edit-ap="' + a.id + '" title="Editar">✏️</button>' +
+    (isAdmin ? '<button class="btn-icon danger" data-del-ap="' + a.id + '" title="Eliminar">🗑</button>' : '') +
+  '</div>';
+
+  return '<div class="apartado-row ' + rowClass + '" data-id="' + a.id + '">' +
+    '<div class="main-area">' +
+      '<h4>' + ((cli && cli.nombre) || '— sin cliente —') + ' ' + tag + '</h4>' +
+      '<p>#' + a.numero + ' · ' + ((cli && cli.cedula) || '') + (cli && cli.telefono ? ' · ' + cli.telefono : '') + '</p>' +
+      '<div class="producto">' + pTxt + '</div>' +
+      '<div class="progress-mini"><span style="width:' + Math.min(pct, 100) + '%;"></span></div>' +
+    '</div>' +
+    '<div class="saldo">' +
+      '<div class="v">' + fmt(saldo) + '</div>' +
+      '<div class="l">por cobrar</div>' +
+    '</div>' +
+    actions +
+  '</div>';
+}
+
+document.getElementById('apSearch').addEventListener('input', renderApartados);
+
+// =================================================================
+// CLIENTES
+// =================================================================
+function renderClientes() {
+  var search = (document.getElementById('clSearch').value || '').toLowerCase().trim();
+  var list = CLIENTES.slice();
+  if (search) {
+    list = list.filter(function(c){
+      var t = [c.nombre, c.cedula, c.telefono, c.ciudad].filter(Boolean).join(' ').toLowerCase();
+      return t.indexOf(search) >= 0;
+    });
+  }
+  document.getElementById('clSub').textContent = list.length + ' cliente' + (list.length === 1 ? '' : 's') + ' registrados';
+
+  var cont = document.getElementById('clList');
+  if (list.length === 0) {
+    cont.innerHTML = '<div class="empty-state"><div class="ico">👤</div><h3>No hay clientes</h3><p>Registra el primero con el botón "+ Nuevo"</p></div>';
+    return;
+  }
+  var isAdmin = currentUserApp && currentUserApp.rol === 'admin';
+  cont.innerHTML = '<div class="row-list">' + list.map(function(c){
+    var actions = '<div class="row-actions">' +
+      '<button class="btn-icon" data-edit-cli="' + c.id + '" title="Editar">✏️</button>' +
+      (isAdmin ? '<button class="btn-icon danger" data-del-cli="' + c.id + '" title="Eliminar">🗑</button>' : '') +
+    '</div>';
+    return '<div class="cliente-row" data-id="' + c.id + '">' +
+      '<div class="av">' + initials(c.nombre) + '</div>' +
+      '<div>' +
+        '<h4>' + c.nombre + '</h4>' +
+        '<p>' + (c.cedula || '—') + (c.telefono ? ' · ' + c.telefono : '') + (c.ciudad ? ' · ' + c.ciudad : '') + '</p>' +
+      '</div>' +
+      '<div class="score score-' + (c.score || 'B') + '">' + (c.score || 'B') + '</div>' +
+      actions +
+    '</div>';
+  }).join('') + '</div>';
+
+  var editBtns = cont.querySelectorAll('[data-edit-cli]');
+  for (var j = 0; j < editBtns.length; j++) {
+    (function(b){
+      b.addEventListener('click', function(e){
+        e.stopPropagation();
+        openEditCliente(b.dataset.editCli);
+      });
+    })(editBtns[j]);
+  }
+
+  var delBtns = cont.querySelectorAll('[data-del-cli]');
+  for (var d = 0; d < delBtns.length; d++) {
+    (function(b){
+      b.addEventListener('click', function(e){
+        e.stopPropagation();
+        deleteCliente(b.dataset.delCli);
+      });
+    })(delBtns[d]);
+  }
+}
+
+document.getElementById('clSearch').addEventListener('input', renderClientes);
+
+function populateClientesSelect() {
+  var opts = '<option value="">-- Selecciona un cliente --</option>' +
+    CLIENTES.map(function(c){
+      return '<option value="' + c.id + '">' + c.nombre + ' · ' + (c.cedula || 'sin cédula') + '</option>';
+    }).join('');
+
+  ['naCliente', 'ncrCliente'].forEach(function(id){
+    var sel = document.getElementById(id);
+    if (sel) {
+      var current = sel.value;
+      sel.innerHTML = opts;
+      sel.value = current;
+    }
+  });
+}
+
+// =================================================================
+// CREAR / EDITAR CLIENTE
+// =================================================================
+function openNewCliente() {
+  editingClienteId = null;
+  document.getElementById('mClienteTitle').innerHTML = 'Nuevo <em>Cliente</em>';
+  ['ncNombre','ncCedula','ncTelefono','ncCiudad','ncEmail','ncDireccion','ncNotas'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  showModal('mNewCli');
+}
+document.getElementById('btnNewCli').addEventListener('click', openNewCliente);
+
+function openEditCliente(id) {
+  var c = CLIENTES.find(function(x){return x.id === id;});
+  if (!c) return;
+  editingClienteId = id;
+  document.getElementById('mClienteTitle').innerHTML = 'Editar <em>Cliente</em>';
+  document.getElementById('ncNombre').value = c.nombre || '';
+  document.getElementById('ncCedula').value = c.cedula || '';
+  document.getElementById('ncTelefono').value = c.telefono || '';
+  document.getElementById('ncCiudad').value = c.ciudad || '';
+  document.getElementById('ncEmail').value = c.email || '';
+  document.getElementById('ncDireccion').value = c.direccion || '';
+  var notasEl = document.getElementById('ncNotas');
+  if (notasEl) notasEl.value = c.notas || '';
+  showModal('mNewCli');
+}
+
+document.getElementById('btnSaveCli').addEventListener('click', async function(){
+  var nombre = document.getElementById('ncNombre').value.trim();
+  var cedula = document.getElementById('ncCedula').value.trim();
+  var telefono = document.getElementById('ncTelefono').value.trim();
+  if (!nombre) return toast('Ingresa el nombre', 'e');
+  if (nombre.length < 3) return toast('Nombre muy corto (min 3 caracteres)', 'e');
+  if (!cedula) return toast('Ingresa la cédula', 'e');
+  if (!telefono) return toast('Ingresa el teléfono', 'e');
+
+  // Validar cédula duplicada
+  var dup = CLIENTES.find(function(c){return c.cedula === cedula && c.id !== editingClienteId;});
+  if (dup) return toast('Ya existe un cliente con esa cédula: ' + dup.nombre, 'e');
+
+  var notasEl = document.getElementById('ncNotas');
+  var data = {
+    nombre: nombre, cedula: cedula, telefono: telefono,
+    ciudad: document.getElementById('ncCiudad').value.trim() || null,
+    email: document.getElementById('ncEmail').value.trim() || null,
+    direccion: document.getElementById('ncDireccion').value.trim() || null,
+    notas: notasEl ? (notasEl.value.trim() || null) : null
+  };
+
+  try {
+    if (editingClienteId) {
+      var result = await sb.from('clientes').update(data).eq('id', editingClienteId);
+      if (result.error) throw result.error;
+      closeModal('mNewCli');
+      toast('✓ Cliente actualizado', 's');
+    } else {
+      data.created_by = currentUserApp.id;
+      var result2 = await sb.from('clientes').insert(data).select().single();
+      if (result2.error) throw result2.error;
+      closeModal('mNewCli');
+      toast('✓ Cliente "' + nombre + '" creado', 's');
+      if (window._returnToApartado) {
+        window._returnToApartado = false;
+        await loadData();
+        document.getElementById('naCliente').value = result2.data.id;
+        showModal('mNewAp');
+        return;
+      }
+    }
+    await loadData();
+  } catch (e) {
+    if (e.message && (e.message.indexOf('duplicate') >= 0 || e.code === '23505')) {
+      toast('Ya existe un cliente con esa cédula', 'e');
+    } else {
+      toast('Error: ' + e.message, 'e');
+    }
+  }
+});
+
+function deleteCliente(id) {
+  var c = CLIENTES.find(function(x){return x.id === id;});
+  if (!c) return;
+  var aps = APARTADOS.filter(function(a){return a.cliente_id === id && a.estado === 'activo';});
+  if (aps.length > 0) {
+    return toast('No puedes eliminar: tiene ' + aps.length + ' apartado(s) activo(s)', 'e');
+  }
+  confirmAction(
+    '¿Eliminar cliente?',
+    'Esta acción no se puede deshacer. Se eliminarán también todos los apartados completados de este cliente.',
+    c.nombre + ' (' + c.cedula + ')',
+    async function() {
+      try {
+        var r = await sb.from('clientes').delete().eq('id', id);
+        if (r.error) throw r.error;
+        toast('✓ Cliente eliminado', 's');
+        await loadData();
+      } catch (e) {
+        toast('Error: ' + e.message, 'e');
+      }
+    }
+  );
+}
+
+// =================================================================
+// CREAR / EDITAR APARTADO
+// =================================================================
+// =================================================================
+// MANEJO DE PRODUCTOS MÚLTIPLES
+// =================================================================
+
+// Renderiza la lista de productos en el modal especificado
+// containerType: 'na' (apartado) o 'ncr' (credito)
+function renderProductsList(containerType) {
+  var arr = containerType === 'na' ? naProds : ncrProds;
+  var cont = document.getElementById(containerType + 'ProductosList');
+  if (!cont) return;
+
+  if (arr.length === 0) {
+    arr.push({descripcion: '', marca: '', precio: ''});
+  }
+
+  cont.innerHTML = arr.map(function(p, i){
+    var canRemove = arr.length > 1;
+    return '<div class="prod-item" data-idx="' + i + '">' +
+      '<div class="prod-fields">' +
+        '<input type="text" class="p-desc" placeholder="Descripción (ej: Aire LG 18000 BTU)" value="' + (p.descripcion || '').replace(/"/g, '&quot;') + '">' +
+        '<input type="text" class="p-marca" placeholder="Marca/Modelo (opcional)" value="' + (p.marca || '').replace(/"/g, '&quot;') + '">' +
+      '</div>' +
+      '<input type="number" class="p-precio prod-price" step="0.01" min="0" placeholder="Precio $" value="' + (p.precio || '') + '">' +
+      '<button type="button" class="prod-remove" ' + (canRemove ? '' : 'disabled') + ' data-rem="' + i + '">🗑</button>' +
+    '</div>';
+  }).join('');
+
+  // Eventos para sincronizar
+  cont.querySelectorAll('.p-desc').forEach(function(el){
+    el.addEventListener('input', function(){
+      var idx = parseInt(el.closest('.prod-item').dataset.idx);
+      arr[idx].descripcion = el.value;
+    });
+  });
+  cont.querySelectorAll('.p-marca').forEach(function(el){
+    el.addEventListener('input', function(){
+      var idx = parseInt(el.closest('.prod-item').dataset.idx);
+      arr[idx].marca = el.value;
+    });
+  });
+  cont.querySelectorAll('.p-precio').forEach(function(el){
+    el.addEventListener('input', function(){
+      var idx = parseInt(el.closest('.prod-item').dataset.idx);
+      arr[idx].precio = el.value;
+      updateTotalProds(containerType);
+    });
+  });
+  cont.querySelectorAll('.prod-remove').forEach(function(el){
+    el.addEventListener('click', function(){
+      if (el.disabled) return;
+      var idx = parseInt(el.dataset.rem);
+      arr.splice(idx, 1);
+      renderProductsList(containerType);
+      updateTotalProds(containerType);
+    });
+  });
+
+  updateTotalProds(containerType);
+}
+
+function updateTotalProds(containerType) {
+  var arr = containerType === 'na' ? naProds : ncrProds;
+  var total = arr.reduce(function(s, p){return s + (parseFloat(p.precio) || 0);}, 0);
+  var el = document.getElementById(containerType + 'TotalProds');
+  if (el) el.textContent = fmt(total);
+}
+
+function addProduct(containerType) {
+  var arr = containerType === 'na' ? naProds : ncrProds;
+  arr.push({descripcion: '', marca: '', precio: ''});
+  renderProductsList(containerType);
+}
+
+document.getElementById('btnAddProd').addEventListener('click', function(){addProduct('na');});
+document.getElementById('btnAddProdCr').addEventListener('click', function(){addProduct('ncr');});
+
+// =================================================================
+// CREAR / EDITAR APARTADO
+// =================================================================
+function openNewAp() {
+  editingApartadoId = null;
+  document.getElementById('mApartadoTitle').innerHTML = 'Nuevo <em>Apartado</em>';
+  document.getElementById('naCliente').value = '';
+  document.getElementById('naInicial').value = '';
+  document.getElementById('naNotas').value = '';
+  document.getElementById('naFecha').value = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+  document.getElementById('naMetWrap').style.display = 'none';
+  var btns = document.querySelectorAll('#naMetGrid .met-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  selMetInicial = null;
+  naProds = [{descripcion: '', marca: '', precio: ''}];
+  renderProductsList('na');
+  showModal('mNewAp');
+}
+document.getElementById('btnNewAp').addEventListener('click', openNewAp);
+document.getElementById('btnNewApDash').addEventListener('click', openNewAp);
+
+function openEditApartado(id) {
+  var a = APARTADOS.find(function(x){return x.id === id;});
+  if (!a) return;
+  editingApartadoId = id;
+  document.getElementById('mApartadoTitle').innerHTML = 'Editar <em>Apartado #' + a.numero + '</em>';
+  document.getElementById('naCliente').value = a.cliente_id || '';
+  document.getElementById('naInicial').value = '';
+  document.getElementById('naFecha').value = a.fecha_limite || today();
+  document.getElementById('naNotas').value = a.notas || '';
+  document.getElementById('naMetWrap').style.display = 'none';
+  selMetInicial = null;
+  var prods = PRODUCTOS.filter(function(p){return p.apartado_id === a.id;});
+  naProds = prods.length > 0 ? prods.map(function(p){
+    return {id: p.id, descripcion: p.descripcion, marca: p.marca_modelo || '', precio: p.precio_unitario};
+  }) : [{descripcion: '', marca: '', precio: ''}];
+  renderProductsList('na');
+  showModal('mNewAp');
+}
+
+function deleteApartado(id) {
+  var a = APARTADOS.find(function(x){return x.id === id;});
+  if (!a) return;
+  var cli = CLIENTES.find(function(c){return c.id === a.cliente_id;});
+  var abos = ABONOS.filter(function(x){return x.apartado_id === id;});
+  confirmAction(
+    '¿Eliminar apartado?',
+    'Se eliminarán también los ' + abos.length + ' abono(s) asociados. Esta acción no se puede deshacer.',
+    'Apartado #' + a.numero + ' · ' + ((cli && cli.nombre) || '?') + ' · ' + fmt(a.monto_total),
+    async function() {
+      try {
+        var r = await sb.from('apartados').delete().eq('id', id);
+        if (r.error) throw r.error;
+        toast('✓ Apartado eliminado', 's');
+        if (currentApartadoId === id) {
+          currentApartadoId = null;
+          showView('vApartados');
+        }
+        await loadData();
+      } catch (e) {
+        toast('Error: ' + e.message, 'e');
+      }
+    }
+  );
+}
+
+function deleteAbono(id) {
+  var ab = ABONOS.find(function(x){return x.id === id;});
+  if (!ab) return;
+  confirmAction(
+    '¿Eliminar abono?',
+    'El saldo del apartado se ajustará automáticamente.',
+    fmt(ab.monto) + ' · ' + ab.metodo + ' · ' + fmtDate(ab.fecha),
+    async function() {
+      try {
+        var r = await sb.from('abonos').delete().eq('id', id);
+        if (r.error) throw r.error;
+        toast('✓ Abono eliminado', 's');
+        await loadData();
+        if (currentApartadoId) renderDetail();
+      } catch (e) {
+        toast('Error: ' + e.message, 'e');
+      }
+    }
+  );
+}
+
+function confirmAction(title, msg, what, callback) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmWhat').textContent = what;
+  confirmCallback = callback;
+  showModal('mConfirm');
+}
+
+document.getElementById('btnConfirmYes').addEventListener('click', async function(){
+  if (confirmCallback) {
+    var cb = confirmCallback;
+    confirmCallback = null;
+    closeModal('mConfirm');
+    await cb();
+  }
+});
+
+document.getElementById('naCrearCli').addEventListener('click', function(e){
+  e.preventDefault();
+  closeModal('mNewAp');
+  window._returnToApartado = true;
+  openNewCliente();
+});
+
+document.getElementById('naInicial').addEventListener('input', function(e){
+  if (editingApartadoId) return;
+  var v = parseFloat(e.target.value) || 0;
+  document.getElementById('naMetWrap').style.display = v > 0 ? 'block' : 'none';
+});
+
+var naMets = document.querySelectorAll('#naMetGrid .met-btn');
+for (var n = 0; n < naMets.length; n++) {
+  (function(b){
+    b.addEventListener('click', function(){
+      var all = document.querySelectorAll('#naMetGrid .met-btn');
+      for (var x = 0; x < all.length; x++) all[x].classList.remove('active');
+      b.classList.add('active');
+      selMetInicial = b.dataset.m;
+    });
+  })(naMets[n]);
+}
+
+document.getElementById('btnSaveAp').addEventListener('click', async function(){
+  var cliente_id = document.getElementById('naCliente').value;
+  var inicial = parseFloat(document.getElementById('naInicial').value) || 0;
+  var fecha = document.getElementById('naFecha').value;
+  var notas = document.getElementById('naNotas').value.trim();
+
+  // Filtrar productos válidos
+  var validProds = naProds.filter(function(p){
+    return (p.descripcion || '').trim().length >= 3 && parseFloat(p.precio) > 0;
+  });
+
+  // Validaciones
+  if (!cliente_id) return toast('Selecciona o crea un cliente', 'e');
+  if (validProds.length === 0) return toast('Agrega al menos 1 producto con descripción y precio', 'e');
+
+  for (var i = 0; i < validProds.length; i++) {
+    var p = validProds[i];
+    if (p.descripcion.trim().length < 3) return toast('Producto ' + (i+1) + ': descripción muy corta', 'e');
+    if (parseFloat(p.precio) <= 0) return toast('Producto ' + (i+1) + ': precio inválido', 'e');
+    if (parseFloat(p.precio) > 1000000) return toast('Producto ' + (i+1) + ': precio demasiado alto', 'e');
+  }
+
+  var totalProds = validProds.reduce(function(s, p){return s + parseFloat(p.precio);}, 0);
+
+  if (!fecha) return toast('Selecciona la fecha límite', 'e');
+  if (!editingApartadoId && new Date(fecha) < new Date(today())) return toast('La fecha límite no puede ser pasada', 'e');
+  if (!editingApartadoId) {
+    if (inicial < 0) return toast('El abono no puede ser negativo', 'e');
+    if (inicial > 0 && !selMetInicial) return toast('Selecciona método del abono inicial', 'e');
+    if (inicial > totalProds) return toast('El abono no puede ser mayor al total ' + fmt(totalProds), 'e');
+  }
+
+  try {
+    if (editingApartadoId) {
+      // EDITAR: actualizar apartado, borrar productos viejos, insertar nuevos
+      var ru = await sb.from('apartados').update({
+        cliente_id: cliente_id, monto_total: totalProds,
+        fecha_limite: fecha, notas: notas || null
+      }).eq('id', editingApartadoId);
+      if (ru.error) throw ru.error;
+
+      // Borrar productos viejos
+      var rDel = await sb.from('productos_apartado').delete().eq('apartado_id', editingApartadoId);
+      if (rDel.error) throw rDel.error;
+
+      // Insertar productos nuevos
+      var prodsInsert = validProds.map(function(p){
+        return {
+          apartado_id: editingApartadoId,
+          descripcion: p.descripcion.trim(),
+          marca_modelo: (p.marca || '').trim() || null,
+          cantidad: 1,
+          precio_unitario: parseFloat(p.precio)
+        };
+      });
+      var rIns = await sb.from('productos_apartado').insert(prodsInsert);
+      if (rIns.error) throw rIns.error;
+
+      closeModal('mNewAp');
+      toast('✓ Apartado actualizado con ' + validProds.length + ' producto(s)', 's');
+      await loadData();
+      if (currentApartadoId === editingApartadoId) renderDetail();
+    } else {
+      // CREAR
+      var r1 = await sb.from('apartados').insert({
+        cliente_id: cliente_id, monto_total: totalProds, fecha_limite: fecha,
+        notas: notas || null, created_by: currentUserApp.id, estado: 'activo'
+      }).select().single();
+      if (r1.error) throw r1.error;
+      var ap = r1.data;
+
+      // Insertar todos los productos
+      var prodsInsert2 = validProds.map(function(p){
+        return {
+          apartado_id: ap.id,
+          descripcion: p.descripcion.trim(),
+          marca_modelo: (p.marca || '').trim() || null,
+          cantidad: 1,
+          precio_unitario: parseFloat(p.precio)
+        };
+      });
+      var r2 = await sb.from('productos_apartado').insert(prodsInsert2);
+      if (r2.error) throw r2.error;
+
+      if (inicial > 0) {
+        var r3 = await sb.from('abonos').insert({
+          apartado_id: ap.id, fecha: today(), monto: inicial,
+          metodo: selMetInicial, notas: 'Abono inicial al crear apartado',
+          registrado_por: currentUserApp.id,
+          confirmado: true, fecha_confirmacion: new Date().toISOString()
+        });
+        if (r3.error) throw r3.error;
+      }
+
+      closeModal('mNewAp');
+      toast('✓ Apartado #' + ap.numero + ' creado con ' + validProds.length + ' producto(s)', 's');
+      await loadData();
+    }
+  } catch (e) {
+    toast('Error: ' + e.message, 'e');
+  }
+});
+
+// =================================================================
+// CRÉDITOS - LIST / CREATE / EDIT / DELETE
+// =================================================================
+function renderCreditos() {
+  var search = (document.getElementById('crSearch').value || '').toLowerCase().trim();
+  var list = CREDITOS.filter(function(c){return c.estado === 'activo' || c.estado === 'vencido';});
+  if (search) {
+    list = list.filter(function(cr){
+      var cli = CLIENTES.find(function(c){return c.id === cr.cliente_id;});
+      var txt = ((cli && cli.nombre) || '') + ' ' + ((cli && cli.cedula) || '') + ' ' + (cr.productos_descripcion || '');
+      return txt.toLowerCase().indexOf(search) >= 0;
+    });
+  }
+  document.getElementById('crSub').textContent = list.length + ' crédito' + (list.length === 1 ? '' : 's');
+
+  var cont = document.getElementById('crList');
+  if (list.length === 0) {
+    cont.innerHTML = '<div class="empty-state"><div class="ico">💳</div><h3>No hay créditos activos</h3><p>Crea el primero con el botón "+ Nuevo"</p></div>';
+    return;
+  }
+  var isAdmin = currentUserApp && currentUserApp.rol === 'admin';
+  cont.innerHTML = '<div class="row-list">' + list.map(function(cr){return renderCreditoRow(cr, isAdmin);}).join('') + '</div>';
+
+  var areas = cont.querySelectorAll('.apartado-row .main-area');
+  for (var i = 0; i < areas.length; i++) {
+    (function(el){
+      el.addEventListener('click', function(){
+        var row = el.closest('.apartado-row');
+        goDetailCredito(row.dataset.id);
+      });
+    })(areas[i]);
+  }
+
+  var editBtns = cont.querySelectorAll('[data-edit-cr]');
+  for (var j = 0; j < editBtns.length; j++) {
+    (function(b){
+      b.addEventListener('click', function(e){
+        e.stopPropagation();
+        openEditCredito(b.dataset.editCr);
+      });
+    })(editBtns[j]);
+  }
+  var delBtns = cont.querySelectorAll('[data-del-cr]');
+  for (var d = 0; d < delBtns.length; d++) {
+    (function(b){
+      b.addEventListener('click', function(e){
+        e.stopPropagation();
+        deleteCredito(b.dataset.delCr);
+      });
+    })(delBtns[d]);
+  }
+}
+
+function renderCreditoRow(cr, isAdmin) {
+  var cli = CLIENTES.find(function(c){return c.id === cr.cliente_id;});
+  var saldo = parseFloat(cr.monto_total) - parseFloat(cr.monto_pagado || 0);
+  var pct = parseFloat(cr.monto_total) > 0 ? (parseFloat(cr.monto_pagado || 0) / parseFloat(cr.monto_total)) * 100 : 0;
+  var dias = daysBetween(today(), cr.fecha_limite);
+  var rowClass = '';
+  var tag = '';
+  if (dias < 0) { rowClass = 'vencido'; tag = '<span class="tag tag-vencido">VENCIDO ' + Math.abs(dias) + 'D</span>'; }
+  else if (dias <= 7) { rowClass = 'porvencer'; tag = '<span class="tag tag-porvencer">VENCE ' + dias + 'D</span>'; }
+  else { tag = '<span class="tag tag-activo">ACTIVO</span>'; }
+
+  var pTxt = (cr.productos_descripcion || 'Sin descripción').split('\n')[0];
+
+  var actions = '<div class="row-actions">' +
+    '<button class="btn-icon" data-edit-cr="' + cr.id + '" title="Editar">✏️</button>' +
+    (isAdmin ? '<button class="btn-icon danger" data-del-cr="' + cr.id + '" title="Eliminar">🗑</button>' : '') +
+  '</div>';
+
+  return '<div class="apartado-row ' + rowClass + '" data-id="' + cr.id + '" style="border-left-color:#9b59b6;">' +
+    '<div class="main-area">' +
+      '<h4>💳 ' + ((cli && cli.nombre) || '— sin cliente —') + ' ' + tag + '</h4>' +
+      '<p>#' + cr.numero + ' · ' + ((cli && cli.cedula) || '') + (cli && cli.telefono ? ' · ' + cli.telefono : '') + '</p>' +
+      '<div class="producto">' + pTxt + '</div>' +
+      '<div class="progress-mini"><span style="width:' + Math.min(pct, 100) + '%;background:linear-gradient(90deg,#9b59b6,#b97fd1);"></span></div>' +
+    '</div>' +
+    '<div class="saldo">' +
+      '<div class="v" style="color:#b97fd1;">' + fmt(saldo) + '</div>' +
+      '<div class="l">por cobrar</div>' +
+    '</div>' +
+    actions +
+  '</div>';
+}
+
+document.getElementById('crSearch').addEventListener('input', renderCreditos);
+
+function openNewCredito() {
+  // Solo admin puede crear créditos
+  if (currentUserApp && currentUserApp.rol !== 'admin') {
+    return toast('Solo el administrador puede crear créditos', 'e');
+  }
+  editingCreditoId = null;
+  document.getElementById('mCreditoTitle').innerHTML = 'Nuevo <em>Crédito</em>';
+  document.getElementById('ncrCliente').value = '';
+  document.getElementById('ncrInicial').value = '';
+  document.getElementById('ncrNotas').value = '';
+  document.getElementById('ncrDireccion').value = '';
+  document.getElementById('ncrFecha').value = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+  document.getElementById('ncrMetWrap').style.display = 'none';
+  var btns = document.querySelectorAll('#ncrMetGrid .met-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  selMetInicial = null;
+  ncrProds = [{descripcion: '', marca: '', precio: ''}];
+  renderProductsList('ncr');
+  showModal('mNewCr');
+}
+document.getElementById('btnNewCr').addEventListener('click', openNewCredito);
+
+function openEditCredito(id) {
+  var cr = CREDITOS.find(function(x){return x.id === id;});
+  if (!cr) return;
+  if (currentUserApp && currentUserApp.rol !== 'admin') {
+    return toast('Solo el administrador puede editar créditos', 'e');
+  }
+  editingCreditoId = id;
+  document.getElementById('mCreditoTitle').innerHTML = 'Editar <em>Crédito #' + cr.numero + '</em>';
+  document.getElementById('ncrCliente').value = cr.cliente_id || '';
+  document.getElementById('ncrInicial').value = '';
+  document.getElementById('ncrFecha').value = cr.fecha_limite || today();
+  document.getElementById('ncrNotas').value = cr.notas || '';
+  document.getElementById('ncrDireccion').value = cr.direccion_entrega || '';
+  document.getElementById('ncrMetWrap').style.display = 'none';
+  selMetInicial = null;
+
+  // Parsear productos del campo de texto
+  var prodsTxt = cr.productos_descripcion || '';
+  ncrProds = [];
+  prodsTxt.split('\n').forEach(function(line){
+    line = line.trim();
+    if (!line) return;
+    // Formato: "Descripción | Marca | $123.45"
+    var parts = line.split(' | ');
+    var precioStr = parts[parts.length - 1] || '0';
+    var precio = parseFloat(precioStr.replace(/[^0-9.]/g, '')) || 0;
+    ncrProds.push({
+      descripcion: parts[0] || '',
+      marca: parts.length >= 3 ? parts[1] : '',
+      precio: precio
+    });
+  });
+  if (ncrProds.length === 0) ncrProds = [{descripcion: '', marca: '', precio: ''}];
+
+  renderProductsList('ncr');
+  showModal('mNewCr');
+}
+
+function deleteCredito(id) {
+  var cr = CREDITOS.find(function(x){return x.id === id;});
+  if (!cr) return;
+  var cli = CLIENTES.find(function(c){return c.id === cr.cliente_id;});
+  var abos = ABONOS.filter(function(x){return x.credito_id === id;});
+  confirmAction(
+    '¿Eliminar crédito?',
+    'Se eliminarán también los ' + abos.length + ' pago(s) asociados. Esta acción no se puede deshacer.',
+    'Crédito #' + cr.numero + ' · ' + ((cli && cli.nombre) || '?') + ' · ' + fmt(cr.monto_total),
+    async function() {
+      try {
+        var r = await sb.from('creditos').delete().eq('id', id);
+        if (r.error) throw r.error;
+        toast('✓ Crédito eliminado', 's');
+        if (currentCreditoId === id) {
+          currentCreditoId = null;
+          showView('vCreditos');
+        }
+        await loadData();
+      } catch (e) {
+        toast('Error: ' + e.message, 'e');
+      }
+    }
+  );
+}
+
+// Listener: si el usuario escribe abono inicial, mostrar métodos de pago
+var ncrInicialEl = document.getElementById('ncrInicial');
+if (ncrInicialEl) {
+  ncrInicialEl.addEventListener('input', function(e){
+    if (editingCreditoId) return;
+    var v = parseFloat(e.target.value) || 0;
+    document.getElementById('ncrMetWrap').style.display = v > 0 ? 'block' : 'none';
+  });
+}
+
+// Métodos de pago del crédito
+var ncrMets = document.querySelectorAll('#ncrMetGrid .met-btn');
+for (var nm = 0; nm < ncrMets.length; nm++) {
+  (function(b){
+    b.addEventListener('click', function(){
+      var all = document.querySelectorAll('#ncrMetGrid .met-btn');
+      for (var x = 0; x < all.length; x++) all[x].classList.remove('active');
+      b.classList.add('active');
+      selMetInicial = b.dataset.m;
+    });
+  })(ncrMets[nm]);
+}
+
+document.getElementById('ncrCrearCli').addEventListener('click', function(e){
+  e.preventDefault();
+  closeModal('mNewCr');
+  window._returnToCredito = true;
+  openNewCliente();
+});
+
+document.getElementById('btnSaveCr').addEventListener('click', async function(){
+  var cliente_id = document.getElementById('ncrCliente').value;
+  var inicial = parseFloat(document.getElementById('ncrInicial').value) || 0;
+  var fecha = document.getElementById('ncrFecha').value;
+  var notas = document.getElementById('ncrNotas').value.trim();
+  var direccion = document.getElementById('ncrDireccion').value.trim();
+
+  var validProds = ncrProds.filter(function(p){
+    return (p.descripcion || '').trim().length >= 3 && parseFloat(p.precio) > 0;
+  });
+
+  if (!cliente_id) return toast('Selecciona un cliente', 'e');
+  if (validProds.length === 0) return toast('Agrega al menos 1 producto', 'e');
+  if (!direccion || direccion.length < 5) return toast('Indica la dirección de entrega/cobranza', 'e');
+  if (!fecha) return toast('Selecciona la fecha límite', 'e');
+  if (!editingCreditoId && new Date(fecha) < new Date(today())) return toast('La fecha límite no puede ser pasada', 'e');
+
+  for (var i = 0; i < validProds.length; i++) {
+    if (parseFloat(validProds[i].precio) > 1000000) return toast('Producto ' + (i+1) + ': precio demasiado alto', 'e');
+  }
+
+  var totalProds = validProds.reduce(function(s, p){return s + parseFloat(p.precio);}, 0);
+
+  if (!editingCreditoId) {
+    if (inicial < 0) return toast('El abono no puede ser negativo', 'e');
+    if (inicial > 0 && !selMetInicial) return toast('Selecciona método del abono inicial', 'e');
+    if (inicial > totalProds) return toast('El abono no puede ser mayor al total', 'e');
+  }
+
+  // Convertir productos a texto multilinea
+  var productosTexto = validProds.map(function(p){
+    return p.descripcion.trim() + ' | ' + (p.marca || '-') + ' | ' + fmt(parseFloat(p.precio));
+  }).join('\n');
+
+  try {
+    if (editingCreditoId) {
+      var ru = await sb.from('creditos').update({
+        cliente_id: cliente_id, monto_total: totalProds,
+        fecha_limite: fecha, notas: notas || null,
+        direccion_entrega: direccion,
+        productos_descripcion: productosTexto
+      }).eq('id', editingCreditoId);
+      if (ru.error) throw ru.error;
+
+      closeModal('mNewCr');
+      toast('✓ Crédito actualizado', 's');
+      await loadData();
+      if (currentCreditoId === editingCreditoId) renderDetailCredito();
+    } else {
+      var r1 = await sb.from('creditos').insert({
+        cliente_id: cliente_id, monto_total: totalProds, fecha_limite: fecha,
+        notas: notas || null, created_by: currentUserApp.id, estado: 'activo',
+        direccion_entrega: direccion,
+        productos_descripcion: productosTexto,
+        fecha_inicio: today()
+      }).select().single();
+      if (r1.error) throw r1.error;
+      var cr = r1.data;
+
+      if (inicial > 0) {
+        var r2 = await sb.from('abonos').insert({
+          credito_id: cr.id, apartado_id: null, fecha: today(), monto: inicial,
+          metodo: selMetInicial, notas: 'Abono inicial al crear crédito',
+          registrado_por: currentUserApp.id,
+          confirmado: true, fecha_confirmacion: new Date().toISOString()
+        });
+        if (r2.error) throw r2.error;
+      }
+
+      closeModal('mNewCr');
+      toast('✓ Crédito #' + cr.numero + ' creado', 's');
+      await loadData();
+    }
+  } catch (e) {
+    toast('Error: ' + e.message, 'e');
+  }
+});
+
+// =================================================================
+// DETAIL CRÉDITO
+// =================================================================
+function goDetailCredito(id) {
+  currentCreditoId = id;
+  currentApartadoId = null;
+  showView('vDetail');
+  renderDetailCredito();
+}
+
+function renderDetailCredito() {
+  var cr = CREDITOS.find(function(x){return x.id === currentCreditoId;});
+  if (!cr) { showView('vCreditos'); return; }
+  var cli = CLIENTES.find(function(c){return c.id === cr.cliente_id;});
+  var abos = ABONOS.filter(function(x){return x.credito_id === cr.id;}).sort(function(x,y){
+    return new Date(y.fecha).getTime() - new Date(x.fecha).getTime();
+  });
+  var saldo = parseFloat(cr.monto_total) - parseFloat(cr.monto_pagado || 0);
+  var pct = parseFloat(cr.monto_total) > 0 ? (parseFloat(cr.monto_pagado || 0) / parseFloat(cr.monto_total)) * 100 : 0;
+  var dias = daysBetween(today(), cr.fecha_limite);
+  var venc = dias < 0;
+  var isAdmin = currentUserApp && currentUserApp.rol === 'admin';
+
+  // Parsear productos del texto
+  var prodLines = (cr.productos_descripcion || '').split('\n').filter(function(l){return l.trim();});
+
+  var abonosHtml = abos.length === 0 ? '<p style="font-size:12px;color:var(--muted);">Aún no hay pagos</p>' :
+    abos.map(function(ab){
+      var delBtn = isAdmin ? '<button class="del-mini" data-del-ab="' + ab.id + '" title="Eliminar pago">🗑</button>' : '<div></div>';
+      return '<div class="abono-item" style="grid-template-columns:auto 1fr auto auto;">' +
+        '<div class="met-badge ' + metClass(ab.metodo) + '">' + ab.metodo + '</div>' +
+        '<div>' + (ab.notas || 'Pago recibido') + '<br><span style="font-size:10px;color:var(--muted);">' + fmtDate(ab.fecha) + (ab.referencia ? ' · Ref: ' + ab.referencia : '') + '</span></div>' +
+        '<div class="amt">' + fmt(ab.monto) + '</div>' +
+        delBtn +
+      '</div>';
+    }).join('');
+
+  document.getElementById('detailContent').innerHTML =
+    '<div class="detail-banner" style="border-left:4px solid #9b59b6;">' +
+      '<div class="av-big" style="background:linear-gradient(135deg,#9b59b6,#6a3c80);">' + initials(cli && cli.nombre) + '</div>' +
+      '<div style="flex:1;">' +
+        '<h2>💳 ' + ((cli && cli.nombre) || '—') + '</h2>' +
+        '<p>' + ((cli && cli.cedula) || '') + (cli && cli.telefono ? ' · ' + cli.telefono : '') + (cli && cli.ciudad ? ' · ' + cli.ciudad : '') + '</p>' +
+        '<span class="tag" style="background:rgba(155,89,182,0.15);color:#b97fd1;margin-top:6px;margin-left:0;">CRÉDITO #' + cr.numero + '</span>' +
+        ' <span class="tag" style="background:rgba(39,174,96,0.15);color:var(--green-soft);margin-top:6px;margin-left:4px;">⭐ Score ' + ((cli && cli.score) || 'B') + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
+        (isAdmin ? '<button class="btn btn-ghost" id="btnEditCrDetail">✏️ Editar</button>' : '') +
+        (isAdmin ? '<button class="btn btn-red" id="btnDelCrDetail">🗑 Eliminar</button>' : '') +
+      '</div>' +
+      '<div class="right-side" style="width:100%;border-top:1px solid var(--border);padding-top:12px;margin-top:8px;">' +
+        '<div class="v" style="color:#b97fd1;">' + fmt(saldo) + '</div>' +
+        '<div class="l">por cobrar de ' + fmt(cr.monto_total) + '</div>' +
+        '<div style="font-size:11px;color:' + (venc ? 'var(--red-soft)' : 'var(--muted)') + ';margin-top:5px;">' +
+          (venc ? '⚠ Venció hace ' + Math.abs(dias) + ' días' : 'Vence en ' + dias + ' días · ' + fmtDate(cr.fecha_limite)) +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<h3 style="font-size:15px;margin-bottom:10px;">Productos <em style="color:#b97fd1;font-style:italic;">entregados</em></h3>' +
+      (prodLines.length === 0 ? '<p style="font-size:12px;color:var(--muted);">Sin productos</p>' :
+        prodLines.map(function(line){
+          var parts = line.split(' | ');
+          var desc = parts[0] || '—';
+          var marca = parts.length >= 3 ? parts[1] : '';
+          var precio = parts[parts.length - 1] || '';
+          return '<div class="producto-card">' +
+            '<div class="ico">📦</div>' +
+            '<div><h5>' + desc + '</h5>' + (marca && marca !== '-' ? '<p>' + marca + '</p>' : '') + '</div>' +
+            '<div class="price">' + precio + '</div>' +
+          '</div>';
+        }).join('')) +
+    '</div>' +
+
+    '<div class="card">' +
+      '<h3 style="font-size:15px;margin-bottom:10px;">📍 Dirección de cobranza</h3>' +
+      '<p style="font-size:13px;color:var(--text-2);">' + (cr.direccion_entrega || '—') + '</p>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<h3 style="font-size:15px;margin-bottom:10px;">Resumen</h3>' +
+      '<div class="summary-row"><span class="l">Crédito #</span><span class="v">' + cr.numero + '</span></div>' +
+      '<div class="summary-row"><span class="l">Fecha inicio</span><span class="v">' + fmtDate(cr.fecha_inicio) + '</span></div>' +
+      '<div class="summary-row"><span class="l">Fecha límite</span><span class="v">' + fmtDate(cr.fecha_limite) + '</span></div>' +
+      '<div class="summary-row"><span class="l">Total</span><span class="v">' + fmt(cr.monto_total) + '</span></div>' +
+      '<div class="summary-row"><span class="l">Pagado</span><span class="v" style="color:var(--green-soft);">' + fmt(cr.monto_pagado) + '</span></div>' +
+      '<div class="summary-row"><span class="l">% pagado</span><span class="v">' + pct.toFixed(0) + '%</span></div>' +
+      '<div class="summary-row total" style="border-top-color:#b97fd1;"><span class="l">Saldo</span><span class="v" style="color:#b97fd1;">' + fmt(saldo) + '</span></div>' +
+      (saldo > 0 ? '<button class="btn btn-green" id="btnOpenAbCr" style="width:100%;justify-content:center;margin-top:14px;padding:14px;">💰 Registrar Pago</button>' :
+        '<div style="text-align:center;margin-top:14px;padding:12px;background:rgba(39,174,96,0.1);border-radius:8px;color:var(--green-soft);font-size:13px;font-weight:600;">✓ Crédito completamente pagado</div>') +
+    '</div>' +
+
+    '<div class="card">' +
+      '<h3 style="font-size:15px;margin-bottom:10px;">Historial de <em style="color:#b97fd1;">pagos</em> <span style="font-size:11px;color:var(--muted);">(' + abos.length + ')</span></h3>' +
+      abonosHtml +
+    '</div>' +
+
+    (cli && cli.telefono ? '<button class="btn btn-green" id="btnWhatsCr" style="width:100%;justify-content:center;padding:14px;margin-top:14px;background:#25d366;">📱 Enviar recordatorio por WhatsApp</button>' : '');
+
+  var btnAbCr = document.getElementById('btnOpenAbCr');
+  if (btnAbCr) btnAbCr.addEventListener('click', function(){abContext = 'credito'; openAbono();});
+
+  var btnEdCr = document.getElementById('btnEditCrDetail');
+  if (btnEdCr) btnEdCr.addEventListener('click', function(){openEditCredito(cr.id);});
+
+  var btnDelCr = document.getElementById('btnDelCrDetail');
+  if (btnDelCr) btnDelCr.addEventListener('click', function(){deleteCredito(cr.id);});
+
+  var btnWA = document.getElementById('btnWhatsCr');
+  if (btnWA) btnWA.addEventListener('click', function(){sendWhatsAppReminder('credito', cr);});
+
+  if (isAdmin) {
+    var delAbBtns = document.querySelectorAll('[data-del-ab]');
+    for (var i = 0; i < delAbBtns.length; i++) {
+      (function(b){
+        b.addEventListener('click', function(){deleteAbono(b.dataset.delAb);});
+      })(delAbBtns[i]);
+    }
+  }
+}
+
+// =================================================================
+// WHATSAPP SEMI-AUTOMÁTICO
+// =================================================================
+function cleanPhone(phone) {
+  if (!phone) return '';
+  var p = phone.replace(/[^0-9]/g, '');
+  // Venezuela: si empieza con 0, quitarlo. Si no tiene 58, agregarlo
+  if (p.startsWith('0')) p = p.substring(1);
+  if (!p.startsWith('58')) p = '58' + p;
+  return p;
+}
+
+function sendWhatsAppReminder(tipo, obj) {
+  var cli = CLIENTES.find(function(c){return c.id === obj.cliente_id;});
+  if (!cli || !cli.telefono) return toast('El cliente no tiene teléfono', 'e');
+
+  var phone = cleanPhone(cli.telefono);
+  var saldo = parseFloat(obj.monto_total) - parseFloat((tipo === 'apartado' ? obj.monto_abonado : obj.monto_pagado) || 0);
+  var nombre = cli.nombre.split(' ')[0];
+  var num = obj.numero;
+  var label = tipo === 'apartado' ? 'apartado' : 'crédito';
+
+  var msg = 'Hola ' + nombre + ', te recordamos que tienes pendiente ' + fmt(saldo) +
+    ' del ' + label + ' #' + num + ' en Mercantil Yumana. Fecha límite: ' + fmtDate(obj.fecha_limite) +
+    '. Gracias!';
+
+  var url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank');
+}
+
+function sendWhatsAppPago(tipo, obj, monto, saldoNuevo) {
+  var cli = CLIENTES.find(function(c){return c.id === obj.cliente_id;});
+  if (!cli || !cli.telefono) return;
+
+  var phone = cleanPhone(cli.telefono);
+  var nombre = cli.nombre.split(' ')[0];
+  var num = obj.numero;
+  var label = tipo === 'apartado' ? 'apartado' : 'crédito';
+
+  var msg = 'Hola ' + nombre + ', recibimos tu pago de ' + fmt(monto) +
+    ' al ' + label + ' #' + num + '. Saldo pendiente: ' + fmt(saldoNuevo) +
+    '. Gracias por tu pago! - Mercantil Yumana';
+
+  var url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank');
+}
+
+
+
+// =================================================================
+// DETAIL (APARTADO)
+// =================================================================
+function goDetail(id) {
+  currentApartadoId = id;
+  currentCreditoId = null;
+  showView('vDetail');
+  renderDetail();
+}
+window.goDetail = goDetail;
+window.goDetailCredito = goDetailCredito;
+
+document.getElementById('btnBack').addEventListener('click', function(){
+  var fromCredito = currentCreditoId !== null;
+  currentApartadoId = null;
+  currentCreditoId = null;
+  showView(fromCredito ? 'vCreditos' : 'vApartados');
+});
+
+function renderDetail() {
+  var a = APARTADOS.find(function(x){return x.id === currentApartadoId;});
+  if (!a) { showView('vApartados'); return; }
+  var cli = CLIENTES.find(function(c){return c.id === a.cliente_id;});
+  var prods = PRODUCTOS.filter(function(p){return p.apartado_id === a.id;});
+  var abos = ABONOS.filter(function(x){return x.apartado_id === a.id;}).sort(function(x,y){
+    return new Date(y.fecha).getTime() - new Date(x.fecha).getTime();
+  });
+  var saldo = parseFloat(a.monto_total) - parseFloat(a.monto_abonado || 0);
+  var pct = parseFloat(a.monto_total) > 0 ? (parseFloat(a.monto_abonado || 0) / parseFloat(a.monto_total)) * 100 : 0;
+  var dias = daysBetween(today(), a.fecha_limite);
+  var venc = dias < 0;
+  var isAdmin = currentUserApp && currentUserApp.rol === 'admin';
+
+  var abonosHtml = abos.length === 0 ? '<p style="font-size:12px;color:var(--muted);">Aún no hay abonos</p>' :
+    abos.map(function(ab){
+      var delBtn = isAdmin ? '<button class="btn-icon danger" data-del-ab="' + ab.id + '" title="Eliminar abono" style="width:28px;height:28px;font-size:11px;">🗑</button>' : '';
+      return '<div class="abono-item" style="grid-template-columns:auto 1fr auto auto;">' +
+        '<div class="met-badge ' + metClass(ab.metodo) + '">' + ab.metodo + '</div>' +
+        '<div>' + (ab.notas || 'Abono recibido') + '<br><span style="font-size:10px;color:var(--muted);">' + fmtDate(ab.fecha) + (ab.referencia ? ' · Ref: ' + ab.referencia : '') + '</span></div>' +
+        '<div class="amt">' + fmt(ab.monto) + '</div>' +
+        delBtn +
+      '</div>';
+    }).join('');
+
+  document.getElementById('detailContent').innerHTML =
+    '<div class="detail-banner">' +
+      '<div class="av-big">' + initials(cli && cli.nombre) + '</div>' +
+      '<div style="flex:1;">' +
+        '<h2>' + ((cli && cli.nombre) || '—') + '</h2>' +
+        '<p>' + ((cli && cli.cedula) || '') + (cli && cli.telefono ? ' · ' + cli.telefono : '') + (cli && cli.ciudad ? ' · ' + cli.ciudad : '') + '</p>' +
+        '<span class="tag" style="background:rgba(39,174,96,0.15);color:var(--green-soft);margin-top:6px;margin-left:0;">⭐ Score ' + ((cli && cli.score) || 'B') + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
+        '<button class="btn btn-ghost" id="btnEditApDetail">✏️ Editar</button>' +
+        (isAdmin ? '<button class="btn btn-red" id="btnDelApDetail">🗑 Eliminar</button>' : '') +
+      '</div>' +
+      '<div class="right-side" style="width:100%;border-top:1px solid var(--border);padding-top:12px;margin-top:8px;">' +
+        '<div class="v">' + fmt(saldo) + '</div>' +
+        '<div class="l">por cobrar de ' + fmt(a.monto_total) + '</div>' +
+        '<div style="font-size:11px;color:' + (venc ? 'var(--red-soft)' : 'var(--muted)') + ';margin-top:5px;">' +
+          (venc ? '⚠ Venció hace ' + Math.abs(dias) + ' días' : 'Vence en ' + dias + ' días · ' + fmtDate(a.fecha_limite)) +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<h3 style="font-size:15px;margin-bottom:10px;">Productos <em style="color:var(--gold);">apartados</em></h3>' +
+      (prods.length === 0 ? '<p style="font-size:12px;color:var(--muted);">Sin productos</p>' :
+        prods.map(function(p){
+          return '<div class="producto-card">' +
+            '<div class="ico">📦</div>' +
+            '<div><h5>' + p.descripcion + '</h5>' + (p.marca_modelo ? '<p>' + p.marca_modelo + '</p>' : '') + '</div>' +
+            '<div class="price">' + fmt(p.precio_unitario) + '</div>' +
+          '</div>';
+        }).join('')) +
+    '</div>' +
+
+    '<div class="card">' +
+      '<h3 style="font-size:15px;margin-bottom:10px;">Resumen</h3>' +
+      '<div class="summary-row"><span class="l">Apartado #</span><span class="v">' + a.numero + '</span></div>' +
+      '<div class="summary-row"><span class="l">Fecha inicio</span><span class="v">' + fmtDate(a.fecha_inicio) + '</span></div>' +
+      '<div class="summary-row"><span class="l">Fecha límite</span><span class="v">' + fmtDate(a.fecha_limite) + '</span></div>' +
+      '<div class="summary-row"><span class="l">Total</span><span class="v">' + fmt(a.monto_total) + '</span></div>' +
+      '<div class="summary-row"><span class="l">Abonado</span><span class="v" style="color:var(--green-soft);">' + fmt(a.monto_abonado) + '</span></div>' +
+      '<div class="summary-row"><span class="l">% pagado</span><span class="v">' + pct.toFixed(0) + '%</span></div>' +
+      '<div class="summary-row total"><span class="l">Saldo</span><span class="v">' + fmt(saldo) + '</span></div>' +
+      (saldo > 0 ? '<button class="btn btn-green" id="btnOpenAb" style="width:100%;justify-content:center;margin-top:14px;padding:14px;">💰 Registrar Abono</button>' :
+        '<div style="text-align:center;margin-top:14px;padding:12px;background:rgba(39,174,96,0.1);border-radius:8px;color:var(--green-soft);font-size:13px;font-weight:600;">✓ Apartado completamente pagado</div>') +
+    '</div>' +
+
+    '<div class="card">' +
+      '<h3 style="font-size:15px;margin-bottom:10px;">Historial de <em style="color:var(--gold);">abonos</em> <span style="font-size:11px;color:var(--muted);">(' + abos.length + ')</span></h3>' +
+      abonosHtml +
+    '</div>' +
+
+    (cli && cli.telefono ? '<button class="btn btn-green" id="btnWhatsAp" style="width:100%;justify-content:center;padding:14px;margin-top:14px;background:#25d366;">📱 Enviar recordatorio por WhatsApp</button>' : '');
+
+  var btnAb = document.getElementById('btnOpenAb');
+  if (btnAb) btnAb.addEventListener('click', function(){abContext = 'apartado'; openAbono();});
+
+  var btnWAap = document.getElementById('btnWhatsAp');
+  if (btnWAap) btnWAap.addEventListener('click', function(){sendWhatsAppReminder('apartado', a);});
+
+  document.getElementById('btnEditApDetail').addEventListener('click', function(){openEditApartado(a.id);});
+  if (isAdmin) {
+    var btnDel = document.getElementById('btnDelApDetail');
+    if (btnDel) btnDel.addEventListener('click', function(){deleteApartado(a.id);});
+
+    var delAbBtns = document.querySelectorAll('[data-del-ab]');
+    for (var i = 0; i < delAbBtns.length; i++) {
+      (function(b){
+        b.addEventListener('click', function(){deleteAbono(b.dataset.delAb);});
+      })(delAbBtns[i]);
+    }
+  }
+}
+
+// =================================================================
+// ABONOS
+// =================================================================
+function openAbono() {
+  var obj, saldo, cli, num, tipoLabel;
+
+  if (abContext === 'credito') {
+    obj = CREDITOS.find(function(x){return x.id === currentCreditoId;});
+    if (!obj) return;
+    saldo = parseFloat(obj.monto_total) - parseFloat(obj.monto_pagado || 0);
+    tipoLabel = 'Crédito';
+  } else {
+    obj = APARTADOS.find(function(x){return x.id === currentApartadoId;});
+    if (!obj) return;
+    saldo = parseFloat(obj.monto_total) - parseFloat(obj.monto_abonado || 0);
+    tipoLabel = 'Apartado';
+  }
+
+  cli = CLIENTES.find(function(c){return c.id === obj.cliente_id;});
+  num = obj.numero;
+
+  document.getElementById('abInfo').innerHTML =
+    'Cliente: <b>' + ((cli && cli.nombre) || '?') + '</b><br>' +
+    '<span style="font-size:10px;color:var(--muted);">' + tipoLabel + ' #' + num + ' · Saldo: <b style="color:var(--gold);">' + fmt(saldo) + '</b></span>';
+  document.getElementById('abMonto').value = '';
+  document.getElementById('abFecha').value = today();
+  document.getElementById('abRef').value = '';
+  document.getElementById('abNotas').value = '';
+  var btns = document.querySelectorAll('#abMetGrid .met-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  selMetAbono = null;
+  showModal('mAbono');
+}
+
+var abMets = document.querySelectorAll('#abMetGrid .met-btn');
+for (var m = 0; m < abMets.length; m++) {
+  (function(b){
+    b.addEventListener('click', function(){
+      var all = document.querySelectorAll('#abMetGrid .met-btn');
+      for (var x = 0; x < all.length; x++) all[x].classList.remove('active');
+      b.classList.add('active');
+      selMetAbono = b.dataset.m;
+    });
+  })(abMets[m]);
+}
+
+document.getElementById('btnSaveAb').addEventListener('click', async function(){
+  var monto = parseFloat(document.getElementById('abMonto').value);
+  var fecha = document.getElementById('abFecha').value;
+  if (!monto || monto <= 0) return toast('Ingresa un monto válido', 'e');
+  if (monto > 1000000) return toast('Monto demasiado alto. Verifica.', 'e');
+  if (!fecha) return toast('Selecciona la fecha', 'e');
+  if (!selMetAbono) return toast('Selecciona el método de pago', 'e');
+
+  var obj, saldo;
+  if (abContext === 'credito') {
+    obj = CREDITOS.find(function(x){return x.id === currentCreditoId;});
+    if (obj) saldo = parseFloat(obj.monto_total) - parseFloat(obj.monto_pagado || 0);
+  } else {
+    obj = APARTADOS.find(function(x){return x.id === currentApartadoId;});
+    if (obj) saldo = parseFloat(obj.monto_total) - parseFloat(obj.monto_abonado || 0);
+  }
+
+  if (obj && monto > saldo + 0.01) {
+    return toast('El pago ' + fmt(monto) + ' excede el saldo ' + fmt(saldo), 'e');
+  }
+
+  try {
+    var insertData = {
+      fecha: fecha, monto: monto,
+      metodo: selMetAbono,
+      referencia: document.getElementById('abRef').value.trim() || null,
+      notas: document.getElementById('abNotas').value.trim() || null,
+      registrado_por: currentUserApp.id,
+      confirmado: true, fecha_confirmacion: new Date().toISOString()
+    };
+
+    if (abContext === 'credito') {
+      insertData.credito_id = currentCreditoId;
+      insertData.apartado_id = null;
+    } else {
+      insertData.apartado_id = currentApartadoId;
+      insertData.credito_id = null;
+    }
+
+    var r = await sb.from('abonos').insert(insertData);
+    if (r.error) throw r.error;
+
+    var saldoNuevo = saldo - monto;
+
+    closeModal('mAbono');
+    toast('✓ Pago de ' + fmt(monto) + ' registrado', 's');
+    await loadData();
+
+    if (abContext === 'credito') {
+      renderDetailCredito();
+    } else {
+      renderDetail();
+    }
+
+    // Ofrecer enviar WhatsApp si el cliente tiene teléfono
+    var cli = CLIENTES.find(function(c){return c.id === obj.cliente_id;});
+    if (cli && cli.telefono) {
+      setTimeout(function(){
+        if (confirm('¿Enviar mensaje al cliente por WhatsApp?')) {
+          sendWhatsAppPago(abContext, obj, monto, saldoNuevo);
+        }
+      }, 500);
+    }
+  } catch (e) {
+    toast('Error: ' + e.message, 'e');
+  }
+});
+
+// =================================================================
+// TABS
+// =================================================================
+var tabs = document.querySelectorAll('.tab');
+for (var t = 0; t < tabs.length; t++) {
+  (function(el){
+    el.addEventListener('click', function(){
+      currentApartadoId = null;
+      currentCreditoId = null;
+      showView(el.dataset.view);
+    });
+  })(tabs[t]);
+}
+
+// =================================================================
+// SERVICE WORKER - Anti-caché permanente
+// =================================================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw_apartados.js').then(function(reg){
+      log('✓ Service Worker registrado');
+      // Cada 30 segundos chequear si hay versión nueva
+      setInterval(function(){
+        reg.update();
+      }, 30000);
+    }).catch(function(err){
+      log('SW falló: ' + err.message);
+    });
+
+    // Si hay un SW nuevo esperando, activarlo
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      log('🔄 Versión nueva detectada, recargando...');
+      window.location.reload();
+    });
+  });
+}
+
+// Función para forzar actualización manual (botón en la app si se necesita)
+window.forzarActualizacion = function() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(r){r.unregister();});
+    });
+  }
+  if ('caches' in window) {
+    caches.keys().then(function(keys){
+      keys.forEach(function(k){caches.delete(k);});
+    });
+  }
+  setTimeout(function(){
+    window.location.reload(true);
+  }, 500);
+};
+
+// =================================================================
+// INIT
+// =================================================================
+checkSession();
+</script>
+
+</body>
+</html>
