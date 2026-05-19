@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico — Apartados Yumana</title>
+<style>
+body{
+  font-family: -apple-system, system-ui, sans-serif;
+  background: #0a0a14;
+  color: #e8e2d4;
+  padding: 20px;
+  min-height: 100vh;
+  font-size: 16px;
+  line-height: 1.5;
+}
+h1 { color: #c9a84c; font-size: 22px; margin-bottom: 16px; }
+.test {
+  background: #1b1b2e;
+  border-left: 4px solid #888;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+}
+.test.ok { border-left-color: #27ae60; }
+.test.fail { border-left-color: #e74c3c; }
+.test.pending { border-left-color: #f39c12; }
+.test h3 { font-size: 15px; margin-bottom: 4px; }
+.test p { font-size: 13px; color: #b0b0c0; word-break: break-word; }
+.test.ok h3::before { content: "✅ "; }
+.test.fail h3::before { content: "❌ "; }
+.test.pending h3::before { content: "⏳ "; }
+button {
+  background: #c9a84c;
+  color: #0a0a14;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 20px;
+  cursor: pointer;
+  width: 100%;
+}
+.actions {
+  margin-top: 14px;
+  padding: 14px;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.actions button {
+  background: #e74c3c;
+  color: #fff;
+  margin-top: 8px;
+}
+</style>
+</head>
+<body>
+<h1>🔬 Diagnóstico Apartados Yumana</h1>
+
+<div class="test pending" id="t1">
+  <h3>Test 1: HTML cargado</h3>
+  <p>Si ves esto, el HTML se está abriendo correctamente.</p>
+</div>
+
+<div class="test pending" id="t2">
+  <h3>Test 2: Service Workers registrados</h3>
+  <p id="t2p">Verificando...</p>
+</div>
+
+<div class="test pending" id="t3">
+  <h3>Test 3: Conexión a Supabase CDN</h3>
+  <p id="t3p">Cargando...</p>
+</div>
+
+<div class="test pending" id="t4">
+  <h3>Test 4: Conexión a tu base de datos</h3>
+  <p id="t4p">Esperando...</p>
+</div>
+
+<div class="actions" id="cleanArea" style="display:none;">
+  <b>⚠️ Hay Service Workers viejos interceptando.</b><br>
+  Toca el botón para borrarlos. Después recarga la página.
+  <button id="btnClean">🗑 Borrar Service Workers</button>
+</div>
+
+<button onclick="location.reload()">🔄 Repetir tests</button>
+
+<script>
+// TEST 1: el HTML carga
+document.getElementById('t1').className = 'test ok';
+
+// TEST 2: Service Workers
+(async () => {
+  const t2 = document.getElementById('t2');
+  const t2p = document.getElementById('t2p');
+  if (!('serviceWorker' in navigator)) {
+    t2.className = 'test ok';
+    t2p.textContent = 'No hay soporte de Service Workers en este navegador.';
+    return;
+  }
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    if (regs.length === 0) {
+      t2.className = 'test ok';
+      t2p.textContent = 'No hay Service Workers registrados. ✓';
+    } else {
+      t2.className = 'test fail';
+      t2p.innerHTML = `<b>Hay ${regs.length} Service Worker(s) viejos registrados:</b><br>` +
+        regs.map(r => '• ' + r.scope).join('<br>') +
+        '<br><br>⚠️ <b>Estos están interceptando la app nueva.</b>';
+      document.getElementById('cleanArea').style.display = 'block';
+    }
+  } catch(e) {
+    t2.className = 'test fail';
+    t2p.textContent = 'Error verificando SW: ' + e.message;
+  }
+})();
+
+// TEST 3: Cargar SDK Supabase
+(async () => {
+  const t3 = document.getElementById('t3');
+  const t3p = document.getElementById('t3p');
+  try {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      script.onload = resolve;
+      script.onerror = reject;
+      setTimeout(() => reject(new Error('Timeout 10 seg')), 10000);
+      document.head.appendChild(script);
+    });
+    if (typeof window.supabase !== 'undefined') {
+      t3.className = 'test ok';
+      t3p.textContent = 'SDK Supabase cargado correctamente ✓';
+      runTest4();
+    } else {
+      t3.className = 'test fail';
+      t3p.textContent = 'Script cargó pero window.supabase no está definido';
+    }
+  } catch(e) {
+    t3.className = 'test fail';
+    t3p.textContent = 'No se pudo cargar el SDK de Supabase: ' + e.message;
+  }
+})();
+
+// TEST 4: Conexión real a Supabase
+async function runTest4(){
+  const t4 = document.getElementById('t4');
+  const t4p = document.getElementById('t4p');
+  t4p.textContent = 'Conectando...';
+  try {
+    const sb = window.supabase.createClient(
+      'https://tkkiuxaamdyfbildcvtp.supabase.co',
+      'sb_publishable_oOCXiFi1MaOChwvqiLNSdg_IVfega0X'
+    );
+    const start = Date.now();
+    const { data, error } = await sb.from('clientes').select('count').limit(1);
+    const time = Date.now() - start;
+    if (error) {
+      t4.className = 'test fail';
+      t4p.innerHTML = `<b>Error de Supabase:</b> ${error.message}<br><small>Code: ${error.code || 'N/A'}</small>`;
+    } else {
+      t4.className = 'test ok';
+      t4p.innerHTML = `Conexión exitosa en ${time}ms ✓<br>Tu base de datos responde bien.`;
+    }
+  } catch(e) {
+    t4.className = 'test fail';
+    t4p.textContent = 'Error: ' + e.message;
+  }
+}
+
+// Botón limpiar SW
+document.getElementById('btnClean').addEventListener('click', async () => {
+  const btn = document.getElementById('btnClean');
+  btn.disabled = true;
+  btn.textContent = 'Limpiando...';
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r => r.unregister()));
+    btn.textContent = '✓ Limpiado. Recarga la página.';
+    setTimeout(() => location.reload(), 1500);
+  } catch(e) {
+    btn.textContent = 'Error: ' + e.message;
+  }
+});
+</script>
+</body>
+</html>
