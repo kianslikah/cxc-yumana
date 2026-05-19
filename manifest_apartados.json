@@ -1,0 +1,11 @@
+{
+  "name": "Mercantil Yumana - Apartados",
+  "short_name": "Yumana Apartados",
+  "description": "Sistema de Apartados y Créditos - Mercantil Yumana",
+  "start_url": "./Apartados_Yumana_App.html",
+  "display": "standalone",
+  "background_color": "#0a0a14",
+  "theme_color": "#0a0a14",
+  "orientation": "any",
+  "lang": "es-VE"
+}
