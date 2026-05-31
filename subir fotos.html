@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subir Fotos Viejas → Supabase</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 720px; margin: 0 auto; padding: 22px; background: #0f1115; color: #e6e6e6; line-height: 1.5; }
+  h1 { font-size: 21px; margin-bottom: 4px; }
+  .sub { color: #9aa0a6; font-size: 14px; margin-bottom: 18px; }
+  .card { background: #1a1d24; border: 1px solid #2a2e37; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .paso { font-weight: 600; color: #4ade80; font-size: 13px; text-transform: uppercase; letter-spacing: .5px; }
+  input[type=file] { margin-top: 10px; color: #e6e6e6; }
+  button { background: #22c55e; color: #052e16; border: none; padding: 14px 22px; font-size: 16px;
+    font-weight: 700; border-radius: 10px; cursor: pointer; width: 100%; margin-top: 8px; }
+  button:disabled { background: #3a3f4a; color: #777; cursor: not-allowed; }
+  .barra-fondo { background: #2a2e37; border-radius: 999px; height: 22px; overflow: hidden; margin: 14px 0 6px; }
+  .barra { background: #22c55e; height: 100%; width: 0%; transition: width .2s; border-radius: 999px; }
+  .pct { text-align: center; font-size: 13px; color: #9aa0a6; }
+  #log { background: #0a0c10; border: 1px solid #2a2e37; border-radius: 10px; padding: 12px;
+    font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; height: 300px; overflow-y: auto;
+    white-space: pre-wrap; margin-top: 14px; }
+  .ok { color: #4ade80; } .err { color: #f87171; } .warn { color: #fbbf24; } .info { color: #7dd3fc; }
+  .chip { display:inline-block; background:#0a0c10; border:1px solid #2a2e37; border-radius:8px; padding:8px 12px; font-size:14px; margin-top:10px;}
+  .chip b { color:#4ade80; }
+</style>
+</head>
+<body>
+  <h1>Subir las fotos viejas a Supabase</h1>
+  <div class="sub">Sube las 51 fotos de las facturas al bucket prov-fotos y las conecta a su factura. No toca tus datos.</div>
+
+  <div class="card">
+    <div class="paso">Paso 1 · Cargar respaldo</div>
+    <p style="margin:8px 0 0">Selecciona tu archivo <b>Backup_Yumana_2026-05-30.json</b></p>
+    <input type="file" id="archivo" accept=".json">
+    <div id="info"></div>
+  </div>
+
+  <div class="card">
+    <div class="paso">Paso 2 · Subir fotos</div>
+    <p style="margin:8px 0 0">Sube las fotos al Storage y actualiza el link en cada factura. Puedes volver a darle sin miedo (no duplica).</p>
+    <button id="btn" disabled>Selecciona el archivo primero</button>
+    <div class="barra-fondo"><div class="barra" id="barra"></div></div>
+    <div class="pct" id="pct">0%</div>
+  </div>
+
+  <div class="card">
+    <div class="paso">Registro</div>
+    <div id="log">Esperando archivo…</div>
+  </div>
+
+<script>
+const SUPABASE_URL = 'https://tkkiuxaamdyfbildcvtp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oOCXiFi1MaOChwvqiLNSdg_IVfega0X';
+const BUCKET = 'prov-fotos';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+let backup = null;
+
+function log(msg, cls=''){ const el=$('log'); const d=document.createElement('div'); if(cls)d.className=cls; d.textContent=msg; el.appendChild(d); el.scrollTop=el.scrollHeight; }
+function setBarra(p){ $('barra').style.width=p+'%'; $('pct').textContent=Math.round(p)+'%'; }
+
+function facKey(provId, facId){ return provId + '__' + facId; }
+
+$('archivo').addEventListener('change', e => {
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      backup = JSON.parse(r.result);
+      const provs = backup.proveedores || [];
+      let nFotos = 0;
+      provs.forEach(p => (p.facturas||[]).forEach(f => {
+        if (typeof f.foto==='string' && f.foto.startsWith('data:image')) nFotos++;
+      }));
+      $('info').innerHTML = `<div class="chip">Fotos encontradas: <b>${nFotos}</b></div>`;
+      log('Respaldo cargado. '+nFotos+' fotos para subir.', 'ok');
+      $('btn').disabled = false;
+      $('btn').textContent = 'Subir las '+nFotos+' fotos';
+    } catch(err){ log('ERROR: archivo no válido. '+err.message,'err'); }
+  };
+  r.readAsText(file);
+});
+
+function dataURLtoBlob(dataurl){
+  const i = dataurl.indexOf(','); const head = dataurl.slice(0,i); const body = dataurl.slice(i+1);
+  const mime = (head.match(/data:(.*?);base64/)||[,'image/jpeg'])[1];
+  const bin = atob(body); const arr = new Uint8Array(bin.length);
+  for(let j=0;j<bin.length;j++) arr[j]=bin.charCodeAt(j);
+  return new Blob([arr], {type:mime});
+}
+
+$('btn').addEventListener('click', async () => {
+  $('btn').disabled = true; $('btn').textContent = 'Subiendo… no cierres esta página';
+  const provs = backup.proveedores || [];
+
+  // Juntar todas las fotos con su factura
+  const tareas = [];
+  provs.forEach(p => (p.facturas||[]).forEach(f => {
+    if (typeof f.foto==='string' && f.foto.startsWith('data:image')) {
+      tareas.push({ provId: p.id, facId: f.id, foto: f.foto });
+    }
+  }));
+
+  let hechas = 0, errores = 0;
+  log('— SUBIENDO '+tareas.length+' FOTOS —','info');
+
+  for (const t of tareas) {
+    const facFull = facKey(t.provId, t.facId);
+    const nombre = facFull + '.jpg';
+    try {
+      // 1) Subir foto al Storage
+      const blob = dataURLtoBlob(t.foto);
+      const { error: upErr } = await sb.storage.from(BUCKET).upload(nombre, blob, { upsert:true, contentType:'image/jpeg' });
+      if (upErr) throw upErr;
+      // 2) Link público
+      const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(nombre);
+      // 3) Guardar el link en la factura (tabla prov_facturas)
+      const { error: updErr } = await sb.from('prov_facturas').update({ foto_url: pub.publicUrl }).eq('id', facFull);
+      if (updErr) throw updErr;
+      log('✓ '+nombre,'ok');
+    } catch(e) {
+      errores++;
+      log('ERROR en '+nombre+': '+(e.message||e),'err');
+    }
+    hechas++;
+    setBarra((hechas/tareas.length)*100);
+  }
+
+  setBarra(100);
+  if (errores===0){
+    log('— ✅ LISTO. Las '+tareas.length+' fotos quedaron subidas y conectadas. —','ok');
+    $('btn').textContent = '✅ Fotos subidas';
+  } else {
+    log('— ⚠️ Terminó con '+errores+' error(es). Puedes reintentar. —','warn');
+    $('btn').textContent = 'Terminó con '+errores+' error(es) — reintentar';
+    $('btn').disabled = false;
+  }
+});
+</script>
+</body>
+</html>
