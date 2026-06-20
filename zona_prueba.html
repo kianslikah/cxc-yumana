@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Zona de Prueba — Entregas — PRUEBA</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0b0b12; --bg-grad1:#12121e; --bg-grad2:#0a0a10;
+    --surface:#15151f; --surface-2:#1d1d2b; --surface-3:#22222f;
+    --border:#2c2c40; --border-soft:#232331; --gold:#c9a24c; --gold-bright:#e8cd83; --gold-dim:#8c7536;
+    --text:#ece6d8; --text-2:#b8b2a6; --muted:#6f6f82;
+    --green:#2ec27a; --green-soft:#7fe6a8; --red:#e85d4c; --orange:#f0a838; --blue:#4ba3e0;
+    --shadow:0 8px 32px rgba(0,0,0,0.45); --shadow-sm:0 2px 12px rgba(0,0,0,0.3);
+    --glow:0 0 0 1px rgba(201,162,76,0.15), 0 4px 24px rgba(201,162,76,0.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    background:var(--bg);
+    background-image:radial-gradient(ellipse 80% 60% at 50% -10%, var(--bg-grad1), transparent),radial-gradient(ellipse 70% 50% at 100% 100%, var(--bg-grad2), transparent);
+    background-attachment:fixed; color:var(--text); font-family:'Outfit',sans-serif;
+    min-height:100vh; padding:20px 16px 60px;
+  }
+  .wrap{max-width:640px; margin:0 auto;}
+  .banner{background:rgba(240,168,56,0.12); border:1px solid #f0a83855; border-radius:12px; padding:10px 14px; margin-bottom:18px; font-size:12.5px; color:#f0a838;}
+  h1{font-family:'Fraunces',serif; font-size:24px; color:var(--gold); margin-bottom:4px;}
+  .sub{color:var(--text-2); font-size:13px; margin-bottom:22px;}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:14px; box-shadow:var(--shadow-sm);}
+  label{display:block; font-size:11px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;}
+  input{width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px; color:var(--text); font-size:14px; font-family:inherit; outline:none;}
+  input:focus{box-shadow:var(--glow); border-color:var(--gold-dim);}
+  .row{display:flex; gap:10px;}
+  .btn{background:linear-gradient(135deg,var(--gold),var(--gold-dim)); color:#0b0b12; border:none; border-radius:11px; padding:14px; font-size:14px; font-weight:700; cursor:pointer; width:100%; font-family:inherit; transition:transform .15s;}
+  .btn:active{transform:scale(0.97);}
+  .btn:disabled{opacity:0.5; cursor:not-allowed;}
+  .btn-buscar{flex:0 0 auto; width:auto; padding:12px 22px;}
+  .btn-green{background:linear-gradient(135deg,var(--green),#1f9d5e); color:#fff;}
+  .btn-orange{background:linear-gradient(135deg,var(--orange),#c8881e); color:#0b0b12;}
+  .btn-ghost{background:var(--surface-3); color:var(--gold); border:1px solid var(--gold-dim);}
+  .venta-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--border);}
+  .venta-head .num{font-family:'Fraunces',serif; font-size:20px; color:var(--gold);}
+  .venta-head .meta{font-size:12px; color:var(--text-2); margin-top:3px;}
+  .estado-badge{font-size:11px; font-weight:700; padding:4px 12px; border-radius:8px; text-transform:uppercase;}
+  .e-vendido{background:rgba(75,163,224,0.15); color:var(--blue);}
+  .e-pendiente{background:rgba(240,168,56,0.15); color:var(--orange);}
+  .e-entregado{background:rgba(46,194,122,0.15); color:var(--green-soft);}
+  .prod{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-soft); font-size:13.5px;}
+  .prod:last-child{border-bottom:none;}
+  .prod .q{color:var(--text-2);}
+  .total-row{display:flex; justify-content:space-between; padding-top:12px; margin-top:6px; border-top:1px solid var(--border);}
+  .total-row .amt{font-family:'Fraunces',serif; font-size:20px; color:var(--green-soft); font-weight:700;}
+  .acciones{display:flex; gap:10px; margin-top:16px;}
+  .acciones .btn{flex:1;}
+  .empty{text-align:center; color:var(--muted); font-size:13px; padding:30px 18px;}
+  #toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--surface-3); border:1px solid var(--gold-dim); color:var(--text); padding:12px 20px; border-radius:12px; font-size:13px; box-shadow:var(--shadow); display:none; z-index:200; max-width:90%;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">⚠ MODO PRUEBA — Zona de entrega. Marca ventas como entregadas/pendientes en la base de datos real.</div>
+  <h1>Zona de Prueba — Entregas</h1>
+  <div class="sub">Verifica el producto, genera la nota para firma del cliente, y confirma la entrega</div>
+
+  <div class="card">
+    <label>Buscar venta por número</label>
+    <div class="row">
+      <input type="number" id="numVenta" placeholder="Ej: 47" autocomplete="off">
+      <button class="btn btn-buscar" id="btnBuscar">Buscar</button>
+    </div>
+  </div>
+
+  <div id="resultado"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://tkkiuxaamdyfbildcvtp.supabase.co';
+const SUPABASE_KEY='sb_publishable_oOCXiFi1MaOChwvqiLNSdg_IVfega0X';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let VENTA_ACTUAL=null;
+let ITEMS_ACTUAL=[];
+
+function toast(msg, ms){ var t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(function(){t.style.display='none';}, ms||2800); }
+
+function nombreEstado(e){
+  if(e==='vendido') return 'Vendido';
+  if(e==='pendiente_retirar') return 'Pendiente por retirar';
+  if(e==='entregado') return 'Entregado';
+  if(e==='anulado') return 'Anulado';
+  return e;
+}
+function claseEstado(e){
+  if(e==='entregado') return 'e-entregado';
+  if(e==='pendiente_retirar') return 'e-pendiente';
+  return 'e-vendido';
+}
+
+async function buscarVenta(){
+  var num = parseInt(document.getElementById('numVenta').value,10);
+  if(!num){ toast('Escribe un número de venta'); return; }
+  var cont = document.getElementById('resultado');
+  cont.innerHTML = '<div class="card"><div class="empty">Buscando...</div></div>';
+  try{
+    var rv = await sb.from('inv_ventas').select('*').eq('numero', num).maybeSingle();
+    if(!rv.data){ cont.innerHTML='<div class="card"><div class="empty">No se encontró la venta #'+num+'</div></div>'; return; }
+    VENTA_ACTUAL = rv.data;
+    var ri = await sb.from('inv_venta_items').select('*').eq('venta_id', rv.data.id);
+    ITEMS_ACTUAL = ri.data || [];
+    renderVenta();
+  }catch(e){ cont.innerHTML='<div class="card"><div class="empty">Error: '+e.message+'</div></div>'; }
+}
+
+function renderVenta(){
+  var v = VENTA_ACTUAL;
+  var fecha = new Date(v.fecha).toLocaleDateString('es-VE') + ' ' + new Date(v.fecha).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'});
+  var prodsHtml = ITEMS_ACTUAL.map(function(it){
+    return '<div class="prod"><span>'+(it.descripcion||'').replace(/</g,'&lt;')+'</span><span class="q">'+it.cantidad+' × $'+Number(it.precio_unitario).toFixed(2)+'</span></div>';
+  }).join('');
+  var yaEntregado = (v.estado==='entregado');
+  var accionesHtml = yaEntregado
+    ? '<div style="text-align:center;color:var(--green-soft);font-size:13px;padding:8px;">✓ Esta venta ya fue entregada</div>'
+    : '<div class="acciones">'+
+        '<button class="btn btn-green" id="btnEntregar">✓ Cliente lo retira</button>'+
+        '<button class="btn btn-orange" id="btnPendiente">Queda pendiente</button>'+
+      '</div>'+
+      '<button class="btn btn-ghost" id="btnNota" style="margin-top:10px;">Generar nota de entrega (para firma)</button>';
+
+  document.getElementById('resultado').innerHTML =
+    '<div class="card">'+
+      '<div class="venta-head">'+
+        '<div><div class="num">Venta #'+v.numero+'</div>'+
+        '<div class="meta">'+fecha+(v.cliente_nombre?' · '+v.cliente_nombre:' · sin cliente')+'</div></div>'+
+        '<span class="estado-badge '+claseEstado(v.estado)+'">'+nombreEstado(v.estado)+'</span>'+
+      '</div>'+
+      prodsHtml+
+      '<div class="total-row"><span>Total</span><span class="amt">$'+Number(v.total).toFixed(2)+'</span></div>'+
+      accionesHtml+
+    '</div>';
+
+  if(!yaEntregado){
+    document.getElementById('btnEntregar').addEventListener('click', function(){ confirmarEntrega('entregado'); });
+    document.getElementById('btnPendiente').addEventListener('click', function(){ confirmarEntrega('pendiente_retirar'); });
+    document.getElementById('btnNota').addEventListener('click', generarNota);
+  }
+}
+
+async function confirmarEntrega(nuevoEstado){
+  if(!VENTA_ACTUAL) return;
+  try{
+    var r = await sb.from('inv_ventas').update({ estado:nuevoEstado }).eq('id', VENTA_ACTUAL.id);
+    if(r.error) throw r.error;
+    // Actualizar también el estado de los items
+    await sb.from('inv_venta_items').update({ estado_item:nuevoEstado }).eq('venta_id', VENTA_ACTUAL.id);
+    VENTA_ACTUAL.estado = nuevoEstado;
+    renderVenta();
+    toast(nuevoEstado==='entregado' ? '✓ Venta #'+VENTA_ACTUAL.numero+' marcada como ENTREGADA' : 'Venta #'+VENTA_ACTUAL.numero+' queda PENDIENTE por retirar', 3500);
+  }catch(e){ toast('Error: '+e.message, 4000); }
+}
+
+function generarNota(){
+  var v = VENTA_ACTUAL;
+  var fecha = new Date(v.fecha).toLocaleDateString('es-VE');
+  var filas = ITEMS_ACTUAL.map(function(it){
+    return '<tr><td>'+(it.descripcion||'')+'</td><td style="text-align:center;">'+it.cantidad+'</td><td style="text-align:right;">$'+Number(it.precio_unitario).toFixed(2)+'</td><td style="text-align:right;">$'+Number(it.subtotal).toFixed(2)+'</td></tr>';
+  }).join('');
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Nota de Entrega #'+v.numero+'</title>'+
+    '<style>body{font-family:Arial,sans-serif;padding:30px;color:#000;max-width:700px;margin:0 auto;}'+
+    'h1{color:#c9a24c;font-size:22px;margin-bottom:2px;}.sub{color:#666;font-size:13px;margin-bottom:20px;}'+
+    'table{width:100%;border-collapse:collapse;margin:16px 0;}th,td{border-bottom:1px solid #ddd;padding:8px;font-size:13px;}'+
+    'th{text-align:left;color:#c9a24c;border-bottom:2px solid #c9a24c;}.total{text-align:right;font-size:18px;font-weight:bold;margin-top:8px;}'+
+    '.firma{margin-top:60px;border-top:1px solid #000;width:260px;padding-top:6px;font-size:12px;text-align:center;}'+
+    '.declara{margin-top:30px;font-size:12px;color:#444;line-height:1.5;}</style></head><body>'+
+    '<h1>MERCANTIL YUMANA</h1><div class="sub">Nota de Entrega · #'+v.numero+' · '+fecha+'</div>'+
+    '<div style="font-size:13px;margin-bottom:6px;"><b>Cliente:</b> '+(v.cliente_nombre||'________________')+'</div>'+
+    '<table><thead><tr><th>Producto</th><th style="text-align:center;">Cant.</th><th style="text-align:right;">P. Unit.</th><th style="text-align:right;">Subtotal</th></tr></thead><tbody>'+filas+'</tbody></table>'+
+    '<div class="total">Total: $'+Number(v.total).toFixed(2)+'</div>'+
+    '<div class="declara">El cliente declara haber verificado y recibido los productos descritos en buen estado y funcionamiento, conforme a su compra.</div>'+
+    '<div class="firma">Firma del cliente</div>'+
+    '</body></html>';
+  var w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 400);
+}
+
+document.getElementById('btnBuscar').addEventListener('click', buscarVenta);
+document.getElementById('numVenta').addEventListener('keydown', function(e){ if(e.key==='Enter') buscarVenta(); });
+</script>
+</body>
+</html>
