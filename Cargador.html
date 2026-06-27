@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cargador de Proveedores · Yumana</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0d0f14; --bg-grad1:#141821; --bg-grad2:#0a0c11;
+    --surface:#1a1f2b; --surface-2:#212838; --surface-3:#252d3d;
+    --border:#2a3344; --border-soft:#222a38; --gold:#d4a24e; --gold-bright:#e8c583; --gold-dim:#9c7330;
+    --text:#eef2f8; --text-2:#9aa6b8; --muted:#5f6b80;
+    --green:#4ea876; --red:#e8755c; --orange:#f0a838;
+    --shadow:0 18px 50px rgba(0,0,0,0.45); --shadow-sm:0 6px 18px rgba(0,0,0,0.3);
+    --glow:0 0 0 3px rgba(212,162,78,0.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:'Outfit',-apple-system,system-ui,sans-serif;
+    background:var(--bg);
+    background-image:radial-gradient(ellipse 80% 60% at 50% -10%, var(--bg-grad1), transparent),radial-gradient(ellipse 70% 50% at 100% 100%, var(--bg-grad2), transparent);
+    background-attachment:fixed; color:var(--text); min-height:100vh; padding:24px 16px 60px;
+  }
+  .wrap{max-width:720px;margin:0 auto;}
+  .head{display:flex;align-items:center;gap:13px;margin-bottom:8px;}
+  .mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--gold-bright),var(--gold-dim));display:flex;align-items:center;justify-content:center;color:#1a1206;font-family:'Fraunces',serif;font-weight:700;font-size:22px;flex-shrink:0;}
+  h1{font-family:'Fraunces',serif;font-size:26px;font-weight:600;line-height:1.1;}
+  .sub{color:var(--text-2);font-size:14px;margin:4px 0 26px 57px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:16px;box-shadow:var(--shadow-sm);}
+  .card h2{font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:9px;}
+  .step-num{width:25px;height:25px;border-radius:50%;background:var(--gold);color:#1a1206;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .step-num.done{background:var(--green);color:#fff;}
+  label{display:block;font-size:11px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+  input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:13px 14px;color:var(--text);font-size:16px;font-family:inherit;outline:none;margin-bottom:12px;}
+  input:focus{box-shadow:var(--glow);border-color:var(--gold-dim);}
+  input[type=file]{padding:11px 14px;}
+  .btn{background:linear-gradient(135deg,var(--gold),var(--gold-dim));color:#1a1206;border:none;border-radius:11px;padding:14px 20px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s;width:100%;}
+  .btn:active{transform:scale(0.98);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .muted{color:var(--muted);}
+  .resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:6px 0 18px;}
+  .rc{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+  .rc .n{font-family:'Fraunces',serif;font-size:26px;font-weight:600;color:var(--gold-bright);}
+  .rc .l{font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:0.5px;margin-top:3px;}
+  .log{background:#0a0c11;border:1px solid var(--border-soft);border-radius:10px;padding:14px;font-family:ui-monospace,monospace;font-size:12.5px;line-height:1.7;max-height:300px;overflow-y:auto;margin-top:12px;white-space:pre-wrap;color:var(--text-2);}
+  .log .ok{color:var(--green);}
+  .log .err{color:var(--red);}
+  .log .info{color:var(--gold-bright);}
+  .bar-wrap{background:var(--surface-2);border-radius:10px;height:10px;overflow:hidden;margin:12px 0;}
+  .bar{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright));width:0%;transition:width .3s;}
+  .estado{font-size:13px;color:var(--text-2);margin-bottom:8px;}
+  .warn{background:rgba(240,168,56,0.1);border:1px solid #f0a83855;border-radius:11px;padding:13px 15px;font-size:13px;color:var(--orange);margin-bottom:16px;line-height:1.5;}
+  .hidden{display:none;}
+  @media(max-width:560px){.resumen{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="mark">Y</div>
+    <div><h1>Cargador de Proveedores</h1></div>
+  </div>
+  <p class="sub">Carga el respaldo de proveedores a la base de datos. Una sola vez.</p>
+
+  <div class="warn">
+    Esta herramienta escribe en la base real. Primero te muestra qué va a cargar y solo escribe cuando confirmas. Si la corres dos veces no duplica: actualiza los mismos registros.
+  </div>
+
+  <div class="card" id="cardLogin">
+    <h2><span class="step-num" id="n1">1</span> Inicia sesión</h2>
+    <label>Correo</label>
+    <input type="email" id="email" placeholder="tu@correo.com" autocomplete="username">
+    <label>Contraseña</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn" id="btnLogin">Entrar</button>
+    <div id="loginMsg" class="estado" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card hidden" id="cardFile">
+    <h2><span class="step-num" id="n2">2</span> Sube el respaldo</h2>
+    <label>Archivo de respaldo (.json)</label>
+    <input type="file" id="file" accept="application/json,.json">
+    <div id="fileMsg" class="estado" style="margin-top:6px"></div>
+  </div>
+
+  <div class="card hidden" id="cardPreview">
+    <h2><span class="step-num" id="n3">3</span> Revisa qué se va a cargar</h2>
+    <div class="resumen" id="resumen"></div>
+    <button class="btn" id="btnCargar">Cargar todo a la base</button>
+    <div class="muted" style="font-size:12px;margin-top:10px;text-align:center">Puede tardar varios minutos por las fotos. No cierres la página.</div>
+  </div>
+
+  <div class="card hidden" id="cardProgress">
+    <h2><span class="step-num" id="n4">4</span> Cargando</h2>
+    <div class="estado" id="estado">Preparando…</div>
+    <div class="bar-wrap"><div class="bar" id="bar"></div></div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<script>
+const SB_URL='https://tkkiuxaamdyfbildcvtp.supabase.co';
+const SB_KEY='sb_publishable_oOCXiFi1MaOChwvqiLNSdg_IVfega0X';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const BUCKET='prov-fotos';
+let backup=null;
+
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function setDone(n){var e=document.getElementById(n);e.classList.add('done');e.textContent='\u2713';}
+function logLine(msg,cls){var l=document.getElementById('log');var s=document.createElement('span');if(cls)s.className=cls;s.textContent=msg+'\n';l.appendChild(s);l.scrollTop=l.scrollHeight;}
+function setBar(pct){document.getElementById('bar').style.width=pct+'%';}
+function setEstado(t){document.getElementById('estado').textContent=t;}
+function uid(a,b){ return a+'__'+b; }
+function fechaOnull(v){ return (v&&String(v).trim())?v:null; }
+function numOnull(v){ return (v===null||v===undefined||v==='')?null:Number(v); }
+
+document.getElementById('btnLogin').addEventListener('click',async function(){
+  var email=document.getElementById('email').value.trim();
+  var pass=document.getElementById('password').value;
+  var msg=document.getElementById('loginMsg');
+  if(!email||!pass){msg.textContent='Escribe tu correo y contraseña.';return;}
+  msg.textContent='Entrando…';
+  try{
+    var r1=await sb.auth.signInWithPassword({email:email,password:pass});
+    if(r1.error) throw r1.error;
+    var r2=await sb.auth.getUser();
+    var user=r2.data.user;
+    var r3=await sb.from('usuarios_app').select('rol').eq('id',user.id).single();
+    if(!r3.data || r3.data.rol!=='admin'){
+      msg.textContent='Tu usuario no es admin. Solo un admin puede cargar.';
+      await sb.auth.signOut();
+      return;
+    }
+    setDone('n1');
+    document.getElementById('btnLogin').disabled=true;
+    msg.innerHTML='<span style="color:var(--green)">Sesión iniciada como admin.</span>';
+    show('cardFile');
+  }catch(e){ msg.textContent='No se pudo entrar: '+(e.message||e); }
+});
+
+document.getElementById('file').addEventListener('change',function(ev){
+  var f=ev.target.files[0];
+  var msg=document.getElementById('fileMsg');
+  if(!f){return;}
+  msg.textContent='Leyendo archivo… (puede tardar si es grande)';
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      backup=JSON.parse(reader.result);
+      if(!backup.proveedores||!Array.isArray(backup.proveedores)) throw new Error('El archivo no tiene la lista de proveedores esperada.');
+      msg.innerHTML='<span style="color:var(--green)">Archivo leído correctamente.</span>';
+      setDone('n2');
+      prepararPreview();
+    }catch(e){ msg.textContent='Error leyendo el archivo: '+(e.message||e); backup=null; }
+  };
+  reader.onerror=function(){ msg.textContent='No se pudo leer el archivo.'; };
+  reader.readAsText(f);
+});
+
+function prepararPreview(){
+  var provs=backup.proveedores;
+  var nFac=0,nAb=0,nDev=0,nHist=0,nFotos=0;
+  provs.forEach(function(p){
+    (p.facturas||[]).forEach(function(f){
+      nFac++;
+      nAb+=(f.abonos||[]).length;
+      nDev+=(f.devoluciones||[]).length;
+      if(f.foto) nFotos++;
+    });
+    nHist+=(p.historialCreditos||[]).length;
+  });
+  document.getElementById('resumen').innerHTML=
+    rc(provs.length,'Proveedores')+rc(nFac,'Facturas')+rc(nAb,'Abonos')+
+    rc(nDev,'Devoluciones')+rc(nHist,'Historial')+rc(nFotos,'Fotos');
+  show('cardPreview');
+}
+function rc(n,l){return '<div class="rc"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
+
+document.getElementById('btnCargar').addEventListener('click',async function(){
+  this.disabled=true;
+  setDone('n3');
+  show('cardProgress');
+  try{ await cargarTodo(); }
+  catch(e){ logLine('ERROR FATAL: '+(e.message||e),'err'); setEstado('La carga se detuvo por un error.'); }
+});
+
+async function cargarTodo(){
+  var provs=backup.proveedores;
+  var totalOps=0;
+  provs.forEach(function(p){
+    totalOps++;
+    (p.facturas||[]).forEach(function(f){
+      totalOps++; if(f.foto) totalOps++;
+      totalOps+=(f.abonos||[]).length; totalOps+=(f.devoluciones||[]).length;
+    });
+    totalOps+=(p.historialCreditos||[]).length;
+  });
+  var hechas=0;
+  function tick(){ hechas++; setBar(Math.round(hechas/totalOps*100)); }
+
+  logLine('Iniciando carga de '+provs.length+' proveedores…','info');
+
+  for(var i=0;i<provs.length;i++){
+    var p=provs[i];
+    setEstado('Proveedor '+(i+1)+' de '+provs.length+': '+p.proveedor);
+
+    var provRow={id:p.id,proveedor:p.proveedor||'',telefono:p.telefono||'',notas:p.notas||'',notas_privadas:p.notasPrivadas||'',credito_a_favor:numOnull(p.creditoAFavor)||0,favorito:!!p.favorito};
+    var eP=(await sb.from('prov_proveedores').upsert(provRow)).error;
+    if(eP){ logLine('  ✗ proveedor '+p.proveedor+': '+eP.message,'err'); } else { logLine('✓ '+p.proveedor,'ok'); }
+    tick();
+
+    var facturas=p.facturas||[];
+    for(var j=0;j<facturas.length;j++){
+      var f=facturas[j];
+      var facId=uid(p.id,f.id);
+
+      var fotoUrl=null;
+      if(f.foto && String(f.foto).startsWith('data:')){
+        try{
+          setEstado('Subiendo foto ('+p.proveedor+')…');
+          var blob=dataURLtoBlob(f.foto);
+          var ext=((f.foto.substring(5,f.foto.indexOf(';'))||'image/jpeg').split('/')[1]||'jpg');
+          var path=p.id+'/'+f.id+'.'+ext;
+          var eUp=(await sb.storage.from(BUCKET).upload(path,blob,{upsert:true,contentType:'image/'+ext})).error;
+          if(eUp) throw eUp;
+          fotoUrl=sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+          tick();
+        }catch(eF){ logLine('  ✗ foto factura '+f.id+': '+(eF.message||eF),'err'); tick(); }
+      }
+
+      var facRow={id:facId,proveedor_id:p.id,llegada:fechaOnull(f.llegada),vence:fechaOnull(f.vence),monto:numOnull(f.monto)||0,abonado:numOnull(f.abonado)||0,num:f.num||'',desc_factura:f.desc||'',notas:f.notas||'',foto_url:fotoUrl,pronto_pago:f.prontoPago||null,esperando_doc:!!f.esperandoDoc,disputada:!!f.disputada,motivo_disputa:f.motivoDisputa||''};
+      var eFac=(await sb.from('prov_facturas').upsert(facRow)).error;
+      if(eFac){ logLine('  ✗ factura '+f.id+': '+eFac.message,'err'); }
+      tick();
+
+      var abonos=f.abonos||[];
+      for(var k=0;k<abonos.length;k++){
+        var a=abonos[k];
+        var abRow={id:uid(facId,a.id),factura_id:facId,fecha:fechaOnull(a.fecha),metodo:a.metodo||'',titular_zelle:a.titularZelle||'',cambiador:a.cambiador||'',observaciones:a.observaciones||'',efectivo_salido:numOnull(a.efectivoSalido),ganancia:numOnull(a.ganancia),tasa_comision:numOnull(a.tasaComision),en_transito:!!a.enTransito,fecha_confirmado:fechaOnull(a.fechaConfirmado),monto:numOnull(a.monto)||0};
+        var eAb=(await sb.from('prov_abonos').upsert(abRow)).error;
+        if(eAb){ logLine('  ✗ abono '+a.id+': '+eAb.message,'err'); }
+        tick();
+      }
+
+      var devs=f.devoluciones||[];
+      for(var m=0;m<devs.length;m++){
+        var dv=devs[m];
+        var devRow={id:uid(facId,dv.id),factura_id:facId,fecha:fechaOnull(dv.fecha),monto:numOnull(dv.monto)||0,desc_dev:dv.desc||'',motivo:dv.motivo||'',estado:dv.estado||'',notas:dv.notas||''};
+        var eDv=(await sb.from('prov_devoluciones').upsert(devRow)).error;
+        if(eDv){ logLine('  ✗ devolución '+dv.id+': '+eDv.message,'err'); }
+        tick();
+      }
+    }
+
+    var hist=p.historialCreditos||[];
+    for(var h=0;h<hist.length;h++){
+      var hc=hist[h];
+      var histRow={id:uid(p.id,hc.id),proveedor_id:p.id,tipo:hc.tipo||'',fecha:fechaOnull(hc.fecha),monto:numOnull(hc.monto)||0,origen:hc.origen||'',fac_origen_id:hc.facOrigenId?uid(p.id,hc.facOrigenId):null,fac_destino_id:hc.facDestinoId?uid(p.id,hc.facDestinoId):null,saldo_final:numOnull(hc.saldoFinal)};
+      var eH=(await sb.from('prov_historial_creditos').upsert(histRow)).error;
+      if(eH){ logLine('  ✗ historial '+hc.id+': '+eH.message,'err'); }
+      tick();
+    }
+  }
+
+  setBar(100);
+  setEstado('¡Carga completada!');
+  setDone('n4');
+  logLine('','');
+  logLine('=== CARGA TERMINADA ===','info');
+  logLine('Si no hay líneas en rojo arriba, todo cargó bien.','info');
+}
+
+function dataURLtoBlob(dataurl){
+  var arr=dataurl.split(','), mime=arr[0].match(/:(.*?);/)[1];
+  var bstr=atob(arr[1]), n=bstr.length, u8=new Uint8Array(n);
+  while(n--){ u8[n]=bstr.charCodeAt(n); }
+  return new Blob([u8],{type:mime});
+}
+</script>
+</body>
+</html>
