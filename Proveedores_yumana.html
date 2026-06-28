@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proveedores — Mercantil Yumana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0d0f14;--bg-2:#141821;--surface:#1a1f2b;--surface-2:#212838;--surface-3:#252d3d;
+    --border:#2a3344;--border-soft:#222a38;
+    --gold:#d4a24e;--gold-soft:#e8c583;--gold-bright:#e8c583;--gold-deep:#9c7330;
+    --text:#eef2f8;--text-2:#9aa6b8;--muted:#5f6b80;
+    --green:#4ea876;--red:#e8755c;--blue:#5b9bd5;--orange:#f0a838;
+    --glow:0 0 0 3px rgba(212,162,78,0.18);
+    --shadow:0 18px 50px rgba(0,0,0,0.45);--shadow-sm:0 6px 18px rgba(0,0,0,0.3);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  body{background:radial-gradient(1200px 600px at 80% -10%, rgba(212,162,78,0.07), transparent 60%),var(--bg);}
+  ::selection{background:rgba(212,162,78,0.3);}
+
+  #loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .login-card{width:100%;max-width:420px;background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--border);border-radius:24px;padding:44px 36px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+  .login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+  .brand-mark{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .brand-emblem{width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,var(--gold),var(--gold-deep));display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:26px;color:#1a1206;}
+  .brand-name{font-family:'Fraunces',serif;font-size:23px;font-weight:600;line-height:1;}
+  .brand-sub{font-size:12px;color:var(--gold-soft);letter-spacing:3px;text-transform:uppercase;margin-top:3px;font-weight:500;}
+  .login-title{font-family:'Fraunces',serif;font-size:27px;font-weight:500;margin:34px 0 6px;}
+  .login-desc{color:var(--text-2);font-size:14px;margin-bottom:28px;line-height:1.5;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12px;color:var(--text-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600;}
+  .field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:13px;padding:15px 16px;color:var(--text);font-size:16px;font-family:inherit;outline:none;transition:all .2s ease;}
+  .field input:focus{border-color:var(--gold);box-shadow:var(--glow);}
+  .btn-login{width:100%;margin-top:10px;background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:#1a1206;border:none;border-radius:13px;padding:16px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s ease;box-shadow:0 8px 20px rgba(212,162,78,0.28);}
+  .btn-login:hover{transform:translateY(-1px);}
+  .btn-login:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+  .login-msg{margin-top:16px;font-size:14px;text-align:center;min-height:20px;}
+  .login-msg.error{color:var(--red);}
+
+  #appView{display:none;min-height:100vh;}
+  .layout{display:flex;min-height:100vh;}
+  .sidebar{width:248px;flex-shrink:0;background:var(--bg-2);border-right:1px solid var(--border-soft);padding:24px 16px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+  .side-brand{display:flex;align-items:center;gap:11px;padding:0 8px 22px;margin-bottom:8px;border-bottom:1px solid var(--border-soft);}
+  .side-emblem{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--gold),var(--gold-deep));display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:21px;color:#1a1206;flex-shrink:0;}
+  .side-title{font-family:'Fraunces',serif;font-size:15px;font-weight:600;line-height:1.1;}
+  .side-title small{display:block;font-family:'Outfit',sans-serif;font-size:9px;letter-spacing:2px;color:var(--gold-soft);text-transform:uppercase;margin-top:3px;font-weight:500;}
+  .nav{flex:1;margin-top:14px;display:flex;flex-direction:column;gap:4px;}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:11px;color:var(--text-2);font-size:14.5px;font-weight:500;cursor:pointer;transition:all .18s ease;border:1px solid transparent;}
+  .nav-item svg{width:19px;height:19px;flex-shrink:0;}
+  .nav-item:hover{background:var(--surface);color:var(--text);}
+  .nav-item.active{background:var(--surface-2);color:var(--gold-soft);border-color:var(--border);}
+  .side-foot{padding-top:16px;border-top:1px solid var(--border-soft);flex-shrink:0;}
+  .side-user{display:flex;align-items:center;gap:10px;padding:8px;}
+  .side-avatar{width:34px;height:34px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;color:var(--gold-soft);}
+  .side-user .un{font-size:13px;font-weight:600;line-height:1.2;}
+  .side-user .ur{font-size:10px;color:var(--gold-soft);text-transform:uppercase;letter-spacing:1px;}
+  .side-links{display:flex;gap:8px;margin-top:10px;}
+  .side-links a,.side-links button{flex:1;text-align:center;background:transparent;border:1px solid var(--border);color:var(--text-2);border-radius:9px;padding:9px;font-size:12px;font-family:inherit;cursor:pointer;transition:all .18s ease;text-decoration:none;}
+  .side-links a:hover{border-color:var(--gold);color:var(--gold-soft);}
+  .side-links button:hover{border-color:var(--red);color:var(--red);}
+
+  .content{flex:1;padding:40px 40px 90px;max-width:1100px;}
+  .page-head{margin-bottom:26px;}
+  .page-head h1{font-family:'Fraunces',serif;font-size:30px;font-weight:500;line-height:1.15;}
+  .page-head p{color:var(--text-2);font-size:14.5px;margin-top:7px;max-width:640px;line-height:1.5;}
+
+  .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
+  .search-box{flex:1;min-width:200px;position:relative;}
+  .search-box input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:13px 16px 13px 42px;color:var(--text);font-size:15px;font-family:inherit;outline:none;transition:all .2s ease;}
+  .search-box input:focus{border-color:var(--gold);box-shadow:var(--glow);}
+  .search-box svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);}
+
+  .totals{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+  .total-card{background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:18px 20px;box-shadow:var(--shadow-sm);}
+  .total-lbl{font-size:11.5px;color:var(--text-2);text-transform:uppercase;letter-spacing:0.8px;font-weight:600;}
+  .total-num{font-family:'Fraunces',serif;font-size:27px;font-weight:600;margin-top:8px;line-height:1;}
+  .total-num.deuda{color:var(--red);}
+  .total-num.favor{color:var(--green);}
+  .total-num.cant{color:var(--gold-bright);}
+
+  .prov-list{display:flex;flex-direction:column;gap:10px;}
+  .prov-card{background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--border-soft);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all .18s ease;}
+  .prov-card:hover{border-color:var(--gold);transform:translateX(2px);}
+  .prov-av{width:46px;height:46px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--gold-soft);flex-shrink:0;}
+  .prov-info{flex:1;min-width:0;}
+  .prov-nom{font-weight:600;font-size:16px;display:flex;align-items:center;gap:8px;}
+  .prov-star{color:var(--gold);font-size:13px;}
+  .prov-sub{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .prov-right{text-align:right;flex-shrink:0;}
+  .prov-deuda{font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:var(--red);line-height:1;}
+  .prov-deuda.cero{color:var(--green);}
+  .prov-favor{font-size:11.5px;color:var(--green);margin-top:5px;font-weight:600;}
+  .prov-nfac{font-size:11px;color:var(--muted);margin-top:4px;}
+
+  .back-btn{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--border);color:var(--text-2);border-radius:10px;padding:9px 14px;font-size:13px;font-family:inherit;cursor:pointer;transition:all .18s ease;margin-bottom:20px;}
+  .back-btn:hover{border-color:var(--gold);color:var(--gold-soft);}
+  .back-btn svg{width:15px;height:15px;}
+  .det-head{background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:22px;}
+  .det-head-top{display:flex;align-items:center;gap:16px;margin-bottom:18px;}
+  .det-av{width:56px;height:56px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:25px;font-weight:600;color:var(--gold-soft);flex-shrink:0;}
+  .det-nom{font-family:'Fraunces',serif;font-size:24px;font-weight:600;}
+  .det-tel{font-size:13px;color:var(--text-2);margin-top:4px;}
+  .det-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .det-stat{background:var(--bg);border:1px solid var(--border-soft);border-radius:12px;padding:14px 16px;}
+  .det-stat-lbl{font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:0.6px;font-weight:600;}
+  .det-stat-num{font-family:'Fraunces',serif;font-size:21px;font-weight:600;margin-top:6px;line-height:1;}
+
+  .fac-section-title{font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin:24px 0 14px;display:flex;align-items:center;gap:10px;}
+  .fac-section-title .count{font-family:'Outfit';font-size:12px;color:var(--muted);background:var(--surface-2);padding:3px 10px;border-radius:20px;font-weight:500;}
+  .fac-list{display:flex;flex-direction:column;gap:10px;}
+  .fac-card{background:var(--surface);border:1px solid var(--border-soft);border-radius:13px;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:all .18s ease;}
+  .fac-card:hover{border-color:var(--border);}
+  .fac-card.pagada{opacity:0.62;}
+  .fac-main{flex:1;min-width:0;}
+  .fac-num{font-weight:600;font-size:14.5px;}
+  .fac-meta{font-size:12px;color:var(--muted);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;}
+  .fac-venc{display:inline-flex;align-items:center;gap:5px;}
+  .fac-venc svg{width:13px;height:13px;}
+  .fac-venc.vencida{color:var(--red);}
+  .fac-venc.pronto{color:var(--orange);}
+  .fac-right{text-align:right;flex-shrink:0;}
+  .fac-saldo{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:var(--red);line-height:1;}
+  .fac-saldo.pagada{color:var(--green);}
+  .fac-montos{font-size:11px;color:var(--muted);margin-top:5px;}
+  .badge{display:inline-block;font-size:9.5px;letter-spacing:0.5px;text-transform:uppercase;font-weight:700;padding:2px 7px;border-radius:5px;margin-left:6px;vertical-align:middle;}
+  .badge-disp{background:rgba(232,117,92,0.16);color:var(--red);}
+  .badge-doc{background:rgba(240,168,56,0.16);color:var(--orange);}
+  .badge-pp{background:rgba(78,168,118,0.16);color:var(--green);}
+
+  .empty-box{text-align:center;padding:60px 20px;border:1px dashed var(--border);border-radius:16px;color:var(--text-2);}
+  .empty-box h3{font-family:'Fraunces',serif;font-size:19px;color:var(--text);margin-bottom:8px;}
+  .loading-box{padding:50px;text-align:center;color:var(--text-2);}
+
+  .denied{text-align:center;padding:100px 20px;color:var(--text-2);}
+  .denied h2{font-family:'Fraunces',serif;font-size:26px;color:var(--text);margin-bottom:10px;}
+
+  .toast{position:fixed;bottom:30px;left:calc(50% + 124px);transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:13px 20px;border-radius:11px;font-size:13.5px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:40;}
+  .toast.show{opacity:1;}
+  .loader{display:inline-block;width:17px;height:17px;border:2px solid rgba(26,18,6,0.3);border-top-color:#1a1206;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* boton abonar en factura */
+  .btn-abonar{background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:#1a1206;border:none;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .18s ease;white-space:nowrap;}
+  .btn-abonar:hover{transform:translateY(-1px);}
+  .fac-actions{margin-left:8px;flex-shrink:0;}
+
+  /* modal */
+  .modal-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:60;align-items:flex-start;justify-content:center;padding:30px 18px;overflow-y:auto;}
+  .modal-scrim.show{display:flex;}
+  .modal{width:100%;max-width:480px;background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--border);border-radius:20px;padding:28px;box-shadow:var(--shadow);position:relative;margin:auto;}
+  .modal::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);border-radius:20px 20px 0 0;}
+  .modal-head{margin-bottom:20px;}
+  .modal-title{font-family:'Fraunces',serif;font-size:21px;font-weight:600;}
+  .modal-sub{font-size:13px;color:var(--text-2);margin-top:4px;}
+  .fg{margin-bottom:15px;}
+  .fg label{display:block;font-size:11.5px;color:var(--text-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;font-weight:600;}
+  .fg input,.fg select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:13px 14px;color:var(--text);font-size:15px;font-family:inherit;outline:none;transition:all .2s ease;}
+  .fg input:focus,.fg select:focus{border-color:var(--gold);box-shadow:var(--glow);}
+  .method-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .method-opt{background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:12px 10px;color:var(--text-2);font-size:13px;font-family:inherit;cursor:pointer;transition:all .18s ease;text-align:center;font-weight:500;}
+  .method-opt:hover{border-color:var(--gold-deep);color:var(--text);}
+  .method-opt.active{border-color:var(--gold);background:rgba(212,162,78,0.12);color:var(--gold-soft);font-weight:600;}
+  .calc-box{background:var(--bg);border:1px solid var(--border-soft);border-radius:11px;padding:13px 15px;margin-bottom:15px;font-size:13px;}
+  .calc-row{display:flex;justify-content:space-between;padding:4px 0;}
+  .calc-row .lbl{color:var(--text-2);}
+  .calc-row .val{font-weight:600;}
+  .calc-row .val.gan{color:var(--green);}
+  .transito-toggle{display:flex;align-items:center;gap:11px;padding:13px 15px;background:var(--bg);border:1px solid var(--border-soft);border-radius:11px;margin-bottom:15px;cursor:pointer;}
+  .transito-toggle input{width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
+  .transito-toggle .tt-txt{font-size:12.5px;color:var(--text-2);line-height:1.4;}
+  .modal-actions{display:flex;gap:10px;margin-top:8px;}
+  .btn-cancel{flex:1;background:transparent;border:1px solid var(--border);color:var(--text-2);border-radius:11px;padding:13px;font-size:14px;font-family:inherit;cursor:pointer;transition:all .18s ease;}
+  .btn-cancel:hover{border-color:var(--red);color:var(--red);}
+  .btn-confirm{flex:2;background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:#1a1206;border:none;border-radius:11px;padding:13px;font-size:14.5px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .18s ease;}
+  .btn-confirm:hover{transform:translateY(-1px);}
+  .btn-confirm:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+  .modal-msg{font-size:13px;text-align:center;min-height:18px;margin-top:10px;}
+  .modal-msg.error{color:var(--red);}
+
+  /* chips de filtro por vencer */
+  .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:18px;-webkit-overflow-scrolling:touch;}
+  .chip{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:9px 16px;color:var(--text-2);font-size:13px;font-family:inherit;cursor:pointer;transition:all .18s ease;white-space:nowrap;font-weight:500;flex-shrink:0;}
+  .chip:hover{border-color:var(--gold-deep);color:var(--text);}
+  .chip.active{background:rgba(212,162,78,0.14);border-color:var(--gold);color:var(--gold-soft);font-weight:600;}
+  .chip .n{margin-left:6px;font-size:11px;opacity:0.8;}
+
+  /* tarjeta por vencer: proveedor grande, factura pequeña, borde de color por urgencia */
+  .venc-card{background:var(--surface);border:1px solid var(--border-soft);border-left:4px solid var(--border);border-radius:13px;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:all .18s ease;}
+  .venc-card.u-vencida{border-left-color:var(--red);}
+  .venc-card.u-7{border-left-color:var(--orange);}
+  .venc-card.u-15{border-left-color:var(--gold);}
+  .venc-card.u-30{border-left-color:var(--green);}
+  .venc-main{flex:1;min-width:0;}
+  .venc-prov-nom{font-family:'Fraunces',serif;font-size:17px;font-weight:600;line-height:1.15;}
+  .venc-fac-num{font-size:12.5px;color:var(--text-2);margin-top:3px;}
+  .venc-fecha{font-size:12px;margin-top:6px;display:inline-flex;align-items:center;gap:5px;font-weight:600;}
+  .venc-fecha svg{width:13px;height:13px;}
+  .venc-fecha.u-vencida{color:var(--red);}
+  .venc-fecha.u-7{color:var(--orange);}
+  .venc-fecha.u-15{color:var(--gold-soft);}
+  .venc-fecha.u-30{color:var(--green);}
+  .venc-right{text-align:right;flex-shrink:0;}
+  .venc-saldo{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:var(--text);line-height:1;}
+
+  /* foto de factura */
+  .fac-foto{width:42px;height:42px;border-radius:9px;object-fit:cover;border:1px solid var(--border);cursor:pointer;flex-shrink:0;transition:all .18s ease;background:var(--bg);}
+  .fac-foto:hover{border-color:var(--gold);transform:scale(1.05);}
+  .fac-foto-ph{width:42px;height:42px;border-radius:9px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;}
+  .fac-foto-ph svg{width:18px;height:18px;}
+  .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:80;align-items:center;justify-content:center;padding:20px;flex-direction:column;}
+  .lightbox.show{display:flex;}
+  .lightbox img{max-width:100%;max-height:88vh;border-radius:12px;box-shadow:var(--shadow);}
+  .lightbox-close{position:absolute;top:20px;right:20px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .lightbox-cap{color:rgba(255,255,255,0.8);font-size:13px;margin-top:14px;}
+
+  .mobile-top{display:none;}
+  @media (max-width:820px){
+    .sidebar{position:fixed;left:0;top:0;z-index:50;transform:translateX(-100%);transition:transform .25s ease;box-shadow:var(--shadow);}
+    .sidebar.open{transform:translateX(0);}
+    .content{padding:20px 18px 90px;}
+    .toast{left:50%;}
+    .totals,.det-stats{grid-template-columns:1fr;}
+    .mobile-top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border-soft);position:sticky;top:0;background:rgba(13,15,20,0.9);backdrop-filter:blur(12px);z-index:20;}
+    .mobile-top .mt-title{font-family:'Fraunces',serif;font-size:16px;font-weight:600;}
+    .burger{background:var(--surface);border:1px solid var(--border);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;}
+    .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:45;}
+    .scrim.show{display:block;}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+
+<div id="loginView">
+  <div class="login-card">
+    <div class="brand-mark">
+      <div class="brand-emblem">Y</div>
+      <div><div class="brand-name">Mercantil Yumana</div><div class="brand-sub">Proveedores</div></div>
+    </div>
+    <div class="login-title">Proveedores</div>
+    <div class="login-desc">Control de facturas, abonos y saldos con proveedores.</div>
+    <div class="field"><label>Correo</label><input type="email" id="email" placeholder="tu@correo.com" autocomplete="username"></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="password" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-login" id="btnLogin">Entrar</button>
+    <div class="login-msg" id="loginMsg"></div>
+  </div>
+</div>
+
+<div id="appView">
+  <div class="scrim" id="scrim"></div>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-brand">
+        <div class="side-emblem">Y</div>
+        <div class="side-title">Proveedores<small>Mercantil Yumana</small></div>
+      </div>
+      <nav class="nav" id="nav"></nav>
+      <div class="side-foot">
+        <div class="side-user">
+          <div class="side-avatar" id="sideAvatar">—</div>
+          <div><div class="un" id="sideName">—</div><div class="ur" id="sideRole">—</div></div>
+        </div>
+        <div class="side-links">
+          <a href="portal.html">← Portal</a>
+          <button id="btnLogout">Salir</button>
+        </div>
+      </div>
+    </aside>
+
+    <div style="flex:1;display:flex;flex-direction:column;">
+      <div class="mobile-top">
+        <button class="burger" id="burger">☰</button>
+        <div class="mt-title">Proveedores</div>
+        <div style="width:40px;"></div>
+      </div>
+      <main class="content" id="content"></main>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lbClose">×</button>
+  <img id="lbImg" src="" alt="factura">
+  <div class="lightbox-cap" id="lbCap"></div>
+</div>
+
+<div class="modal-scrim" id="modalAbono">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Registrar abono</div>
+      <div class="modal-sub" id="abonoSub">—</div>
+    </div>
+    <div class="fg"><label>Monto del abono (USD)</label><input type="number" id="aMonto" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+    <div class="fg"><label>Método de pago</label>
+      <div class="method-grid" id="aMetodos">
+        <button type="button" class="method-opt" data-m="Zelle">Zelle</button>
+        <button type="button" class="method-opt" data-m="USDT">USDT</button>
+        <button type="button" class="method-opt" data-m="Efectivo USD">Efectivo USD</button>
+        <button type="button" class="method-opt" data-m="Transferencia">Transferencia</button>
+        <button type="button" class="method-opt" data-m="Bolívares">Bolívares</button>
+        <button type="button" class="method-opt" data-m="Efectivo→USDT">Efectivo → USDT (1.25%)</button>
+        <button type="button" class="method-opt" data-m="Efectivo→Zelle">Efectivo → Zelle (2%)</button>
+      </div>
+    </div>
+    <div class="calc-box" id="aCalc" style="display:none;"></div>
+    <div class="fg" id="aTitularWrap" style="display:none;"><label>Titular Zelle (opcional)</label><input type="text" id="aTitularZelle" placeholder="Nombre del titular"></div>
+    <div class="fg"><label>Fecha</label><input type="date" id="aFecha"></div>
+    <div class="fg"><label>Observaciones (opcional)</label><input type="text" id="aObs" placeholder="Nota del abono"></div>
+    <label class="transito-toggle">
+      <input type="checkbox" id="aTransito">
+      <span class="tt-txt"><b>En tránsito</b> — márcalo si enviaste el pago pero esperas confirmación del proveedor (Zelle/USDT sin recibo aún)</span>
+    </label>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="aCancel">Cancelar</button>
+      <button class="btn-confirm" id="aConfirm">Registrar abono</button>
+    </div>
+    <div class="modal-msg" id="aMsg"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://tkkiuxaamdyfbildcvtp.supabase.co';
+const SUPABASE_KEY='sb_publishable_oOCXiFi1MaOChwvqiLNSdg_IVfega0X';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let currentUserApp=null;
+let DATA={ proveedores:[], facturasPorProv:{} };
+let CONFIG={ tasa_efectivo_zelle:2.0, tasa_efectivo_usdt:1.5 };
+let VISTA='lista';
+let PROV_ACTUAL=null;
+let FILTRO='';
+let ABONO_FAC=null;
+let ABONO_METODO=null;
+
+function ico(nombre){
+  var P='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
+  var paths={
+    truck:'<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+    search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    back:'<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
+    cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    img:'<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>'
+  };
+  return P+(paths[nombre]||paths.truck)+'</svg>';
+}
+
+function fmtUSD(n){ return '$'+(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function r2(n){ return Math.round((Number(n)||0)*100)/100; }
+function ini(s){ return ((s||'?').trim()[0]||'?').toUpperCase(); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function fmtFecha(d){
+  if(!d) return '—';
+  var p=String(d).split('-'); if(p.length!==3) return d;
+  return p[2]+'/'+p[1]+'/'+p[0];
+}
+function diasHasta(d){
+  if(!d) return null;
+  var hoy=new Date(); hoy.setHours(0,0,0,0);
+  var f=new Date(d+'T00:00:00');
+  return Math.round((f-hoy)/86400000);
+}
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); },2600); }
+
+async function traerTodo(tabla, columnas){
+  var todo=[], desde=0, tam=1000;
+  while(true){
+    var r=await sb.from(tabla).select(columnas).range(desde, desde+tam-1);
+    if(r.error) throw r.error;
+    var lote=r.data||[];
+    todo=todo.concat(lote);
+    if(lote.length<tam) break;
+    desde+=tam;
+  }
+  return todo;
+}
+
+async function checkSession(){
+  try{ var s=await sb.auth.getSession(); if(s.data.session&&s.data.session.user){ await cargarUsuario(s.data.session.user); } }catch(e){}
+}
+async function login(){
+  var email=document.getElementById('email').value.trim();
+  var password=document.getElementById('password').value;
+  var msg=document.getElementById('loginMsg');var btn=document.getElementById('btnLogin');
+  msg.className='login-msg';msg.textContent='';
+  if(!email||!password){msg.className='login-msg error';msg.textContent='Escribe tu correo y contraseña.';return;}
+  btn.disabled=true;btn.innerHTML='<span class="loader"></span>';
+  try{
+    var result=await sb.auth.signInWithPassword({email:email,password:password});
+    if(result.error) throw result.error;
+    await cargarUsuario(result.data.user);
+  }catch(e){
+    msg.className='login-msg error';
+    msg.textContent=(e.message&&/invalid/i.test(e.message))?'Correo o contraseña incorrectos.':('No se pudo entrar: '+e.message);
+    btn.disabled=false;btn.textContent='Entrar';
+  }
+}
+async function cargarUsuario(user){
+  var r=await sb.from('usuarios_app').select('*').eq('id',user.id).single();
+  if(r.error||!r.data){
+    document.getElementById('loginMsg').className='login-msg error';
+    document.getElementById('loginMsg').textContent='Tu usuario no tiene rol asignado.';
+    await sb.auth.signOut();
+    var b=document.getElementById('btnLogin');if(b){b.disabled=false;b.textContent='Entrar';}
+    return;
+  }
+  currentUserApp=r.data;
+  document.getElementById('loginView').style.display='none';
+  document.getElementById('appView').style.display='block';
+  var nombre=currentUserApp.nombre||'Usuario', rol=currentUserApp.rol||'lectura';
+  document.getElementById('sideName').textContent=nombre;
+  document.getElementById('sideRole').textContent=rol;
+  document.getElementById('sideAvatar').textContent=ini(nombre);
+  renderNav();
+  cargarDatos();
+}
+
+function renderNav(){
+  var nav=document.getElementById('nav');
+  nav.innerHTML=
+    '<div class="nav-item active" data-sec="lista">'+ico('truck')+'<span>Proveedores</span></div>'+
+    '<div class="nav-item" data-sec="vencer">'+ico('alert')+'<span>Por vencer</span></div>';
+  nav.querySelectorAll('.nav-item').forEach(function(it){
+    it.addEventListener('click',function(){
+      var sec=this.dataset.sec;
+      if(sec==='lista') irLista(); else irVencer();
+      cerrarSidebarMovil();
+    });
+  });
+}
+function setNavActivo(sec){
+  document.querySelectorAll('.nav-item').forEach(function(it){ it.classList.toggle('active', it.dataset.sec===sec); });
+}
+
+async function cargarDatos(soloRefrescar){
+  var c=document.getElementById('content');
+  if(!soloRefrescar) c.innerHTML='<div class="loading-box"><span class="loader" style="border-top-color:var(--gold);border-color:rgba(212,162,78,0.3);"></span><div style="margin-top:14px;">Cargando proveedores...</div></div>';
+  try{
+    var cfg=await sb.from('prov_config').select('clave,valor');
+    if(!cfg.error&&cfg.data){ cfg.data.forEach(function(r){ CONFIG[r.clave]=Number(r.valor); }); }
+    var provs=await traerTodo('prov_proveedores','id,proveedor,telefono,credito_a_favor,favorito,notas');
+    var facs=await traerTodo('prov_facturas','id,proveedor_id,num,llegada,vence,monto,abonado,disputada,esperando_doc,pronto_pago,foto_url');
+    var porProv={};
+    facs.forEach(function(f){
+      if(!porProv[f.proveedor_id]) porProv[f.proveedor_id]=[];
+      porProv[f.proveedor_id].push(f);
+    });
+    DATA.proveedores=provs;
+    DATA.facturasPorProv=porProv;
+    if(!soloRefrescar) irLista();
+  }catch(e){
+    if(!soloRefrescar) c.innerHTML='<div class="denied"><h2>Error al cargar</h2><p>'+esc(e.message)+'</p></div>';
+  }
+}
+
+function calcDeuda(provId){
+  var facs=DATA.facturasPorProv[provId]||[];
+  var deuda=0, conSaldo=0;
+  facs.forEach(function(f){
+    var s=r2((f.monto||0)-(f.abonado||0));
+    if(s>0.01){ deuda+=s; conSaldo++; }
+  });
+  return { deuda:r2(deuda), conSaldo:conSaldo, total:facs.length };
+}
+
+function irLista(){
+  VISTA='lista'; PROV_ACTUAL=null;
+  setNavActivo('lista');
+  renderLista();
+}
+function renderLista(){
+  var c=document.getElementById('content');
+  var totalDeuda=0, totalFavor=0;
+  DATA.proveedores.forEach(function(p){
+    totalDeuda+=calcDeuda(p.id).deuda;
+    totalFavor+=r2(p.credito_a_favor||0);
+  });
+  var lista=DATA.proveedores.slice().map(function(p){
+    var d=calcDeuda(p.id);
+    return {p:p, deuda:d.deuda, conSaldo:d.conSaldo, total:d.total};
+  });
+  lista.sort(function(a,b){
+    if(b.deuda!==a.deuda) return b.deuda-a.deuda;
+    return (b.p.favorito?1:0)-(a.p.favorito?1:0);
+  });
+  var f=FILTRO.toLowerCase().trim();
+  if(f) lista=lista.filter(function(x){ return (x.p.proveedor||'').toLowerCase().includes(f); });
+
+  var cards=lista.map(function(x){
+    var p=x.p;
+    var favor=r2(p.credito_a_favor||0);
+    return '<div class="prov-card" data-id="'+esc(p.id)+'">'+
+      '<div class="prov-av">'+ini(p.proveedor)+'</div>'+
+      '<div class="prov-info">'+
+        '<div class="prov-nom">'+esc(p.proveedor||'Sin nombre')+(p.favorito?'<span class="prov-star">★</span>':'')+'</div>'+
+        '<div class="prov-sub">'+(p.telefono?esc(p.telefono)+' · ':'')+x.total+' factura'+(x.total!==1?'s':'')+'</div>'+
+      '</div>'+
+      '<div class="prov-right">'+
+        '<div class="prov-deuda'+(x.deuda<=0.01?' cero':'')+'">'+fmtUSD(x.deuda)+'</div>'+
+        (favor>0.01?'<div class="prov-favor">'+fmtUSD(favor)+' a favor</div>':'')+
+        '<div class="prov-nfac">'+x.conSaldo+' pendiente'+(x.conSaldo!==1?'s':'')+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  c.innerHTML=
+    '<div class="page-head"><h1>Proveedores</h1><p>Deuda total por proveedor y facturas pendientes. Toca un proveedor para ver sus facturas.</p></div>'+
+    '<div class="totals">'+
+      '<div class="total-card"><div class="total-lbl">Deuda total</div><div class="total-num deuda">'+fmtUSD(totalDeuda)+'</div></div>'+
+      '<div class="total-card"><div class="total-lbl">Saldo a favor</div><div class="total-num favor">'+fmtUSD(totalFavor)+'</div></div>'+
+      '<div class="total-card"><div class="total-lbl">Proveedores</div><div class="total-num cant">'+DATA.proveedores.length+'</div></div>'+
+    '</div>'+
+    '<div class="toolbar"><div class="search-box">'+ico('search')+'<input type="text" id="buscar" placeholder="Buscar proveedor..." value="'+esc(FILTRO)+'"></div></div>'+
+    (cards?'<div class="prov-list">'+cards+'</div>':'<div class="empty-box"><h3>Sin resultados</h3><p>No hay proveedores que coincidan con la búsqueda.</p></div>');
+
+  var bi=document.getElementById('buscar');
+  bi.addEventListener('input',function(){ FILTRO=this.value; var pos=this.selectionStart; renderLista(); var nb=document.getElementById('buscar'); if(nb){ nb.focus(); try{nb.setSelectionRange(pos,pos);}catch(e){} } });
+  c.querySelectorAll('.prov-card').forEach(function(card){
+    card.addEventListener('click',function(){ irDetalle(this.dataset.id); });
+  });
+}
+
+function irDetalle(provId){
+  VISTA='detalle'; PROV_ACTUAL=provId;
+  renderDetalle();
+  window.scrollTo(0,0);
+}
+function renderDetalle(){
+  var c=document.getElementById('content');
+  var p=DATA.proveedores.find(function(x){ return x.id===PROV_ACTUAL; });
+  if(!p){ irLista(); return; }
+  var facs=(DATA.facturasPorProv[p.id]||[]).slice();
+  var d=calcDeuda(p.id);
+  var favor=r2(p.credito_a_favor||0);
+
+  facs.forEach(function(f){ f._saldo=r2((f.monto||0)-(f.abonado||0)); });
+  var pend=facs.filter(function(f){ return f._saldo>0.01; }).sort(function(a,b){ return (a.vence||'9999').localeCompare(b.vence||'9999'); });
+  var pag=facs.filter(function(f){ return f._saldo<=0.01; }).sort(function(a,b){ return (b.vence||'').localeCompare(a.vence||''); });
+
+  function facCard(f, pagada){
+    var dias=diasHasta(f.vence);
+    var vClass='', vTxt=fmtFecha(f.vence);
+    if(!pagada && dias!==null){
+      if(dias<0){ vClass='vencida'; vTxt='Venció '+fmtFecha(f.vence); }
+      else if(dias<=5){ vClass='pronto'; vTxt='Vence en '+dias+'d'; }
+    }
+    var badges='';
+    if(f.disputada) badges+='<span class="badge badge-disp">Disputada</span>';
+    if(f.esperando_doc) badges+='<span class="badge badge-doc">Esp. doc</span>';
+    if(f.pronto_pago) badges+='<span class="badge badge-pp">Pronto pago</span>';
+    return '<div class="fac-card'+(pagada?' pagada':'')+'">'+
+      (f.foto_url?'<img class="fac-foto" src="'+esc(f.foto_url)+'" data-foto="'+esc(f.foto_url)+'" data-cap="'+(f.num?'Factura '+esc(f.num):'Factura')+'" alt="foto" loading="lazy">':'<div class="fac-foto-ph">'+ico('img')+'</div>')+
+      '<div class="fac-main">'+
+        '<div class="fac-num">'+(f.num?esc(f.num):'Factura s/n')+badges+'</div>'+
+        '<div class="fac-meta">'+
+          '<span class="fac-venc '+vClass+'">'+ico('cal')+vTxt+'</span>'+
+          '<span>Llegó '+fmtFecha(f.llegada)+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="fac-right">'+
+        '<div class="fac-saldo'+(pagada?' pagada':'')+'">'+(pagada?'Pagada':fmtUSD(f._saldo))+'</div>'+
+        '<div class="fac-montos">'+fmtUSD(f.abonado||0)+' / '+fmtUSD(f.monto||0)+'</div>'+
+      '</div>'+
+      (pagada?'':'<div class="fac-actions"><button class="btn-abonar" data-fac="'+esc(f.id)+'">Abonar</button></div>')+
+    '</div>';
+  }
+
+  var html=
+    '<button class="back-btn" id="btnBack">'+ico('back')+'Volver a proveedores</button>'+
+    '<div class="det-head">'+
+      '<div class="det-head-top">'+
+        '<div class="det-av">'+ini(p.proveedor)+'</div>'+
+        '<div><div class="det-nom">'+esc(p.proveedor||'Sin nombre')+(p.favorito?' <span class="prov-star">★</span>':'')+'</div>'+
+        '<div class="det-tel">'+(p.telefono?esc(p.telefono):'Sin teléfono registrado')+'</div></div>'+
+      '</div>'+
+      '<div class="det-stats">'+
+        '<div class="det-stat"><div class="det-stat-lbl">Deuda actual</div><div class="det-stat-num" style="color:var(--red);">'+fmtUSD(d.deuda)+'</div></div>'+
+        '<div class="det-stat"><div class="det-stat-lbl">Saldo a favor</div><div class="det-stat-num" style="color:var(--green);">'+fmtUSD(favor)+'</div></div>'+
+        '<div class="det-stat"><div class="det-stat-lbl">Facturas</div><div class="det-stat-num" style="color:var(--gold-bright);">'+facs.length+'</div></div>'+
+      '</div>'+
+    '</div>';
+
+  if(pend.length){
+    html+='<div class="fac-section-title">Pendientes <span class="count">'+pend.length+'</span></div>'+
+      '<div class="fac-list">'+pend.map(function(f){ return facCard(f,false); }).join('')+'</div>';
+  }
+  if(pag.length){
+    html+='<div class="fac-section-title">Pagadas <span class="count">'+pag.length+'</span></div>'+
+      '<div class="fac-list">'+pag.map(function(f){ return facCard(f,true); }).join('')+'</div>';
+  }
+  if(!facs.length){
+    html+='<div class="empty-box"><h3>Sin facturas</h3><p>Este proveedor no tiene facturas registradas.</p></div>';
+  }
+
+  c.innerHTML=html;
+  document.getElementById('btnBack').addEventListener('click',irLista);
+  c.querySelectorAll('.btn-abonar').forEach(function(b){
+    b.addEventListener('click',function(){ abrirAbono(this.dataset.fac); });
+  });
+  c.querySelectorAll('.fac-foto').forEach(function(img){
+    img.addEventListener('click',function(){ abrirFoto(this.dataset.foto, this.dataset.cap); });
+  });
+}
+
+/* ---------- vista POR VENCER ---------- */
+let VENC_FILTRO='todas';
+function irVencer(){
+  VISTA='vencer'; PROV_ACTUAL=null;
+  setNavActivo('vencer');
+  renderVencer();
+  window.scrollTo(0,0);
+}
+function todasPendientes(){
+  var out=[];
+  DATA.proveedores.forEach(function(p){
+    (DATA.facturasPorProv[p.id]||[]).forEach(function(f){
+      var saldo=r2((f.monto||0)-(f.abonado||0));
+      if(saldo>0.01){
+        out.push({ fac:f, prov:p, saldo:saldo, dias:diasHasta(f.vence) });
+      }
+    });
+  });
+  return out;
+}
+function renderVencer(){
+  var c=document.getElementById('content');
+  var todas=todasPendientes();
+  // categorias: vencidas (dias<0), y futuras acumulativas desde hoy
+  var nVencidas=todas.filter(function(x){ return x.dias!==null && x.dias<0; }).length;
+  var n7=todas.filter(function(x){ return x.dias!==null && x.dias>=0 && x.dias<=7; }).length;
+  var n15=todas.filter(function(x){ return x.dias!==null && x.dias>=0 && x.dias<=15; }).length;
+  var n30=todas.filter(function(x){ return x.dias!==null && x.dias>=0 && x.dias<=30; }).length;
+
+  // aplicar filtro (vencidas aparte; los plazos solo futuro, sin vencidas)
+  var lista=todas.slice();
+  if(VENC_FILTRO==='vencidas') lista=lista.filter(function(x){ return x.dias!==null && x.dias<0; });
+  else if(VENC_FILTRO==='7') lista=lista.filter(function(x){ return x.dias!==null && x.dias>=0 && x.dias<=7; });
+  else if(VENC_FILTRO==='15') lista=lista.filter(function(x){ return x.dias!==null && x.dias>=0 && x.dias<=15; });
+  else if(VENC_FILTRO==='30') lista=lista.filter(function(x){ return x.dias!==null && x.dias>=0 && x.dias<=30; });
+  lista.sort(function(a,b){
+    if(a.dias===null) return 1; if(b.dias===null) return -1;
+    return a.dias-b.dias;
+  });
+
+  var totalFiltro=r2(lista.reduce(function(s,x){ return s+x.saldo; },0));
+
+  function chip(id,txt,n){
+    return '<button class="chip'+(VENC_FILTRO===id?' active':'')+'" data-f="'+id+'">'+txt+(n!=null?'<span class="n">'+n+'</span>':'')+'</button>';
+  }
+  var chips='<div class="chips">'+
+    chip('vencidas','Vencidas',nVencidas)+
+    chip('7','7 días',n7)+
+    chip('15','15 días',n15)+
+    chip('30','30 días',n30)+
+    chip('todas','Todas',todas.length)+
+  '</div>';
+
+  // clase de urgencia por dias
+  function urg(dias){
+    if(dias===null) return '';
+    if(dias<0) return 'u-vencida';
+    if(dias<=7) return 'u-7';
+    if(dias<=15) return 'u-15';
+    if(dias<=30) return 'u-30';
+    return '';
+  }
+  function card(x){
+    var f=x.fac, dias=x.dias, u=urg(dias);
+    var vTxt=fmtFecha(f.vence);
+    if(dias!==null){
+      if(dias<0) vTxt='Venció hace '+Math.abs(dias)+'d · '+fmtFecha(f.vence);
+      else if(dias===0) vTxt='Vence HOY';
+      else vTxt='Vence en '+dias+'d · '+fmtFecha(f.vence);
+    }
+    return '<div class="venc-card '+u+'">'+
+      '<div class="venc-main">'+
+        '<div class="venc-prov-nom">'+esc(x.prov.proveedor||'—')+'</div>'+
+        '<div class="venc-fac-num">'+(f.num?'Factura '+esc(f.num):'Factura s/n')+'</div>'+
+        '<div class="venc-fecha '+u+'">'+ico('cal')+vTxt+'</div>'+
+      '</div>'+
+      '<div class="venc-right">'+
+        '<div class="venc-saldo">'+fmtUSD(x.saldo)+'</div>'+
+      '</div>'+
+      '<div class="fac-actions"><button class="btn-abonar" data-fac="'+esc(f.id)+'" data-prov="'+esc(x.prov.id)+'">Abonar</button></div>'+
+    '</div>';
+  }
+
+  c.innerHTML=
+    '<div class="page-head"><h1>Por vencer</h1><p>Facturas pendientes de todos los proveedores. Las vencidas van aparte; los plazos muestran lo que viene de hoy en adelante.</p></div>'+
+    chips+
+    '<div class="total-card" style="margin-bottom:20px;"><div class="total-lbl">Total a pagar en este filtro</div><div class="total-num deuda">'+fmtUSD(totalFiltro)+'</div></div>'+
+    (lista.length?'<div class="fac-list">'+lista.map(card).join('')+'</div>':'<div class="empty-box"><h3>Nada por aquí</h3><p>No hay facturas pendientes en este plazo.</p></div>');
+
+  c.querySelectorAll('.chip').forEach(function(b){
+    b.addEventListener('click',function(){ VENC_FILTRO=this.dataset.f; renderVencer(); });
+  });
+  c.querySelectorAll('.btn-abonar').forEach(function(b){
+    b.addEventListener('click',function(){ PROV_ACTUAL=this.dataset.prov; abrirAbono(this.dataset.fac); });
+  });
+}
+
+/* ---------- modal de abono ---------- */
+function calcEspecial(metodo, monto){
+  var tasas={ 'Efectivo→USDT':CONFIG.tasa_efectivo_usdt, 'Efectivo→Zelle':CONFIG.tasa_efectivo_zelle };
+  if(!(metodo in tasas)) return null;
+  var tasa=tasas[metodo];
+  var efectivo=r2(monto*(1-tasa/100));
+  var ganancia=r2(monto-efectivo);
+  return { efectivoSalido:efectivo, ganancia:ganancia, tasa:tasa };
+}
+function abrirAbono(facId){
+  var p=DATA.proveedores.find(function(x){ return x.id===PROV_ACTUAL; });
+  var facs=DATA.facturasPorProv[PROV_ACTUAL]||[];
+  var f=facs.find(function(x){ return x.id===facId; });
+  if(!f) return;
+  var saldo=r2((f.monto||0)-(f.abonado||0));
+  ABONO_FAC=f; ABONO_METODO=null;
+  document.getElementById('abonoSub').textContent=(f.num?'Factura '+f.num:'Factura s/n')+' · Saldo '+fmtUSD(saldo)+' · '+(p?p.proveedor:'');
+  document.getElementById('aMonto').value='';
+  document.getElementById('aTitularZelle').value='';
+  document.getElementById('aObs').value='';
+  document.getElementById('aTransito').checked=false;
+  document.getElementById('aFecha').value=new Date().toISOString().slice(0,10);
+  document.getElementById('aCalc').style.display='none';
+  document.getElementById('aTitularWrap').style.display='none';
+  document.getElementById('aMsg').textContent='';
+  document.querySelectorAll('#aMetodos .method-opt').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('modalAbono').classList.add('show');
+  setTimeout(function(){ document.getElementById('aMonto').focus(); },100);
+}
+function cerrarAbono(){ document.getElementById('modalAbono').classList.remove('show'); ABONO_FAC=null; ABONO_METODO=null; }
+function actualizarCalc(){
+  var monto=parseFloat(document.getElementById('aMonto').value)||0;
+  var box=document.getElementById('aCalc');
+  var esp=ABONO_METODO?calcEspecial(ABONO_METODO,monto):null;
+  if(esp&&monto>0){
+    box.style.display='block';
+    box.innerHTML='<div class="calc-row"><span class="lbl">Entregas en efectivo</span><span class="val">'+fmtUSD(esp.efectivoSalido)+'</span></div>'+
+      '<div class="calc-row"><span class="lbl">Tu ganancia ('+esp.tasa+'%)</span><span class="val gan">'+fmtUSD(esp.ganancia)+'</span></div>';
+  } else { box.style.display='none'; }
+}
+async function confirmarAbono(){
+  if(!ABONO_FAC) return;
+  var monto=parseFloat(document.getElementById('aMonto').value);
+  var msg=document.getElementById('aMsg'); msg.className='modal-msg'; msg.textContent='';
+  if(!monto||monto<=0){ msg.className='modal-msg error'; msg.textContent='Escribe un monto válido.'; return; }
+  if(!ABONO_METODO){ msg.className='modal-msg error'; msg.textContent='Selecciona un método de pago.'; return; }
+  var fecha=document.getElementById('aFecha').value||new Date().toISOString().slice(0,10);
+  var titular=document.getElementById('aTitularZelle').value.trim()||null;
+  var obs=document.getElementById('aObs').value.trim()||null;
+  var transito=document.getElementById('aTransito').checked;
+  var esp=calcEspecial(ABONO_METODO,monto);
+  var btn=document.getElementById('aConfirm'); btn.disabled=true; btn.innerHTML='<span class="loader"></span>';
+  try{
+    var r=await sb.rpc('prov_registrar_abono',{
+      p_factura_id:ABONO_FAC.id,
+      p_monto:monto,
+      p_fecha:fecha,
+      p_metodo:ABONO_METODO,
+      p_titular_zelle:titular,
+      p_cambiador:null,
+      p_observaciones:obs,
+      p_en_transito:transito,
+      p_efectivo_salido:esp?esp.efectivoSalido:null,
+      p_ganancia:esp?esp.ganancia:null,
+      p_tasa_comision:esp?esp.tasa:null
+    });
+    if(r.error) throw r.error;
+    var volverA=VISTA;
+    cerrarAbono();
+    toast('Abono registrado.');
+    await cargarDatos(true);
+    if(volverA==='vencer') irVencer();
+    else irDetalle(PROV_ACTUAL);
+  }catch(e){
+    msg.className='modal-msg error'; msg.textContent='Error: '+(e.message||e);
+    btn.disabled=false; btn.textContent='Registrar abono';
+  }
+}
+
+/* ---------- lightbox de fotos ---------- */
+function abrirFoto(url, cap){
+  document.getElementById('lbImg').src=url;
+  document.getElementById('lbCap').textContent=cap||'';
+  document.getElementById('lightbox').classList.add('show');
+}
+function cerrarFoto(){
+  document.getElementById('lightbox').classList.remove('show');
+  document.getElementById('lbImg').src='';
+}
+
+/* ---------- sidebar movil ---------- */
+function cerrarSidebarMovil(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('scrim').classList.remove('show');
+}
+function toggleSidebarMovil(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('scrim').classList.toggle('show');
+}
+
+async function logout(){
+  await sb.auth.signOut();
+  location.reload();
+}
+
+document.getElementById('btnLogin').addEventListener('click',login);
+document.getElementById('password').addEventListener('keydown',function(e){ if(e.key==='Enter') login(); });
+document.getElementById('email').addEventListener('keydown',function(e){ if(e.key==='Enter') document.getElementById('password').focus(); });
+document.getElementById('btnLogout').addEventListener('click',logout);
+document.getElementById('burger').addEventListener('click',toggleSidebarMovil);
+document.getElementById('scrim').addEventListener('click',cerrarSidebarMovil);
+
+// modal de abono
+document.querySelectorAll('#aMetodos .method-opt').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('#aMetodos .method-opt').forEach(function(x){ x.classList.remove('active'); });
+    this.classList.add('active');
+    ABONO_METODO=this.dataset.m;
+    var esZelle=(ABONO_METODO==='Zelle'||ABONO_METODO==='Efectivo→Zelle');
+    document.getElementById('aTitularWrap').style.display=esZelle?'block':'none';
+    actualizarCalc();
+  });
+});
+document.getElementById('aMonto').addEventListener('input',actualizarCalc);
+document.getElementById('aCancel').addEventListener('click',cerrarAbono);
+document.getElementById('aConfirm').addEventListener('click',confirmarAbono);
+document.getElementById('modalAbono').addEventListener('click',function(e){ if(e.target===this) cerrarAbono(); });
+
+// lightbox
+document.getElementById('lbClose').addEventListener('click',cerrarFoto);
+document.getElementById('lightbox').addEventListener('click',function(e){ if(e.target===this) cerrarFoto(); });
+
+checkSession();
+</script>
+</body>
+</html>
