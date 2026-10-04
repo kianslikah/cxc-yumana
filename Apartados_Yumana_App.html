@@ -2217,6 +2217,37 @@ async function sumaInteresesVivos(tipo, id) {
   return redondear2((r.data || []).reduce(function(s, x){ return s + parseFloat(x.monto_interes || 0); }, 0));
 }
 
+// Anti abono repetido: antes de guardar, busca en la base (FRESCA) si en los últimos 15 minutos
+// ya se registró un pago igual en esas mismas cuentas (misma fecha y mismo monto, o el mismo
+// "pago a la cuenta"). Si lo hay, pregunta antes de registrarlo otra vez.
+// Devuelve true si se puede guardar, false si el usuario dijo que era el mismo pago.
+// Casos reales: crédito #314 (abono inicial + el mismo abono otra vez a los 21 s) y #62 (dos iguales en 1 s).
+async function confirmarSiPagoRepetido(campo, ids, fecha, monto, notaPagoCuenta) {
+  try {
+    if (!ids || !ids.length) return true;
+    var desde = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    var r = await sb.from('abonos').select('monto, fecha, metodo, notas, created_at')
+      .in(campo, ids).is('deleted_at', null).eq('fecha', fecha).gte('created_at', desde)
+      .order('created_at', {ascending: false});
+    if (r.error) throw r.error;
+    var parecido = (r.data || []).find(function(a){
+      if (Math.abs(parseFloat(a.monto) - monto) < 0.005) return true;
+      return !!(notaPagoCuenta && a.notas && a.notas.indexOf(notaPagoCuenta) === 0);
+    });
+    if (!parecido) return true;
+    var min = Math.max(0, Math.round((Date.now() - new Date(parecido.created_at).getTime()) / 60000));
+    var hace = min < 1 ? 'hace menos de 1 minuto' : ('hace ' + min + ' minuto' + (min === 1 ? '' : 's'));
+    return confirm('ATENCIÓN: POSIBLE PAGO REPETIDO\n\n' +
+      'Ya se registró un pago de ' + fmt(parecido.monto) + ' ' + hace + ' en esta cuenta (' + (parecido.metodo || '') + ', fecha ' + fmtDate(parecido.fecha) + ').\n\n' +
+      '¿Es un pago DIFERENTE que también hay que registrar?\n\n' +
+      'Aceptar = sí, es otro pago\nCancelar = no, era el mismo (no se guarda)');
+  } catch (e) {
+    // Si la verificación falla (sin internet, etc.), no bloquear el cobro
+    console.warn('No se pudo verificar pago repetido:', e.message);
+    return true;
+  }
+}
+
 // =================================================================
 // AUDITORÍA - Registro de cambios
 // =================================================================
@@ -7961,6 +7992,11 @@ protegerBoton('btnSaveAb', async function(){
     return toast('El pago ' + fmt(monto) + ' excede el saldo ' + fmt(saldo), 'e');
   }
 
+  var idCuentaAb = abContext === 'credito' ? currentCreditoId : currentApartadoId;
+  if (!(await confirmarSiPagoRepetido(abContext === 'credito' ? 'credito_id' : 'apartado_id', [idCuentaAb], fecha, monto))) {
+    return toast('No se guardó: era el mismo pago', 's');
+  }
+
   try {
     var insertData = {
       fecha: fecha, monto: monto,
@@ -9378,6 +9414,10 @@ async function guardarPagoCuenta(){
   if (monto > deuda + 0.01){ msg.style.display='block'; msg.textContent = 'El monto (' + fmt(monto) + ') supera la deuda total (' + fmt(deuda) + '). Ajústalo.'; return; }
   var fecha = document.getElementById('pcFecha').value || today();
   var ref = document.getElementById('pcRef').value.trim();
+  var idsCreditosCli = CREDITOS.filter(function(c){ return c.cliente_id === PC_CLIENTE; }).map(function(c){ return c.id; });
+  if (!(await confirmarSiPagoRepetido('credito_id', idsCreditosCli, fecha, monto, 'Pago a la cuenta de ' + fmt(monto)))) {
+    msg.style.display='block'; msg.textContent = 'No se guardó: era el mismo pago.'; return;
+  }
   try {
     var restante = monto, partes = 0, detalleReparto = [];
     for (var i = 0; i < crs.length && restante > 0.009; i++) {
