@@ -83,7 +83,13 @@ Si una tarea menciona "créditos" o "proveedores" sin dar el nombre de archivo, 
 8. **iOS Safari:** `input[type=date]` se desborda → `-webkit-appearance:none; width:100% !important`. Inputs mínimo 16px para evitar auto-zoom. Dropdowns flotantes fallan con el teclado → usar buscador a pantalla completa.
 9. **Caché agresiva en Safari/iPad:** versionar las URLs del portal (`?v=XX`) en cada entrega.
 10. **Rendimiento:** los buscadores usan `debounce` y las listas se dibujan por partes (80 + "Mostrar más"). Sin eso, la PC se traba.
-11. **SQL:** Claude Code no toca la base. Entregar el SQL en texto para que Kinan lo corra en el SQL Editor de Supabase.
+11. **Base de datos (autorizado por Kinan el 2026-10-04):** Claude Code trabaja la base directo con el conector de Supabase (proyecto `tkkiuxaamdyfbildcvtp`, plan Pro con backup diario automático). Reglas:
+    - **Respaldo antes de cambiar:** antes de una tanda de cambios, copiar todas las tablas de `public` a un esquema `respaldo_AAAAMMDD` (`CREATE TABLE respaldo_x.t AS TABLE public.t`) y verificar que los conteos de filas coincidan. Revocar el acceso de `anon`/`authenticated` a ese esquema. Primer respaldo: `respaldo_20261004`. **Nunca borrar un esquema de respaldo sin permiso de Kinan.**
+    - **Leer es libre:** las consultas de diagnóstico (SELECT) se hacen sin preguntar.
+    - **Agregar sí, destruir no:** se pueden crear tablas, columnas, índices, funciones y políticas sin borrar nada de lo que ya existe.
+    - **Lo peligroso se consulta:** antes de borrar datos, hacer DROP o TRUNCATE, o cambiar montos de créditos, abonos, facturas o saldos, explicarle a Kinan en palabras simples qué se va a hacer y a cuántos registros afecta, y esperar su "dale".
+    - **Correcciones de dinero con rastro:** toda corrección de montos deja el valor de antes y el de después en `historial_auditoria`.
+    - Usar `apply_migration` para cambios de estructura, para que queden registrados.
 
 ## Lo que ya está hecho (no rehacer)
 
