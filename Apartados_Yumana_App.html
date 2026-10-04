@@ -1325,6 +1325,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px);}
         <button class="btn btn-ghost" id="btnExportExcel" title="Exportar a Excel" style="border-color:#27ae60;color:#27ae60;">📊 Excel</button>
         <button class="btn btn-ghost" id="btnExportPdf" title="Reporte PDF" style="border-color:#e74c3c;color:#e74c3c;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg> PDF</button>
         <button class="btn btn-ghost" id="btnBackup" title="Descargar backup"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg> Backup</button>
+        <button class="btn btn-ghost" id="btnVerificar" title="Revisa que todos los créditos y apartados cuadren (no cambia nada)" style="border-color:var(--green);color:var(--green);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> Verificar cuadre</button>
         <button class="btn btn-ghost" id="btnRecalcular" title="Repara descuadres entre saldo y abonos" style="border-color:#f39c12;color:#f39c12;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M14 7a4 4 0 00-5.3 5.3l-5.4 5.4a1.5 1.5 0 002 2l5.4-5.4A4 4 0 0017 10l-2.5 2.5L12 10l2.5-2.5z"/></svg> Recalcular</button>
       </div>
     </div>
@@ -1518,6 +1519,19 @@ input:checked + .toggle-slider::before{transform:translateX(20px);}
     <div class="modal-actions">
       <button class="btn btn-ghost" data-close="mPagoCuenta">Cancelar</button>
       <button class="btn btn-primary" id="pcGuardar">Registrar pago</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="mVerificar">
+  <div class="modal" style="max-width:640px;">
+    <button class="close-btn" data-close="mVerificar">×</button>
+    <h2>Verificador de <em>cuadre</em></h2>
+    <div class="fg-help" style="margin:-8px 0 12px;">Solo revisa, no cambia nada. Compara cada crédito y apartado con sus abonos, intereses y productos reales.</div>
+    <div id="verResultado" style="font-size:13px; line-height:1.5;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close="mVerificar">Cerrar</button>
+      <button class="btn btn-primary" id="btnVerificarOtraVez">Verificar otra vez</button>
     </div>
   </div>
 </div>
@@ -2173,6 +2187,37 @@ function protegerBoton(btnId, handler) {
 }
 
 // =================================================================
+// HELPERS DE CUADRE (leen la base FRESCA, nunca la memoria)
+// =================================================================
+function redondear2(n) { return Math.round((parseFloat(n) || 0) * 100) / 100; }
+
+// Trae TODAS las filas de una tabla paginando de a 1000 (Supabase corta en 1000 sin avisar).
+async function traerTodoBD(tabla, columnas, filtro) {
+  var todos = [];
+  var desde = 0;
+  var tam = 1000;
+  while (true) {
+    var q = sb.from(tabla).select(columnas || '*').order('id', {ascending: true});
+    if (filtro) q = filtro(q);
+    var r = await q.range(desde, desde + tam - 1);
+    if (r.error) throw r.error;
+    var lote = r.data || [];
+    todos = todos.concat(lote);
+    if (lote.length < tam) break;
+    desde += tam;
+  }
+  return todos;
+}
+
+// Suma real de los intereses aplicados (vivos) de un crédito o apartado, leída de la base.
+async function sumaInteresesVivos(tipo, id) {
+  var campo = tipo === 'credito' ? 'credito_id' : 'apartado_id';
+  var r = await sb.from('intereses_aplicados').select('monto_interes').eq(campo, id);
+  if (r.error) throw r.error;
+  return redondear2((r.data || []).reduce(function(s, x){ return s + parseFloat(x.monto_interes || 0); }, 0));
+}
+
+// =================================================================
 // AUDITORÍA - Registro de cambios
 // =================================================================
 async function registrarAuditoria(entidad, entidadId, accion, descripcion, cambios) {
@@ -2535,6 +2580,7 @@ document.getElementById('btnLogout').addEventListener('click', async function() 
 document.addEventListener('click', function(e){
   if (e.target && e.target.id === 'btnBackup') descargarBackup();
   if (e.target && e.target.id === 'btnRecalcular') recalcularSaldos();
+  if (e.target && e.target.closest && e.target.closest('#btnVerificar, #btnVerificarOtraVez')) verificarCuadre();
   if (e.target && e.target.id === 'btnExportExcel') exportarExcel();
   if (e.target && e.target.id === 'btnExportPdf') exportarPdfEjecutivo();
   if (e.target && e.target.id === 'btnImprimirInventario') imprimirInventario();
@@ -2583,7 +2629,9 @@ async function loadData() {
       return todos;
     }
 
-    var r1 = await sb.from('clientes').select('*').order('nombre');
+    // Clientes también paginado: ya van ~740 y al pasar de 1000 se "perderían" en silencio.
+    // Se pagina por id (único) y se ordena por nombre aquí, para que ningún cliente se repita o se salte entre páginas.
+    var r1 = { data: (await traerTodoBD('clientes')).sort(function(a, b){ return String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'); }) };
     var r2 = { data: await traerTodo('apartados', 'created_at', false) };
     var r3 = { data: await traerTodo('abonos', 'fecha', false) };
     var r4 = { data: await traerTodo('productos_apartado', null, false) };
@@ -5395,8 +5443,12 @@ protegerBoton('btnSaveAp', async function(){
 
     if (editingApartadoId) {
       // EDITAR: actualizar apartado, borrar productos viejos, insertar nuevos
+      // El total = productos + intereses vivos (leídos FRESCOS de la base). Antes se guardaba
+      // solo el total de productos y se perdían los intereses ya aplicados.
+      var interesesVivosAp = await sumaInteresesVivos('apartado', editingApartadoId);
       var ru = await sb.from('apartados').update({
-        cliente_id: cliente_id, monto_total: totalProds,
+        cliente_id: cliente_id, monto_total: redondear2(totalProds + interesesVivosAp),
+        interes_acumulado: interesesVivosAp,
         fecha_limite: fecha, fecha_inicio: fechaInicio,
         notas: notas || null
       }).eq('id', editingApartadoId);
@@ -5420,6 +5472,8 @@ protegerBoton('btnSaveAp', async function(){
       var rIns = await sb.from('productos_apartado').insert(prodsInsert);
       if (rIns.error) throw rIns.error;
       try { await crearReservasInventario(validProds, {id: editingApartadoId}, clienteNombreParaReserva()); } catch(e) { console.error(e); }
+      // El total cambió: recalcular pagado y estado desde los abonos reales
+      await recalcularSaldoCuenta('apartado', editingApartadoId);
 
       closeModal('mNewAp');
       toast('✓ Apartado actualizado con ' + validProds.length + ' producto(s)', 's');
@@ -6010,8 +6064,12 @@ protegerBoton('btnSaveCr', async function(){
     };
 
     if (editingCreditoId) {
+      // El total = productos + intereses vivos (leídos FRESCOS de la base). Antes se guardaba
+      // solo el total de productos y se perdían los intereses ya aplicados (créditos #158, #182, #198, #232, #416).
+      var interesesVivosCr = await sumaInteresesVivos('credito', editingCreditoId);
       var updateData = {
-        cliente_id: cliente_id, monto_total: totalProds,
+        cliente_id: cliente_id, monto_total: redondear2(totalProds + interesesVivosCr),
+        interes_acumulado: interesesVivosCr,
         fecha_limite: fecha, fecha_inicio: fechaInicioCr,
         notas: notas || null,
         vendedor_id: vendedor_id,
@@ -6022,6 +6080,8 @@ protegerBoton('btnSaveCr', async function(){
       Object.assign(updateData, fiadorData);
       var ru = await sb.from('creditos').update(updateData).eq('id', editingCreditoId);
       if (ru.error) throw ru.error;
+      // El total cambió: recalcular pagado y estado desde los abonos reales
+      await recalcularSaldoCuenta('credito', editingCreditoId);
 
       closeModal('mNewCr');
       toast('✓ Crédito actualizado', 's');
@@ -6114,7 +6174,6 @@ function aplicarInteres(tipo, obj) {
 
   var monto = Math.round(saldoActual * 0.10 * 100) / 100;
   var saldoDespues = saldoActual + monto;
-  var nuevoTotal = parseFloat(obj.monto_total) + monto;
   var cli = CLIENTES.find(function(c){return c.id === obj.cliente_id;});
 
   // Fecha propuesta = fecha del crédito + N meses (N = cuántos intereses ya se aplicaron + 1).
@@ -6172,12 +6231,17 @@ function aplicarInteres(tipo, obj) {
       var r1 = await sb.from('intereses_aplicados').insert(data);
       if (r1.error) throw r1.error;
 
-      // 2. Aumentar monto_total y interes_acumulado del crédito/apartado
-      var nuevoInteresAcumulado = parseFloat(obj.interes_acumulado || 0) + monto;
+      // 2. Reconstruir monto_total e interes_acumulado desde la FUENTE DE VERDAD (base fresca):
+      //    subtotal productos (total - interés acumulado) + suma real de intereses vivos.
+      //    Así no se suma dos veces aunque los datos en memoria estén viejos (crédito #97).
       var tabla = tipo === 'credito' ? 'creditos' : 'apartados';
+      var rf = await sb.from(tabla).select('monto_total, interes_acumulado').eq('id', obj.id).single();
+      if (rf.error) throw rf.error;
+      var subtotalProductos = parseFloat(rf.data.monto_total || 0) - parseFloat(rf.data.interes_acumulado || 0);
+      var sumaReal = await sumaInteresesVivos(tipo, obj.id);
       var r2 = await sb.from(tabla).update({
-        monto_total: nuevoTotal,
-        interes_acumulado: nuevoInteresAcumulado
+        monto_total: redondear2(subtotalProductos + sumaReal),
+        interes_acumulado: sumaReal
       }).eq('id', obj.id);
       if (r2.error) throw r2.error;
 
@@ -9396,15 +9460,20 @@ async function recalcularSaldos() {
 
   try {
     // APARTADOS — traer desde BD (no usar memoria)
-    var rAp = await sb.from('apartados').select('id,numero,monto_abonado,monto_total,estado').is('deleted_at', null);
-    if (rAp.error) throw rAp.error;
-    var apartadosBD = rAp.data || [];
+    // Todo paginado (Supabase corta en 1000 sin avisar) y leído de una vez, no una consulta por cuenta.
+    var sinBorrar = function(q){ return q.is('deleted_at', null); };
+    var apartadosBD = await traerTodoBD('apartados', 'id,numero,monto_abonado,monto_total,estado', sinBorrar);
+    var creditosBD = await traerTodoBD('creditos', 'id,numero,monto_pagado,monto_total,estado', sinBorrar);
+    var abonosBD = await traerTodoBD('abonos', 'id,monto,credito_id,apartado_id', sinBorrar);
+    var sumaAbonos = {};
+    abonosBD.forEach(function(ab){
+      var k = ab.credito_id || ab.apartado_id;
+      if (k) sumaAbonos[k] = (sumaAbonos[k] || 0) + parseFloat(ab.monto || 0);
+    });
 
     for (var i = 0; i < apartadosBD.length; i++) {
       var a = apartadosBD[i];
-      var rAb = await sb.from('abonos').select('monto').eq('apartado_id', a.id).is('deleted_at', null);
-      if (rAb.error) continue;
-      var sumaReal = (rAb.data || []).reduce(function(s, ab){ return s + parseFloat(ab.monto); }, 0);
+      var sumaReal = redondear2(sumaAbonos[a.id] || 0);
       var actual = parseFloat(a.monto_abonado || 0);
       var nuevoEstado = (sumaReal >= parseFloat(a.monto_total) - 0.005) ? 'completado' : 'activo';
       var estadoEditable = (a.estado === 'activo' || a.estado === 'completado');
@@ -9423,15 +9492,9 @@ async function recalcularSaldos() {
     }
 
     // CRÉDITOS — traer desde BD
-    var rCr = await sb.from('creditos').select('id,numero,monto_pagado,monto_total,estado').is('deleted_at', null);
-    if (rCr.error) throw rCr.error;
-    var creditosBD = rCr.data || [];
-
     for (var j = 0; j < creditosBD.length; j++) {
       var c = creditosBD[j];
-      var rAbC = await sb.from('abonos').select('monto').eq('credito_id', c.id).is('deleted_at', null);
-      if (rAbC.error) continue;
-      var sumaRealC = (rAbC.data || []).reduce(function(s, ab){ return s + parseFloat(ab.monto); }, 0);
+      var sumaRealC = redondear2(sumaAbonos[c.id] || 0);
       var actualC = parseFloat(c.monto_pagado || 0);
       // monto_total YA incluye los intereses aplicados; no sumarlos de nuevo.
       var totalC = parseFloat(c.monto_total);
@@ -9460,6 +9523,162 @@ async function recalcularSaldos() {
     }
   } catch (e) {
     toast('Error: ' + e.message, 'e');
+  }
+}
+
+// =================================================================
+// VERIFICADOR DE CUADRE — solo LECTURA: no cambia nada en la base.
+// Lee todo FRESCO (paginado) y marca cada crédito/apartado que no cuadre con
+// sus abonos, intereses y productos reales.
+// =================================================================
+var VERIFICANDO = false;
+
+// Total de productos de un crédito a partir de su texto ("Producto | marca | $precio" por línea).
+// Se toma el último "$monto" de cada línea (en "2x ... $7.00 c/u = $14.00" es el subtotal).
+function totalProductosDeTexto(txt) {
+  if (!txt) return null;
+  var total = 0, alguno = false;
+  String(txt).split('\n').forEach(function(l){
+    var m = l.match(/\$([0-9][0-9.,]*)\s*$/);
+    if (m) { total += parseFloat(m[1].replace(/,/g, '')) || 0; alguno = true; }
+  });
+  return alguno ? redondear2(total) : null;
+}
+
+function escVer(t) { return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function verificarCuadre() {
+  if (!currentUserApp || currentUserApp.rol !== 'admin') return toast('Solo administrador', 'e');
+  if (VERIFICANDO) return; // anti doble clic
+  VERIFICANDO = true;
+  var cont = document.getElementById('verResultado');
+  var btnOtra = document.getElementById('btnVerificarOtraVez');
+  if (btnOtra) btnOtra.disabled = true;
+  cont.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);">Revisando todas las cuentas...</div>';
+  showModal('mVerificar');
+
+  try {
+    var sinBorrar = function(q){ return q.is('deleted_at', null); };
+    var creditos = await traerTodoBD('creditos', 'id,numero,cliente_id,estado,monto_total,monto_pagado,interes_acumulado,productos_descripcion', sinBorrar);
+    var apartados = await traerTodoBD('apartados', 'id,numero,cliente_id,estado,monto_total,monto_abonado,interes_acumulado', sinBorrar);
+    var abonos = await traerTodoBD('abonos', 'id,credito_id,apartado_id,monto,fecha,metodo,referencia,created_at', sinBorrar);
+    var intereses = await traerTodoBD('intereses_aplicados', 'id,credito_id,apartado_id,monto_interes');
+    var productos = await traerTodoBD('productos_apartado', 'id,apartado_id,cantidad,precio_unitario,subtotal');
+
+    var sumAb = {}, listAb = {}, sumInt = {}, sumProd = {};
+    abonos.forEach(function(a){
+      var k = a.credito_id || a.apartado_id; if (!k) return;
+      sumAb[k] = (sumAb[k] || 0) + parseFloat(a.monto || 0);
+      (listAb[k] = listAb[k] || []).push(a);
+    });
+    intereses.forEach(function(i){
+      var k = i.credito_id || i.apartado_id; if (!k) return;
+      sumInt[k] = (sumInt[k] || 0) + parseFloat(i.monto_interes || 0);
+    });
+    productos.forEach(function(p){
+      if (!p.apartado_id) return;
+      var sub = p.subtotal != null ? parseFloat(p.subtotal) : (parseFloat(p.precio_unitario || 0) * (p.cantidad || 1));
+      sumProd[p.apartado_id] = (sumProd[p.apartado_id] || 0) + (sub || 0);
+    });
+
+    var nombreCli = {};
+    CLIENTES_ALL.forEach(function(c){ nombreCli[c.id] = c.nombre; });
+
+    var problemas = [];
+    var dobles = [];
+    function revisar(tipo, c) {
+      var pagadoCampo = parseFloat((tipo === 'credito' ? c.monto_pagado : c.monto_abonado) || 0);
+      var total = parseFloat(c.monto_total || 0);
+      var ia = parseFloat(c.interes_acumulado || 0);
+      var pagadoReal = redondear2(sumAb[c.id] || 0);
+      var intReal = redondear2(sumInt[c.id] || 0);
+      var prod = tipo === 'credito' ? totalProductosDeTexto(c.productos_descripcion) : (sumProd[c.id] != null ? redondear2(sumProd[c.id]) : null);
+      var saldo = redondear2(total - pagadoReal);
+      var fallas = [];
+
+      if (Math.abs(pagadoCampo - pagadoReal) > 0.005)
+        fallas.push('Pagado guardado ' + fmt(pagadoCampo) + ' pero los abonos suman ' + fmt(pagadoReal) + '. Se arregla con el botón Recalcular.');
+      if (Math.abs(ia - intReal) > 0.005)
+        fallas.push('Interés acumulado ' + fmt(ia) + ' pero los intereses aplicados suman ' + fmt(intReal) + '.');
+      if (prod != null) {
+        var totalCorrecto = redondear2(prod + intReal);
+        var dif = redondear2(total - totalCorrecto);
+        if (Math.abs(dif) > 0.005) {
+          fallas.push('Total ' + fmt(total) + ' pero debería ser ' + fmt(totalCorrecto) + ' (productos ' + fmt(prod) + ' + intereses ' + fmt(intReal) + '). ' +
+            (dif > 0 ? 'Se le está cobrando ' + fmt(dif) + ' DE MÁS al cliente.' : 'Le faltan ' + fmt(-dif) + ' por cobrar.'));
+        }
+      }
+      if (saldo < -0.005) fallas.push('Pagó ' + fmt(-saldo) + ' de más (saldo negativo).');
+      if (c.estado === 'completado' && saldo > 0.005) fallas.push('Marcado como completado pero todavía debe ' + fmt(saldo) + '.');
+      if ((c.estado === 'activo' || c.estado === 'vencido') && saldo <= 0.005 && total > 0) fallas.push('Ya está pagado pero sigue marcado como ' + c.estado + '.');
+
+      if (fallas.length) problemas.push({ tipo: tipo, c: c, fallas: fallas });
+
+      // Posibles abonos repetidos por doble toque: mismo monto, misma fecha, registrados con menos de 2 minutos de diferencia.
+      var lst = (listAb[c.id] || []).slice().sort(function(a, b){ return String(a.created_at).localeCompare(String(b.created_at)); });
+      for (var i = 1; i < lst.length; i++) {
+        var a = lst[i - 1], b = lst[i];
+        var seg = Math.abs(new Date(b.created_at) - new Date(a.created_at)) / 1000;
+        if (a.fecha === b.fecha && Math.abs(parseFloat(a.monto) - parseFloat(b.monto)) < 0.005 && seg < 120 &&
+            !(a.referencia && b.referencia && a.referencia !== b.referencia)) {
+          dobles.push({ tipo: tipo, c: c, a: a, b: b, seg: Math.round(seg) });
+        }
+      }
+    }
+    creditos.forEach(function(c){ revisar('credito', c); });
+    apartados.forEach(function(a){ revisar('apartado', a); });
+
+    var totalCuentas = creditos.length + apartados.length;
+    var html = '';
+    if (!problemas.length && !dobles.length) {
+      html = '<div style="padding:16px;border-radius:10px;background:rgba(46,194,122,0.1);border:1px solid rgba(46,194,122,0.35);color:var(--green-soft);font-weight:700;text-align:center;">' +
+        'Todo cuadra. ' + totalCuentas + ' cuentas revisadas.</div>';
+    } else {
+      html += '<div style="margin-bottom:12px;color:var(--text-2);">' + totalCuentas + ' cuentas revisadas · <b style="color:var(--red-soft);">' + problemas.length + ' con descuadre</b>' +
+        (dobles.length ? ' · <b style="color:var(--orange);">' + dobles.length + ' posible(s) abono(s) repetido(s)</b>' : '') + '</div>';
+      problemas.forEach(function(p){
+        var etiqueta = (p.tipo === 'credito' ? 'Crédito #' : 'Apartado #') + p.c.numero;
+        html += '<div style="border:1px solid rgba(232,93,76,0.35);background:rgba(232,93,76,0.06);border-radius:10px;padding:10px 12px;margin-bottom:8px;">' +
+          '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px;">' +
+            '<div style="font-weight:700;">' + escVer(etiqueta) + ' · ' + escVer(nombreCli[p.c.cliente_id] || '?') + ' <span style="color:var(--muted);font-weight:400;font-size:11px;">(' + escVer(p.c.estado) + ')</span></div>' +
+            '<button class="btn btn-ghost ver-goto" data-tipo="' + p.tipo + '" data-id="' + escVer(p.c.id) + '" style="padding:4px 10px;font-size:11px;">Ver</button>' +
+          '</div>' +
+          p.fallas.map(function(f){ return '<div style="font-size:12.5px;color:var(--text-2);padding-left:2px;">• ' + escVer(f) + '</div>'; }).join('') +
+        '</div>';
+      });
+      dobles.forEach(function(d){
+        var etiqueta = (d.tipo === 'credito' ? 'Crédito #' : 'Apartado #') + d.c.numero;
+        html += '<div style="border:1px solid rgba(240,168,56,0.35);background:rgba(240,168,56,0.06);border-radius:10px;padding:10px 12px;margin-bottom:8px;">' +
+          '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px;">' +
+            '<div style="font-weight:700;">' + escVer(etiqueta) + ' · ' + escVer(nombreCli[d.c.cliente_id] || '?') + '</div>' +
+            '<button class="btn btn-ghost ver-goto" data-tipo="' + d.tipo + '" data-id="' + escVer(d.c.id) + '" style="padding:4px 10px;font-size:11px;">Ver</button>' +
+          '</div>' +
+          '<div style="font-size:12.5px;color:var(--text-2);">• Dos abonos de ' + fmt(d.a.monto) + ' el ' + escVer(fmtDate(d.a.fecha)) + ' (' + escVer(d.a.metodo || '') + '), registrados con ' + d.seg + ' segundos de diferencia. Revisa con el recibo si de verdad fueron dos pagos.</div>' +
+        '</div>';
+      });
+    }
+    cont.innerHTML = html;
+
+    var gos = cont.querySelectorAll('.ver-goto');
+    for (var g = 0; g < gos.length; g++) {
+      (function(b){
+        b.addEventListener('click', function(){
+          closeModal('mVerificar');
+          if (b.dataset.tipo === 'apartado') {
+            currentApartadoId = b.dataset.id; currentCreditoId = null;
+            showView('vDetail'); renderDetail();
+          } else {
+            currentCreditoId = b.dataset.id; currentApartadoId = null;
+            showView('vDetail'); renderDetailCredito();
+          }
+        });
+      })(gos[g]);
+    }
+  } catch (e) {
+    cont.innerHTML = '<div style="color:var(--red-soft);">Error al verificar: ' + escVer(e.message) + '</div>';
+  } finally {
+    VERIFICANDO = false;
+    if (btnOtra) btnOtra.disabled = false;
   }
 }
 
