@@ -93,15 +93,19 @@ Si una tarea menciona "créditos" o "proveedores" sin dar el nombre de archivo, 
     - **Lo peligroso se consulta:** antes de borrar datos, hacer DROP o TRUNCATE, o cambiar montos de créditos, abonos, facturas o saldos, explicarle a Kinan en palabras simples qué se va a hacer y a cuántos registros afecta, y esperar su "dale".
     - **Correcciones de dinero con rastro:** toda corrección de montos deja el valor de antes y el de después en `historial_auditoria`.
     - Usar `apply_migration` para cambios de estructura, para que queden registrados.
+    - **El conector se cuelga con `DELETE`** (se queda esperando una confirmación que nunca llega y la transacción se deshace sola). Para quitar algo: borrado suave (`deleted_at`) o dejar la fila en $0 con nota explicativa (ej. intereses perdonados). Nunca `DELETE` desde el conector.
+    - Respaldos hechos: `respaldo_20261004`, `respaldo_20261004b`, `respaldo_20261004c`.
 
 ## Lo que ya está hecho (no rehacer)
 
 - **Mayorista completo:** panel de control con KPIs, clientes con plazos 30/60 días, facturas con vencimiento automático, abonos repartidos a lo más viejo, saldo a favor automático, precios pactados por cliente, nota de entrega y estado de cuenta en PDF corporativo, envío directo por WhatsApp, estadísticas con Chart.js, exportar CSV, editar/anular con recálculo, drawer móvil. Integrado al portal.
 - **Créditos (Apartados):** cuenta consolidada por cliente (varios créditos = una tarjeta con la suma), "pago a la cuenta" que reparte entre créditos con vista previa, mensaje de confirmación y resumen de cuenta por WhatsApp con lista completa de productos, navegación que vuelve a donde empezaste, eliminación de intereses idempotente.
+- **Verificador de cuadre (2026-10-04):** botón "Verificar cuadre" en Estadísticas (solo admin, función `verificarCuadre()`). Solo lee. Compara cada crédito/apartado con abonos, intereses y productos reales, y detecta posibles abonos repetidos. Para créditos, el total de productos se lee del texto `productos_descripcion` (último `$monto` de cada línea). Helpers nuevos: `traerTodoBD()`, `sumaInteresesVivos()`, `redondear2()`, `confirmarSiPagoRepetido()`.
+- **Arreglos del 2026-10-04:** editar un crédito/apartado ya conserva los intereses (antes los borraba del total: causó #158, #182, #198, #232, #416); aplicar interés reconstruye el total desde la base (antes sumaba sobre memoria: #97); aviso de pago repetido antes de guardar un abono (15 min, misma fecha y monto). Los 6 créditos se corrigieron en la base con rastro en `historial_auditoria` (`usuario_nombre = 'Claude Code (autorizado por Kinan)'`). Intereses perdonados de #182 quedaron en $0 con nota "PERDONADO".
 
 ## Pendientes conocidos
 
-1. **Verificador de cuadre** (lo más urgente): un botón que revise todos los créditos y marque los que no cuadren con su historial de intereses y pagos. Hoy los descuadres se descubren de casualidad.
+1. ~~Verificador de cuadre~~ **HECHO el 2026-10-04.** Pendiente menor: crédito #62 PASCUAL RODRÍGUEZ tiene dos abonos de $20 el 2026-06-14 con 1 s de diferencia; Kinan debe confirmar con Fayssal si fue uno solo. Hay 1 interés huérfano en el crédito eliminado #309 (inofensivo).
 2. **Tope de crédito por cliente** según su score, con aviso al crear uno nuevo.
 3. **Cartera por antigüedad:** cuánto al día / 1-30 / 31-60 / +60 días vencido.
 4. **Migrar login de `Inventario_Yumana_App.html`** a Supabase Auth (hoy usa tabla propia con contraseña en texto plano). Riesgo medio, no hacerlo en horario de venta.
