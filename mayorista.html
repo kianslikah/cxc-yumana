@@ -228,6 +228,32 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
 .method-opt{background:var(--bg); border:1px solid var(--border); border-radius:11px; padding:12px 10px; color:var(--text-2); font-size:13px; font-family:inherit; cursor:pointer; transition:all .18s ease; text-align:center; font-weight:500;}
 .method-opt:hover{border-color:var(--gold-dim); color:var(--text);}
 .method-opt.active{border-color:var(--gold); background:rgba(201,162,76,0.12); color:var(--gold-bright); font-weight:600;}
+/* ===== PEDIDO RÁPIDO (pegar desde Notas) ===== */
+.pr-cab{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:10px; display:flex; flex-direction:column; gap:6px;}
+.pr-fila{background:var(--surface-2); border:1px solid var(--border); border-left-width:3px; border-radius:10px; padding:10px 12px; margin-bottom:8px;}
+.pr-fila.pr-ok{border-left-color:var(--green);} .pr-fila.pr-elegir{border-left-color:var(--orange);}
+.pr-fila.pr-libre{border-left-color:var(--muted);} .pr-fila.pr-falta{border-left-color:var(--red);}
+.pr-fila-top{display:flex; gap:8px; align-items:flex-start;}
+.pr-cant{width:52px; flex-shrink:0; padding:6px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--gold); font-weight:800; font-size:16px; text-align:center;}
+.pr-desc{flex:1; font-size:14px; font-weight:600; line-height:1.3; padding-top:6px;}
+.pr-quitar{background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:8px; width:30px; height:30px; flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+.pr-estado{font-size:12px; color:var(--text-2); margin-top:6px;}
+.pr-ok .pr-estado{color:var(--green-soft);} .pr-elegir .pr-estado{color:var(--orange);} .pr-falta .pr-estado{color:var(--red-soft);}
+.pr-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+.pr-chip{flex:1 1 45%; padding:8px 10px; text-align:left; display:flex; flex-direction:column; gap:2px; min-width:0;}
+.pr-chip b{font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;} .pr-chip small{font-size:11px; color:var(--gold); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.pr-fila-bot{display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;}
+.pr-fila-bot label{font-size:11px; color:var(--muted); display:flex; flex-direction:column; gap:2px; flex:0 0 110px;}
+.pr-precio{width:100%; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:16px;}
+.pr-falta .pr-precio{border-color:var(--red);}
+.pr-origen{font-size:11px; color:var(--muted); flex:1; min-width:90px;}
+.pr-sub{font-weight:700; color:var(--gold); font-size:15px;}
+.pr-agregar{padding:7px 10px; font-size:12px; flex:1 1 100%;}
+.pr-aviso{font-size:12px; color:var(--orange); margin-top:6px;}
+.pr-total{display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:10px; border-top:1px solid var(--border);}
+.pr-total .v{font-size:22px; font-weight:800; color:var(--gold);}
+.pr-total-nota{font-size:12px; margin-top:4px; min-height:14px;} .pr-total-nota.ok{color:var(--green-soft);} .pr-total-nota.mal{color:var(--red-soft);}
+#prTexto{font-size:16px; line-height:1.45; font-family:inherit;}
 .stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
 .stat-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px;}
 .stat-card h3{font-size:15px; margin-bottom:4px;}
@@ -335,6 +361,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
       <div><h1>Facturas <em>del mayor</em></h1><div class="sub" id="facSub">—</div></div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn btn-ghost" id="btnExportarFac">Exportar CSV</button>
+        <button class="btn btn-ghost" id="btnPedidoRapido" title="Pegar el pedido tal como está en Notas"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/></svg> Pedido rápido</button>
         <button class="btn btn-primary" id="btnNuevaFactura">+ Nueva factura</button>
       </div>
     </div>
@@ -447,6 +474,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
     </div>
     <label style="font-size:12px; color:var(--text-2); font-weight:500; display:block; margin-bottom:8px;">Productos *</label>
     <div id="nfItems"></div>
+    <button type="button" class="btn btn-ghost btn-block" id="nfPegarPedido" style="margin-top:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/></svg> Pegar pedido de Notas</button>
     <button class="btn btn-ghost btn-block" id="nfAddItem" style="margin-top:8px; border-style:dashed;">+ Agregar producto</button>
     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
       <span style="font-size:14px; color:var(--text-2);">Total de la factura</span>
@@ -457,6 +485,24 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
     <div class="modal-actions">
       <button class="btn btn-ghost" id="nfCancelar">Cancelar</button>
       <button class="btn btn-primary" id="nfGuardar">Guardar factura</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL PEDIDO RÁPIDO (pegar desde Notas) ===== -->
+<div class="modal-overlay" id="modalPedidoRapido" style="z-index:300;">
+  <div class="modal" style="max-width:560px;">
+    <h2>Pedido <em>rápido</em></h2>
+    <div class="fg">
+      <label>Pega aquí el pedido tal como está en Notas (o díctalo con el micrófono del teclado)</label>
+      <textarea id="prTexto" rows="8" placeholder="Pedido PEDRAZA 30.09&#10;1 - Congelador Mystic 100lt 150$&#10;2 - Aire de ventana TCL 12milBTU 215×2 =430&#10;1 - Lavadora Aut LG 9Kg"></textarea>
+    </div>
+    <button type="button" class="btn btn-primary btn-block" id="prInterpretar">Interpretar</button>
+    <div id="prVista" style="margin-top:14px;"></div>
+    <div class="modal-msg" id="prMsg"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="prCancelar">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="prAplicar" disabled>Pasar a la factura</button>
     </div>
   </div>
 </div>
@@ -735,12 +781,14 @@ async function guardarCliente(){
       if(r.error) throw r.error;
       toast('Cliente actualizado', 's');
     } else {
-      var r2 = await sb.from('may_clientes').insert(data);
+      var r2 = await sb.from('may_clientes').insert(data).select('id').single();
       if(r2.error) throw r2.error;
+      ULTIMO_CLIENTE_CREADO = r2.data ? r2.data.id : null;
       toast('Cliente creado', 's');
     }
     document.getElementById('modalCliente').classList.remove('active');
     await cargarDatos();
+    prAlVolverDeCliente(); // si se estaba creando desde el pedido rápido, vuelve a él
   } catch(e){
     msg.className='modal-msg error'; msg.textContent = 'Error al guardar: ' + e.message;
   }
@@ -923,6 +971,7 @@ function actualizarTotalFactura(){
 
 function abrirNuevaFactura(){
   editingFacturaId = null;
+  PR_TEXTO_ORIGINAL = null; PR_ORIGEN = 'manual';
   NF_ITEMS = [{producto_id:null, descripcion:'', cantidad:1, precio:0}];
   document.getElementById('modalFacturaTitle').textContent = 'Nueva factura';
   // llenar clientes
@@ -959,7 +1008,7 @@ function abrirEditarFactura(facturaId){
   document.getElementById('nfMsg').textContent = '';
   // cargar los items existentes
   NF_ITEMS = itemsDeFactura(facturaId).map(function(it){
-    return {producto_id: it.producto_id, descripcion: it.descripcion, cantidad: parseFloat(it.cantidad)||1, precio: parseFloat(it.precio_unitario)||0};
+    return {producto_id: it.producto_id, descripcion: it.descripcion, cantidad: parseFloat(it.cantidad)||1, precio: parseFloat(it.precio_unitario)||0, costo_unitario: it.costo_unitario != null ? parseFloat(it.costo_unitario) : null};
   });
   if(NF_ITEMS.length === 0) NF_ITEMS = [{producto_id:null, descripcion:'', cantidad:1, precio:0}];
   renderItems();
@@ -1001,7 +1050,7 @@ async function guardarFactura(){
       var di = await sb.from('may_factura_items').delete().eq('factura_id', editingFacturaId);
       if(di.error) throw di.error;
       var itemsEd = items.map(function(it){
-        return { factura_id: editingFacturaId, producto_id: it.producto_id || null, descripcion: it.descripcion, cantidad: it.cantidad || 1, precio_unitario: it.precio, subtotal: (it.cantidad||1) * it.precio };
+        return { factura_id: editingFacturaId, producto_id: it.producto_id || null, descripcion: it.descripcion, cantidad: it.cantidad || 1, precio_unitario: it.precio, subtotal: (it.cantidad||1) * it.precio, costo_unitario: it.costo_unitario != null ? it.costo_unitario : null };
       });
       var rie = await sb.from('may_factura_items').insert(itemsEd);
       if(rie.error) throw rie.error;
@@ -1025,7 +1074,9 @@ async function guardarFactura(){
       monto_pagado: 0,
       estado: 'pendiente',
       notas: document.getElementById('nfNotas').value.trim() || null,
-      creado_por: CURRENT_USER.id
+      creado_por: CURRENT_USER.id,
+      origen: PR_ORIGEN,                 // 'manual' o 'pedido_rapido'
+      texto_pedido: PR_TEXTO_ORIGINAL    // el pedido tal cual se pegó (para estadísticas y auditoría)
     };
     var rf = await sb.from('may_facturas').insert(facturaData).select().single();
     if(rf.error) throw rf.error;
@@ -1038,7 +1089,8 @@ async function guardarFactura(){
         descripcion: it.descripcion,
         cantidad: it.cantidad || 1,
         precio_unitario: it.precio,
-        subtotal: (it.cantidad||1) * it.precio
+        subtotal: (it.cantidad||1) * it.precio,
+        costo_unitario: it.costo_unitario != null ? it.costo_unitario : null // costo al momento de vender (ganancia)
       };
     });
     var ri = await sb.from('may_factura_items').insert(itemsData);
@@ -1058,9 +1110,484 @@ async function guardarFactura(){
     }
     document.getElementById('modalFactura').classList.remove('active');
     renderFacturas();
+    // Ofrecer mandar al grupo del cliente la factura con el saldo total de su cuenta
+    var mEnv = mensajeFacturaConSaldo(facturaId);
+    if(mEnv) abrirEnviar(mEnv.texto, mEnv.telefono);
   } catch(e){
     msg.className='modal-msg error'; msg.textContent = 'Error al guardar: ' + e.message;
   }
+}
+
+// ===== PEDIDO RÁPIDO (pegar el pedido tal cual está en Notas del iPhone) =====
+// Kinan escribe los pedidos en Notas: "Pedido PEDRAZA 30.09" y una línea por producto
+// ("2 - Congelador Mystic 200lt 215×2 =430"). Aquí se pega ese texto, se interpreta,
+// se enlaza cada línea al catálogo (inv_productos) y se pasa a NF_ITEMS de la factura normal.
+var PR_ESTADO = null;            // resultado de la última interpretación
+var PR_INDICE = null;            // índice de tokens del catálogo activo (se arma la primera vez)
+var PR_MARCAS = null;            // palabras que el catálogo escribe en MAYÚSCULAS (marcas)
+var PR_VOLVER_A_PEDIDO = false;  // true mientras se crea un cliente desde el pedido rápido
+var ULTIMO_CLIENTE_CREADO = null;
+var PR_TEXTO_ORIGINAL = null;    // texto pegado, se guarda en may_facturas.texto_pedido
+var PR_ORIGEN = 'manual';        // 'manual' | 'pedido_rapido'
+
+// PR-PURO-INICIO (parser + reconocimiento, sin DOM: se prueba aparte en Node)
+var PR_VACIAS = ['de','con','y','el','la','los','las','para','en','a','c','del','un','una'];
+var PR_SINONIMOS = {aut:'automatica',automatico:'automatica',automaticas:'automatica',automaticos:'automatica',
+  vent:'ventana',tele:'tv',televisor:'tv',refri:'nevera',refrigerador:'nevera',congeladora:'congelador',
+  lic:'licuadora',cong:'congelador',lav:'lavadora',hornilla:'h',hornillas:'h'};
+// Palabras en MAYÚSCULAS del catálogo que NO son marcas
+var PR_COLORES = {blanco:1,blanca:1,negro:1,negra:1,gris:1,rojo:1,roja:1,azul:1,verde:1,plateado:1,plateada:1,dorado:1,dorada:1,silver:1,black:1,nero:1,inox:1,cromado:1,cromada:1};
+var PR_NO_MARCAS = {};
+['btu','tv','nuevo','modelo','ton','con','sin','usb','led','hd','fhd','uhd','qled','plus','mini','max','pro','profesional','acero','aire','azul','barra','black','blanca','blanco','congelador','lavadora','olla','doble','dual','duo','electric','electronic','elite','espejo','full','general','gris','hogar','home','hood','inox','inverter','junior','lite','lt','luxury','maxi','mil','negra','negro','nero','piso','pl','premium','recargable','rojo','verde','silver','sencillo','split','standart','sub','techo','tetra','tina','touch','vertical','vidrio','woofer','secretaria','sencillo'].forEach(function(w){ PR_NO_MARCAS[w] = 1; });
+
+function prNumero(s){
+  s = String(s == null ? '' : s).replace(/[$\s]/g,'');
+  if(!s) return null;
+  if(s.indexOf(',') >= 0 && s.indexOf('.') >= 0){
+    // el último separador es el decimal
+    if(s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g,'').replace(',','.');
+    else s = s.replace(/,/g,'');
+  } else if(s.indexOf(',') >= 0){
+    s = (/^\d{1,3}(,\d{3})+$/.test(s)) ? s.replace(/,/g,'') : s.replace(',','.');
+  }
+  var n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+// Limpia el texto pegado o dictado y devuelve las líneas útiles
+function prPrepararTexto(txt){
+  var t = String(txt || '').replace(/\r/g,'').replace(/ /g,' ')
+    .replace(/(\d)\s*d[oó]lares?\b/gi, '$1$')       // "195 dólares" → "195$"
+    .replace(/(\d)\s*litros?\b/gi, '$1lt')           // "200 litros" → "200lt"
+    .replace(/(\d)\s*kilos?\b/gi, '$1kg')            // "9 kilos" → "9kg"
+    .replace(/(\d)\s*por\s*(\d)/gi, '$1×$2')         // "215 por 2" → "215×2"
+    .replace(/\bigual(?:\s+a)?\s*(?=\$?\s*\d)/gi, '= ') // "igual 430" → "= 430"
+    .replace(/^\s*pedido\s+de\s+/i, 'Pedido ');
+  var lineas = t.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  var out = [];
+  for(var i = 0; i < lineas.length; i++){
+    var l = lineas[i];
+    // Notas parte "215×2" / "=430" en dos líneas al copiar: se vuelven a unir
+    if(out.length && /^=?\s*\$?\s*\d+(?:[.,]\d+)?\s*\$?$/.test(l) && /[×x\*]\s*\d+\s*=?$/i.test(out[out.length-1])){ out[out.length-1] += ' ' + l; continue; }
+    if(out.length && l === '=' ){ out[out.length-1] += ' ='; continue; }
+    out.push(l);
+  }
+  return out;
+}
+
+function prParsearCabecera(l){
+  var m = /^pedido\s+(.+?)(?:\s+(\d{1,2})[.\/-](\d{1,2})(?:[.\/-](\d{2,4}))?)?\.?\s*$/i.exec(l);
+  if(!m) return null;
+  var cab = { textoOriginal: l, nombre: m[1].replace(/[\s.\-–—:]+$/,'').trim(), fecha: null };
+  if(m[2]){
+    var dd = parseInt(m[2],10), mm = parseInt(m[3],10), hoy = new Date();
+    var yy = m[4] ? parseInt(m[4],10) : hoy.getFullYear();
+    if(yy < 100) yy += 2000;
+    if(dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12){
+      // sin año: si la fecha cae más de 45 días en el futuro, era del año pasado
+      if(!m[4] && (new Date(yy, mm-1, dd).getTime() - hoy.getTime()) > 45*86400000) yy--;
+      cab.fecha = yy + '-' + (mm < 10 ? '0' : '') + mm + '-' + (dd < 10 ? '0' : '') + dd;
+    }
+  }
+  return cab;
+}
+
+var PR_RE_ITEM = /^(\d{1,4})\s*(?:[-–—)]\s*|\.(?!\d)\s*|\s+)(\S.*)$/;
+// Una línea "cant - descripción precio" → {cantidad, descripcion, precioNota, ...}
+function prParsearLinea(l){
+  var cantidad = 1, resto = l, sinCantidad = false;
+  var m = PR_RE_ITEM.exec(l);
+  if(m){ cantidad = parseInt(m[1],10) || 1; resto = m[2].trim(); }
+  else { if(!/[a-záéíóúñ]{3,}/i.test(l)) return null; sinCantidad = true; }
+  var it = { textoOriginal: l, cantidad: cantidad, descripcion: resto, precioNota: null, precioSinSimbolo: false, mult: null, totalLinea: null, avisos: [] };
+  if(sinCantidad) it.avisos.push('Sin cantidad al inicio: se asumió 1.');
+  var mB = /^(.*?)\s*\$?\s*(\d+(?:[.,]\d{1,2})?)\s*\$?\s*[×x\*]\s*(\d+)\s*(?:=\s*\$?\s*(\d+(?:[.,]\d{1,2})?)\s*\$?)?\s*$/i.exec(resto);
+  if(mB){
+    it.descripcion = mB[1]; it.precioNota = prNumero(mB[2]); it.mult = parseInt(mB[3],10); it.totalLinea = mB[4] ? prNumero(mB[4]) : null;
+    if(it.mult !== cantidad) it.avisos.push('La nota dice ×' + it.mult + ' pero la cantidad es ' + cantidad + ' (se usa ' + cantidad + ').');
+    if(it.totalLinea != null && Math.abs(it.precioNota * cantidad - it.totalLinea) > 0.01)
+      it.avisos.push('La cuenta no da: ' + it.precioNota + '×' + cantidad + ' = ' + (Math.round(it.precioNota*cantidad*100)/100) + ', la nota dice ' + it.totalLinea + '.');
+  } else {
+    var mA = /^(.*?)\s*(\d+(?:[.,]\d{1,2})?)\s*(?:\$|usd)\s*$/i.exec(resto) || /^(.*?)\s*\$\s*(\d+(?:[.,]\d{1,2})?)\s*$/.exec(resto);
+    if(mA){ it.descripcion = mA[1]; it.precioNota = prNumero(mA[2]); }
+    else {
+      // número suelto al final (típico de dictado): solo si la descripción tiene 2+ palabras
+      var mC = /^(.*\S)\s+(\d{2,5}(?:[.,]\d{1,2})?)$/.exec(resto);
+      if(mC && mC[1].trim().split(/\s+/).length >= 2){ it.descripcion = mC[1]; it.precioNota = prNumero(mC[2]); it.precioSinSimbolo = true; it.avisos.push('Precio sin $: revisar.'); }
+    }
+  }
+  it.descripcion = it.descripcion.replace(/[\s\-–—.,;:]+$/,'').replace(/\s+/g,' ').trim();
+  if(!it.descripcion) return null;
+  return it;
+}
+
+function prParsearPedido(texto){
+  var lineas = prPrepararTexto(texto);
+  var res = { cabecera: null, totalNota: null, lineas: [], avisos: [] };
+  for(var i = 0; i < lineas.length; i++){
+    var l = lineas[i];
+    if(!res.cabecera && !res.lineas.length){ var cab = prParsearCabecera(l); if(cab){ res.cabecera = cab; continue; } }
+    var mT = /^total\b[^\d]*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*\$?\s*$/i.exec(l);
+    if(mT){ res.totalNota = prNumero(mT[1]); continue; }
+    var it = prParsearLinea(l);
+    if(it){ it.orden = res.lineas.length; res.lineas.push(it); }
+    else res.avisos.push('No entendí la línea: "' + l + '"');
+  }
+  return res;
+}
+
+// Tokens comparables de una descripción (misma función para el pedido y para el catálogo)
+function prTokens(txt){
+  var t = normalizar(txt);
+  t = t.replace(/(\d+)[.,]000\s*btu/g, '$1btu')          // 12.000Btu
+       .replace(/(\d+)\s*mil\s*btu/g, '$1btu')             // 12milBTU / 12 mil BTU
+       .replace(/(\d+)\s*mil\b/g, '$1btu')                 // "12mil" solo
+       .replace(/(\d+)\s*btu/g, '$1btu')
+       .replace(/(\d+(?:[.,]\d+)?)\s*(?:lts?|litros?|l)\b/g, function(m,n){ return n.replace(',','.') + 'l'; })
+       .replace(/(\d+(?:[.,]\d+)?)\s*(?:kgs?|kilos?)\b/g, function(m,n){ return n.replace(',','.') + 'kg'; })
+       .replace(/(\d+)\s*(?:vel|velocidades?)\b/g, '$1vel')
+       .replace(/(\d+)\s*(?:v|volt(?:ios)?)\b/g, '$1v')
+       .replace(/(\d+)\s*(?:h|hornillas?)\b/g, '$1h')
+       .replace(/(\d+)\s*(?:ton|toneladas?)\b/g, '$1ton')
+       .replace(/(\d+)\s*(?:w|watts?)\b/g, '$1w')
+       .replace(/(\d+)\s*cm\b/g, '$1cm')
+       .replace(/(\d+)\s*(?:pl\b|pulg(?:adas?)?\b|''|´|`|'|"|¨)/g, '$1')   // pulgadas: queda el número solo
+       .replace(/[^a-z0-9\s]/g, ' ');
+  var vistos = {}, out = [];
+  t.split(/\s+/).forEach(function(w){
+    if(!w) return;
+    if(PR_SINONIMOS[w]) w = PR_SINONIMOS[w];
+    else if(/^[a-z]+$/.test(w) && w.length > 4 && /s$/.test(w)) w = w.replace(/es$|s$/,''); // sillas → silla
+    if(PR_VACIAS.indexOf(w) >= 0 || vistos[w]) return;
+    vistos[w] = 1; out.push(w);
+  });
+  return out;
+}
+function prEsNumerico(tok){ var m = /^(\d+(?:\.\d+)?)([a-z]*)$/.exec(tok); return m ? { n: parseFloat(m[1]), u: m[2] } : null; }
+function prCoincideToken(a, b){
+  if(a === b) return true;
+  if(prEsNumerico(a) || prEsNumerico(b)) return false;
+  if(a.length < 4 || b.length < 4) return false;
+  return (a.indexOf(b) === 0 || b.indexOf(a) === 0) && Math.abs(a.length - b.length) <= 3;
+}
+function prConstruirIndice(){
+  PR_INDICE = []; PR_MARCAS = {};
+  (CATALOGO || []).forEach(function(p){
+    if(!p || !p.descripcion) return;
+    String(p.descripcion).split(/\s+/).forEach(function(w){
+      if(/^[A-ZÁÉÍÓÚÑ]{2,}$/.test(w)){ var tk = prTokens(w)[0]; if(tk && !prEsNumerico(tk) && !PR_NO_MARCAS[tk]) PR_MARCAS[tk] = true; }
+    });
+    if(p.activo === false) return;
+    PR_INDICE.push({ p: p, toks: prTokens(p.descripcion) });
+  });
+}
+// Busca en el catálogo los productos que pueden ser esta línea. Devuelve {estado, candidatos}
+function prBuscarCandidatos(descripcion){
+  if(!PR_INDICE) prConstruirIndice();
+  var Q = prTokens(descripcion);
+  if(!Q.length) return { estado: 'libre', candidatos: [] };
+  var nucleo = Q.filter(function(t){ return !prEsNumerico(t); }).slice(0, 2);
+  var marcas = Q.filter(function(t){ return PR_MARCAS[t]; });
+  var numericos = Q.filter(function(t){ return prEsNumerico(t); });
+  var cands = [];
+  for(var i = 0; i < PR_INDICE.length; i++){
+    var toks = PR_INDICE[i].toks, p = PR_INDICE[i].p, ok = true, j, k, aprox = false;
+    // (a) el núcleo (tipo + primer rasgo) tiene que estar
+    for(j = 0; j < nucleo.length && ok; j++){ var hay = false; for(k = 0; k < toks.length; k++) if(prCoincideToken(nucleo[j], toks[k])){ hay = true; break; } if(!hay) ok = false; }
+    if(!ok) continue;
+    // (b) toda marca del pedido tiene que estar
+    for(j = 0; j < marcas.length && ok; j++) if(toks.indexOf(marcas[j]) < 0) ok = false;
+    if(!ok) continue;
+    // (c) un número con la misma unidad y distinto valor descarta (9kg ≠ 19kg, 110v ≠ 220v); litros/kilos admiten ±10% pero marcan "aproximado"
+    for(j = 0; j < numericos.length && ok; j++){
+      var q = prEsNumerico(numericos[j]);
+      for(k = 0; k < toks.length; k++){
+        var c = prEsNumerico(toks[k]);
+        if(!c || c.u !== q.u || c.n === q.n) continue;
+        if((q.u === 'l' || q.u === 'kg') && Math.abs(c.n - q.n) / q.n <= 0.10){ aprox = true; continue; }
+        ok = false; break;
+      }
+    }
+    if(!ok) continue;
+    // (d) color distinto (blanco vs gris): se propone, pero nunca se enlaza solo
+    var colQ = Q.filter(function(t){ return PR_COLORES[t]; }), colP = toks.filter(function(t){ return PR_COLORES[t]; });
+    if(colQ.length && colP.length && !colQ.some(function(t){ return colP.indexOf(t) >= 0; })) aprox = true;
+    var cubiertos = 0, cubre = {};
+    for(j = 0; j < Q.length; j++){
+      var tq = Q[j], qn = prEsNumerico(tq), hit = false;
+      for(k = 0; k < toks.length; k++){
+        var tc = toks[k];
+        if(qn){ var cn = prEsNumerico(tc); if(cn && cn.u === qn.u){ if(cn.n === qn.n){ hit = true; cubre[tc] = 1; } else if((qn.u === 'l' || qn.u === 'kg') && Math.abs(cn.n - qn.n) / qn.n <= 0.10){ hit = true; /* aproximado: se deja como "distinto" para que el chip muestre el litraje real */ } } }
+        else if(prCoincideToken(tq, tc)){ hit = true; cubre[tc] = 1; }
+        if(hit) break;
+      }
+      if(hit) cubiertos++;
+    }
+    var extras = toks.filter(function(t){ return !cubre[t]; });
+    var puntaje = cubiertos / Q.length - Math.min(0.3, 0.05 * extras.length);
+    cands.push({ pid: p.id, descripcion: p.descripcion, precio: p.precio_usd != null ? parseFloat(p.precio_usd) : null, costo: p.costo_usd != null ? parseFloat(p.costo_usd) : null, puntaje: puntaje, aprox: aprox, extras: extras });
+  }
+  cands.sort(function(a, b){ return b.puntaje - a.puntaje || (a.precio || 0) - (b.precio || 0); });
+  var exactos = cands.filter(function(c){ return !c.aprox && c.puntaje >= 0.45; });
+  if(exactos.length){
+    var top = exactos[0];
+    var empatados = exactos.filter(function(c){ return c.puntaje >= top.puntaje - 0.1; });
+    if(empatados.length === 1 && top.puntaje >= 0.7) return { estado: 'ok', candidatos: [top] };
+    return { estado: 'elegir', candidatos: empatados.slice(0, 4) };
+  }
+  var aproximados = cands.filter(function(c){ return c.aprox && c.puntaje >= 0.45; });
+  if(aproximados.length) return { estado: 'elegir', candidatos: aproximados.slice(0, 4) };
+  return { estado: 'libre', candidatos: [] };
+}
+// PR-PURO-FIN
+
+// Palabras del producto que NO están en el pedido, con su escritura original y los números (248L, 110v) primero
+function prPalabrasDistintas(c){
+  if(!c.extras || !c.extras.length) return c.descripcion;
+  var ex = {}; c.extras.forEach(function(t){ ex[t] = 1; });
+  var nums = [], otras = [];
+  String(c.descripcion).split(/\s+/).forEach(function(w){
+    var t = prTokens(w)[0]; if(!t || !ex[t]) return;
+    (prEsNumerico(t) ? nums : otras).push(w.replace(/[,.]+$/, ''));
+  });
+  var lista = nums.concat(otras);
+  return lista.length ? lista.join(' ') : c.descripcion;
+}
+function prEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function prMsg(texto, esError){ var m = document.getElementById('prMsg'); m.className = 'modal-msg' + (esError ? ' error' : ' ok'); m.textContent = texto || ''; }
+
+// Precio pactado con este cliente para un producto del catálogo (lo usa también el buscador)
+function precioPactadoPara(cliId, pid){
+  if(!cliId || pid == null) return null;
+  var p = PRECIOS_CLI.find(function(x){ return String(x.cliente_id) === String(cliId) && String(x.producto_id) === String(pid); });
+  return p ? parseFloat(p.precio) : null;
+}
+// Precio de una línea: la nota manda → pactado → catálogo → nada
+function prPrecioPorDefecto(l, cliId){
+  if(l.precioNota != null){ l.precio = l.precioNota; l.origenPrecio = 'nota'; return; }
+  if(l.producto_id != null){
+    var pact = precioPactadoPara(cliId, l.producto_id);
+    if(pact != null){ l.precio = pact; l.origenPrecio = 'pactado'; return; }
+    var c = l.candidatos.find(function(x){ return x.pid === l.producto_id; });
+    if(c && c.precio != null){ l.precio = c.precio; l.origenPrecio = 'catalogo'; return; }
+  }
+  l.precio = null; l.origenPrecio = '';
+}
+function prClasificarLinea(l, cliId){
+  var r = prBuscarCandidatos(l.descripcion);
+  l.estadoMatch = r.estado; l.candidatos = r.candidatos;
+  l.producto_id = (r.estado === 'ok') ? r.candidatos[0].pid : null;
+  l.descripcionFinal = l.producto_id != null ? r.candidatos[0].descripcion : l.descripcion;
+  l.costo_unitario = l.producto_id != null ? r.candidatos[0].costo : null;
+  l.precioEditado = false;
+  prPrecioPorDefecto(l, cliId);
+}
+function prEstadoFila(l){
+  if(!(l.precio > 0)) return 'falta';
+  if(l.producto_id != null) return 'ok';
+  return l.estadoMatch === 'elegir' ? 'elegir' : 'libre';
+}
+function prDetectarCliente(nombre){
+  if(!nombre) return null;
+  var n = prTokens(nombre);
+  if(!n.length) return null;
+  var hits = CLIENTES.filter(function(c){
+    var ct = prTokens(c.nombre || '');
+    return n.every(function(t){ return ct.some(function(x){ return prCoincideToken(t, x); }); }) ||
+           (ct.length && ct.every(function(t){ return n.some(function(x){ return prCoincideToken(t, x); }); }));
+  });
+  return hits.length === 1 ? hits[0].id : null;
+}
+function prTitulo(s){ return String(s || '').toLowerCase().replace(/(^|\s)(\S)/g, function(m, a, b){ return a + b.toUpperCase(); }); }
+
+function abrirPedidoRapido(){
+  if(!document.getElementById('modalFactura').classList.contains('active')) abrirNuevaFactura();
+  document.getElementById('prTexto').value = '';
+  document.getElementById('prVista').innerHTML = '';
+  document.getElementById('prAplicar').disabled = true;
+  prMsg('');
+  PR_ESTADO = null;
+  document.getElementById('modalPedidoRapido').classList.add('active');
+  setTimeout(function(){ document.getElementById('prTexto').focus(); }, 100);
+}
+function abrirPedidoRapidoDirecto(){ abrirNuevaFactura(); abrirPedidoRapido(); }
+function cerrarPedidoRapido(){ document.getElementById('modalPedidoRapido').classList.remove('active'); }
+
+function prInterpretar(){
+  var texto = document.getElementById('prTexto').value;
+  if(!texto.trim()){ prMsg('Pega o dicta el pedido primero.', true); return; }
+  var res = prParsearPedido(texto);
+  if(!res.lineas.length){ prMsg('No encontré líneas con cantidad y producto. Ejemplo: "2 - Congelador Mystic 200lt 215×2 =430".', true); return; }
+  res.textoOriginal = texto;
+  res.clienteId = (res.cabecera && prDetectarCliente(res.cabecera.nombre)) || null;
+  var cliId = res.clienteId || document.getElementById('nfCliente').value || null;
+  res.lineas.forEach(function(l){ prClasificarLinea(l, cliId); });
+  PR_ESTADO = res;
+  prMsg('');
+  prRenderVistaPrevia();
+}
+
+function prRenderVistaPrevia(){
+  var cont = document.getElementById('prVista');
+  if(!PR_ESTADO){ cont.innerHTML = ''; return; }
+  var E = PR_ESTADO, html = '';
+  // Cabecera: cliente y fecha
+  var cliSel = E.clienteId ? CLIENTES.find(function(c){ return c.id === E.clienteId; }) : null;
+  var cabHtml = '';
+  if(cliSel) cabHtml += '<div><span style="color:var(--muted);">Cliente:</span> <b style="color:var(--green-soft);">' + prEsc(cliSel.nombre) + '</b></div>';
+  else if(E.cabecera && E.cabecera.nombre) cabHtml += '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"><span style="color:var(--orange);">Cliente "' + prEsc(E.cabecera.nombre) + '" no existe.</span><button type="button" class="btn btn-ghost" id="prCrearCliente" style="padding:6px 12px; font-size:12px;">Crear cliente ' + prEsc(prTitulo(E.cabecera.nombre)) + '</button><span style="color:var(--muted); font-size:12px;">Si no lo creas, se usa el cliente elegido en la factura.</span></div>';
+  else cabHtml += '<div style="color:var(--muted);">Sin nombre de cliente en el texto: se usa el de la factura.</div>';
+  cabHtml += '<div><span style="color:var(--muted);">Fecha:</span> ' + (E.cabecera && E.cabecera.fecha ? fmtDate(E.cabecera.fecha) : 'hoy') + '</div>';
+  html += '<div class="pr-cab">' + cabHtml + '</div>';
+  // Filas
+  E.lineas.forEach(function(l, i){
+    var est = prEstadoFila(l);
+    var estadoTxt = '';
+    if(est === 'ok'){ var cOk = l.candidatos.find(function(x){ return x.pid === l.producto_id; }); estadoTxt = 'Catálogo: ' + prEsc(cOk ? cOk.descripcion : l.descripcionFinal) + (l.agregado ? ' (agregado)' : ''); }
+    else if(est === 'elegir') estadoTxt = (l.candidatos[0] && l.candidatos[0].aprox) ? 'Litraje parecido en el catálogo. ¿Es alguno de estos?' : 'Elige la versión (' + l.candidatos.length + ' en el catálogo):';
+    else if(est === 'libre') estadoTxt = 'No está en el catálogo: se factura como texto libre.';
+    else estadoTxt = 'Falta el precio. Escríbelo o quita la línea.';
+    var chips = '';
+    if(est === 'elegir'){
+      chips = '<div class="pr-chips">' + l.candidatos.map(function(c){
+        var dif = prPalabrasDistintas(c);
+        return '<button type="button" class="method-opt pr-chip" data-i="' + i + '" data-pid="' + c.pid + '"><b>' + prEsc(dif.length > 42 ? dif.substring(0, 42) + '…' : dif) + '</b><small>' + prEsc(c.descripcion.length > 48 ? c.descripcion.substring(0, 48) + '…' : c.descripcion) + (c.precio != null ? ' · ' + fmt(c.precio) : '') + '</small></button>';
+      }).join('') + '<button type="button" class="method-opt pr-chip active" data-i="' + i + '" data-pid=""><b>Texto libre</b><small>como está escrito</small></button></div>';
+    }
+    var origen = l.origenPrecio === 'nota' ? 'precio de la nota' : l.origenPrecio === 'pactado' ? 'precio pactado con el cliente' : l.origenPrecio === 'catalogo' ? 'precio del catálogo' : l.origenPrecio === 'manual' ? 'precio escrito aquí' : '';
+    var cCat = l.producto_id != null ? l.candidatos.find(function(x){ return x.pid === l.producto_id; }) : null;
+    if(cCat && cCat.precio != null && l.precio != null && Math.abs(cCat.precio - l.precio) > 0.01) origen += ' · catálogo ' + fmt(cCat.precio);
+    var avisos = (l.avisos || []).map(function(a){ return '<div class="pr-aviso">' + prEsc(a) + '</div>'; }).join('');
+    html += '<div class="pr-fila pr-' + est + '" data-i="' + i + '">' +
+      '<div class="pr-fila-top"><input type="number" class="pr-cant" data-i="' + i + '" value="' + l.cantidad + '" min="1" inputmode="numeric" aria-label="Cantidad">' +
+        '<span class="pr-desc">' + prEsc(l.descripcion) + '</span>' +
+        '<button type="button" class="pr-quitar" data-i="' + i + '" aria-label="Quitar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>' +
+      '<div class="pr-estado">' + estadoTxt + '</div>' + chips +
+      '<div class="pr-fila-bot"><label>Precio c/u<input type="number" class="pr-precio" data-i="' + i + '" value="' + (l.precio != null ? l.precio : '') + '" step="0.01" min="0" inputmode="decimal"></label>' +
+        '<span class="pr-origen">' + prEsc(origen) + '</span><span class="pr-sub" id="prSub' + i + '">' + fmt((l.cantidad || 1) * (l.precio || 0)) + '</span>' +
+        (est === 'libre' || (est === 'elegir' && l.producto_id == null) ? '<button type="button" class="btn btn-ghost pr-agregar" data-i="' + i + '">Agregar al catálogo</button>' : '') +
+      '</div>' + avisos + '</div>';
+  });
+  html += '<div class="pr-total"><span style="font-size:14px; color:var(--text-2);">Total calculado · ' + E.lineas.length + ' línea' + (E.lineas.length === 1 ? '' : 's') + '</span><span class="v" id="prTotalV">' + fmt(0) + '</span></div><div class="pr-total-nota" id="prTotalNota"></div>';
+  if(E.avisos.length) html += '<div class="pr-aviso" style="margin-top:8px;">' + E.avisos.map(prEsc).join('<br>') + '</div>';
+  cont.innerHTML = html;
+  prActualizarTotales();
+}
+function prActualizarTotales(){
+  if(!PR_ESTADO) return;
+  var total = 0, faltan = 0;
+  PR_ESTADO.lineas.forEach(function(l, i){
+    var sub = (l.cantidad || 1) * (l.precio || 0); total += sub;
+    if(!(l.precio > 0)) faltan++;
+    var s = document.getElementById('prSub' + i); if(s) s.textContent = fmt(sub);
+  });
+  var v = document.getElementById('prTotalV'); if(v) v.textContent = fmt(total);
+  var n = document.getElementById('prTotalNota');
+  if(n){
+    if(PR_ESTADO.totalNota != null){
+      var dif = Math.round((total - PR_ESTADO.totalNota) * 100) / 100;
+      n.className = 'pr-total-nota ' + (Math.abs(dif) <= 0.01 ? 'ok' : 'mal');
+      n.textContent = Math.abs(dif) <= 0.01 ? 'Coincide con el total de la nota (' + fmt(PR_ESTADO.totalNota) + ').' : 'La nota dice ' + fmt(PR_ESTADO.totalNota) + ': diferencia de ' + (dif > 0 ? '+' : '-') + fmt(dif) + '.';
+    } else { n.className = 'pr-total-nota'; n.textContent = ''; }
+  }
+  var btn = document.getElementById('prAplicar');
+  btn.disabled = !PR_ESTADO.lineas.length || faltan > 0;
+  btn.textContent = faltan > 0 ? faltan + ' sin precio' : 'Pasar a la factura';
+}
+function prElegirCandidato(i, pid){
+  var l = PR_ESTADO.lineas[i]; if(!l) return;
+  var c = pid ? l.candidatos.find(function(x){ return String(x.pid) === String(pid); }) : null;
+  l.producto_id = c ? c.pid : null;
+  l.descripcionFinal = c ? c.descripcion : l.descripcion;
+  l.costo_unitario = c ? c.costo : null;
+  if(!l.precioEditado) prPrecioPorDefecto(l, PR_ESTADO.clienteId || document.getElementById('nfCliente').value);
+  prRenderVistaPrevia();
+}
+function prQuitarLinea(i){ PR_ESTADO.lineas.splice(i, 1); prRenderVistaPrevia(); }
+async function prAgregarAlCatalogo(i, btn){
+  var l = PR_ESTADO.lineas[i]; if(!l) return;
+  if(!(l.precio > 0)){ prMsg('Escribe el precio de "' + l.descripcion + '" antes de agregarla al catálogo.', true); return; }
+  btn.disabled = true; btn.textContent = 'Agregando...';
+  try {
+    var r = await sb.from('inv_productos').insert({ descripcion: l.descripcion, precio_usd: l.precio, categoria: categoriaSugerida(l.descripcion), activo: true, codigo_valery: null })
+      .select('id, descripcion, precio_usd, costo_usd, categoria, activo, codigo_valery').single();
+    if(r.error) throw r.error;
+    CATALOGO.push(r.data); PR_INDICE = null;
+    l.candidatos = [{ pid: r.data.id, descripcion: r.data.descripcion, precio: parseFloat(r.data.precio_usd), costo: null, puntaje: 1, aprox: false, extras: [] }];
+    l.estadoMatch = 'ok'; l.producto_id = r.data.id; l.descripcionFinal = r.data.descripcion; l.costo_unitario = null; l.agregado = true;
+    toast('Producto agregado al catálogo', 's');
+    prRenderVistaPrevia();
+  } catch(e){
+    btn.disabled = false; btn.textContent = 'Agregar al catálogo';
+    toast('No se pudo agregar: ' + e.message, 'e');
+  }
+}
+// Categoría más común entre los productos que empiezan igual ("Aire de ventana" → AIRES-01)
+function categoriaSugerida(descripcion){
+  var q = prTokens(descripcion).filter(function(t){ return !prEsNumerico(t); }).slice(0, 2);
+  if(!q.length) return null;
+  var cuenta = {};
+  (CATALOGO || []).forEach(function(p){
+    if(p.activo === false || !p.categoria) return;
+    var t = prTokens(p.descripcion).filter(function(x){ return !prEsNumerico(x); }).slice(0, q.length);
+    if(t.length === q.length && q.every(function(x, k){ return prCoincideToken(x, t[k]); })) cuenta[p.categoria] = (cuenta[p.categoria] || 0) + 1;
+  });
+  var mejor = null; Object.keys(cuenta).forEach(function(k){ if(!mejor || cuenta[k] > cuenta[mejor]) mejor = k; });
+  return mejor;
+}
+function prCrearCliente(){
+  if(!PR_ESTADO || !PR_ESTADO.cabecera) return;
+  PR_VOLVER_A_PEDIDO = true;
+  document.getElementById('modalPedidoRapido').classList.remove('active');
+  abrirNuevoCliente();
+  document.getElementById('ncNombre').value = prTitulo(PR_ESTADO.cabecera.nombre);
+}
+function prAlVolverDeCliente(){
+  if(!PR_VOLVER_A_PEDIDO) return;
+  PR_VOLVER_A_PEDIDO = false;
+  if(ULTIMO_CLIENTE_CREADO && PR_ESTADO){
+    PR_ESTADO.clienteId = ULTIMO_CLIENTE_CREADO;
+    PR_ESTADO.lineas.forEach(function(l){ if(!l.precioEditado && l.origenPrecio !== 'nota') prPrecioPorDefecto(l, PR_ESTADO.clienteId); });
+  }
+  ULTIMO_CLIENTE_CREADO = null;
+  document.getElementById('modalPedidoRapido').classList.add('active');
+  prRenderVistaPrevia();
+}
+function aplicarPedidoRapido(){
+  if(!PR_ESTADO) return;
+  var faltan = PR_ESTADO.lineas.filter(function(l){ return !(l.precio > 0); });
+  if(faltan.length){ prMsg('Hay ' + faltan.length + ' línea(s) sin precio. Escríbelo o quítala antes de pasar a la factura.', true); return; }
+  var nuevos = PR_ESTADO.lineas.map(function(l){
+    return { producto_id: l.producto_id != null ? l.producto_id : null, descripcion: l.descripcionFinal || l.descripcion, cantidad: l.cantidad || 1, precio: l.precio, costo_unitario: l.costo_unitario != null ? l.costo_unitario : null };
+  });
+  NF_ITEMS = NF_ITEMS.filter(function(it){ return it.descripcion; }).concat(nuevos);
+  var totalCalc = nuevos.reduce(function(s, it){ return s + it.cantidad * it.precio; }, 0);
+  if(!editingFacturaId){
+    var sel = document.getElementById('nfCliente');
+    var actual = sel.value;
+    sel.innerHTML = CLIENTES.map(function(c){ return '<option value="' + c.id + '">' + c.nombre + '</option>'; }).join('');
+    sel.value = PR_ESTADO.clienteId || actual;
+    if(PR_ESTADO.cabecera && PR_ESTADO.cabecera.fecha) document.getElementById('nfFecha').value = PR_ESTADO.cabecera.fecha;
+    actualizarVencimiento();
+    var nf = document.getElementById('nfNotas');
+    var etiqueta = PR_ESTADO.cabecera ? PR_ESTADO.cabecera.textoOriginal + ' (pegado)' : 'Pedido pegado de Notas';
+    if(PR_ESTADO.totalNota != null && Math.abs(PR_ESTADO.totalNota - totalCalc) > 0.01) etiqueta += ' — total de la nota ' + fmt(PR_ESTADO.totalNota) + ' no coincide';
+    nf.value = nf.value ? nf.value + ' · ' + etiqueta : etiqueta;
+    PR_TEXTO_ORIGINAL = PR_ESTADO.textoOriginal;
+    PR_ORIGEN = 'pedido_rapido';
+  }
+  cerrarPedidoRapido();
+  renderItems();
+  toast(nuevos.length + ' producto' + (nuevos.length === 1 ? '' : 's') + ' pasado' + (nuevos.length === 1 ? '' : 's') + ' a la factura', 's');
+}
+// Mensaje de la factura + saldo total de la cuenta (lo que Kinan manda al grupo del cliente)
+function mensajeFacturaConSaldo(facturaId){
+  var m = mensajeFactura(facturaId);
+  if(!m) return null;
+  var f = FACTURAS.find(function(x){ return x.id === facturaId; });
+  var debe = f ? facturasDeCliente(f.cliente_id).reduce(function(s, x){ return s + saldoFactura(x); }, 0) : 0;
+  m.texto += '\n\n' + (debe > 0.01 ? '*Saldo total de tu cuenta: ' + fmt(debe) + '*' : 'Tu cuenta está al día.');
+  return m;
 }
 
 // ===== RENDER FACTURAS =====
@@ -1838,6 +2365,28 @@ document.getElementById('envCerrar').addEventListener('click', function(){ docum
 document.getElementById('nfCancelar').addEventListener('click', function(){ document.getElementById('modalFactura').classList.remove('active'); });
 protegerBoton('nfGuardar', guardarFactura);
 document.getElementById('nfAddItem').addEventListener('click', function(){ NF_ITEMS.push({producto_id:null, descripcion:'', cantidad:1, precio:0}); renderItems(); });
+// Pedido rápido
+document.getElementById('btnPedidoRapido').addEventListener('click', abrirPedidoRapidoDirecto);
+document.getElementById('nfPegarPedido').addEventListener('click', abrirPedidoRapido);
+document.getElementById('prInterpretar').addEventListener('click', prInterpretar);
+document.getElementById('prCancelar').addEventListener('click', cerrarPedidoRapido);
+document.getElementById('prAplicar').addEventListener('click', aplicarPedidoRapido);
+document.getElementById('prVista').addEventListener('click', function(e){
+  var t = e.target.closest ? e.target.closest('.pr-chip, .pr-quitar, .pr-agregar, #prCrearCliente') : null;
+  if(!t || !PR_ESTADO) return;
+  if(t.classList.contains('pr-chip')) prElegirCandidato(parseInt(t.dataset.i), t.dataset.pid);
+  else if(t.classList.contains('pr-quitar')) prQuitarLinea(parseInt(t.dataset.i));
+  else if(t.classList.contains('pr-agregar')) prAgregarAlCatalogo(parseInt(t.dataset.i), t);
+  else if(t.id === 'prCrearCliente') prCrearCliente();
+});
+document.getElementById('prVista').addEventListener('input', function(e){
+  var el = e.target; if(!PR_ESTADO || !el.dataset || el.dataset.i == null) return;
+  var l = PR_ESTADO.lineas[parseInt(el.dataset.i)]; if(!l) return;
+  if(el.classList.contains('pr-precio')){ l.precio = parseFloat(el.value) || null; l.precioEditado = true; l.origenPrecio = 'manual'; }
+  else if(el.classList.contains('pr-cant')){ l.cantidad = parseInt(el.value, 10) || 1; }
+  var fila = el.closest('.pr-fila'); if(fila) fila.className = 'pr-fila pr-' + prEstadoFila(l);
+  prActualizarTotales();
+});
 document.getElementById('nfCliente').addEventListener('change', actualizarVencimiento);
 document.getElementById('nfFecha').addEventListener('change', actualizarVencimiento);
 document.getElementById('bpInput').addEventListener('input', function(){ bpRender(this.value); });
@@ -1862,7 +2411,7 @@ document.querySelectorAll('#abMetodos .method-opt').forEach(function(btn){
   });
 });
 protegerBoton('abGuardar', guardarAbono);
-document.getElementById('ncCancelar').addEventListener('click', function(){ document.getElementById('modalCliente').classList.remove('active'); });
+document.getElementById('ncCancelar').addEventListener('click', function(){ document.getElementById('modalCliente').classList.remove('active'); prAlVolverDeCliente(); });
 protegerBoton('ncGuardar', guardarCliente);
 document.getElementById('btnNuevoUsuario').addEventListener('click', abrirNuevoUsuario);
 document.getElementById('nuCancelar').addEventListener('click', function(){ document.getElementById('modalUsuario').classList.remove('active'); });
