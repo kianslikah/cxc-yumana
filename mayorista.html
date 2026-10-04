@@ -240,8 +240,10 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
 .pr-estado{font-size:12px; color:var(--text-2); margin-top:6px;}
 .pr-ok .pr-estado{color:var(--green-soft);} .pr-elegir .pr-estado{color:var(--orange);} .pr-falta .pr-estado{color:var(--red-soft);}
 .pr-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
-.pr-chip{flex:1 1 45%; padding:8px 10px; text-align:left; display:flex; flex-direction:column; gap:2px; min-width:0;}
-.pr-chip b{font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;} .pr-chip small{font-size:11px; color:var(--gold); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.pr-chip{flex:1 1 100%; padding:10px 12px; text-align:left; display:flex; flex-direction:column; gap:3px; min-width:0;}
+.pr-chip b{font-size:15px; line-height:1.3; color:var(--text); white-space:normal;} .pr-chip small{font-size:12px; color:var(--gold); white-space:normal;}
+.pr-chip.active b{color:var(--gold-bright);}
+@media(min-width:700px){ .pr-chip{flex:1 1 48%;} }
 .pr-fila-bot{display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap;}
 .pr-fila-bot label{font-size:11px; color:var(--muted); display:flex; flex-direction:column; gap:2px; flex:0 0 110px;}
 .pr-precio{width:100%; padding:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:16px;}
@@ -1156,7 +1158,10 @@ function prNumero(s){
 
 // Limpia el texto pegado o dictado y devuelve las líneas útiles
 function prPrepararTexto(txt){
-  var t = String(txt || '').replace(/\r/g,'').replace(/ /g,' ')
+  var t = String(txt || '').replace(/\r/g,'')
+    .replace(/[\u200b-\u200d\u2060\ufeff]/g, '')               // invisibles (Notas los mete al copiar un cálculo)
+    .replace(/[\u00a0\u2000-\u200a\u202f\u205f\u3000]/g, ' ')  // espacios raros → espacio normal
+    .replace(/[\uff1d\u2a75]/g, '=').replace(/[\u2715\u2a2f\u2716\u0445\u0425]/g, '×').replace(/\u2212/g, '-')
     .replace(/(\d)\s*d[oó]lares?\b/gi, '$1$')       // "195 dólares" → "195$"
     .replace(/(\d)\s*litros?\b/gi, '$1lt')           // "200 litros" → "200lt"
     .replace(/(\d)\s*kilos?\b/gi, '$1kg')            // "9 kilos" → "9kg"
@@ -1207,9 +1212,32 @@ function prParsearLinea(l){
     if(it.mult !== cantidad) it.avisos.push('La nota dice ×' + it.mult + ' pero la cantidad es ' + cantidad + ' (se usa ' + cantidad + ').');
     if(it.totalLinea != null && Math.abs(it.precioNota * cantidad - it.totalLinea) > 0.01)
       it.avisos.push('La cuenta no da: ' + it.precioNota + '×' + cantidad + ' = ' + (Math.round(it.precioNota*cantidad*100)/100) + ', la nota dice ' + it.totalLinea + '.');
+  } else if(/=/.test(resto)){
+    // Hay un "=": lo que sigue al último "=" es el TOTAL, nunca el precio unitario (caso "30×3=90" calculado por Notas)
+    var pos = resto.lastIndexOf('=');
+    var antes = resto.substring(0, pos).trim(), despues = resto.substring(pos + 1).trim();
+    var mTot = /^\$?\s*(\d+(?:[.,]\d{1,2})?)\s*\$?$/.exec(despues);
+    it.totalLinea = mTot ? prNumero(mTot[1]) : null;
+    var mMul = /^(.*?)\s*\$?\s*(\d+(?:[.,]\d{1,2})?)\s*\$?\s*[×x\*]\s*(\d+)\s*$/i.exec(antes);
+    if(mMul){
+      it.descripcion = mMul[1]; it.precioNota = prNumero(mMul[2]); it.mult = parseInt(mMul[3],10);
+      if(it.mult !== cantidad) it.avisos.push('La nota dice ×' + it.mult + ' pero la cantidad es ' + cantidad + ' (se usa ' + cantidad + ').');
+      if(it.totalLinea != null && Math.abs(it.precioNota * cantidad - it.totalLinea) > 0.01)
+        it.avisos.push('La cuenta no da: ' + it.precioNota + '×' + cantidad + ' = ' + (Math.round(it.precioNota*cantidad*100)/100) + ', la nota dice ' + it.totalLinea + '.');
+    } else if(it.totalLinea != null && cantidad > 0){
+      it.descripcion = antes.replace(/[\s\d.,$×x\*]+$/i, '');
+      it.precioNota = Math.round(it.totalLinea / cantidad * 100) / 100;
+      it.avisos.push('Precio calculado del total: ' + it.totalLinea + ' ÷ ' + cantidad + '.');
+    } else {
+      it.descripcion = antes;
+    }
   } else {
     var mA = /^(.*?)\s*(\d+(?:[.,]\d{1,2})?)\s*(?:\$|usd)\s*$/i.exec(resto) || /^(.*?)\s*\$\s*(\d+(?:[.,]\d{1,2})?)\s*$/.exec(resto);
     if(mA){ it.descripcion = mA[1]; it.precioNota = prNumero(mA[2]); }
+    else if(/[×\*]|\dx\d/i.test(resto)){
+      // hay una multiplicación que no se entendió: no adivinar un precio
+      it.avisos.push('No entendí la multiplicación. Escribe el precio.');
+    }
     else {
       // número suelto al final (típico de dictado): solo si la descripción tiene 2+ palabras
       var mC = /^(.*\S)\s+(\d{2,5}(?:[.,]\d{1,2})?)$/.exec(resto);
@@ -1451,8 +1479,9 @@ function prRenderVistaPrevia(){
     if(est === 'elegir'){
       chips = '<div class="pr-chips">' + l.candidatos.map(function(c){
         var dif = prPalabrasDistintas(c);
-        return '<button type="button" class="method-opt pr-chip" data-i="' + i + '" data-pid="' + c.pid + '"><b>' + prEsc(dif.length > 42 ? dif.substring(0, 42) + '…' : dif) + '</b><small>' + prEsc(c.descripcion.length > 48 ? c.descripcion.substring(0, 48) + '…' : c.descripcion) + (c.precio != null ? ' · ' + fmt(c.precio) : '') + '</small></button>';
-      }).join('') + '<button type="button" class="method-opt pr-chip active" data-i="' + i + '" data-pid=""><b>Texto libre</b><small>como está escrito</small></button></div>';
+        var det = (dif && dif !== c.descripcion ? 'Diferencia: ' + dif : '') + (c.precio != null ? (dif && dif !== c.descripcion ? ' · ' : '') + 'Catálogo ' + fmt(c.precio) : '');
+        return '<button type="button" class="method-opt pr-chip" data-i="' + i + '" data-pid="' + c.pid + '"><b>' + prEsc(c.descripcion) + '</b>' + (det ? '<small>' + prEsc(det) + '</small>' : '') + '</button>';
+      }).join('') + '<button type="button" class="method-opt pr-chip active" data-i="' + i + '" data-pid=""><b>Ninguna: dejar como está escrito</b><small>se factura como texto libre</small></button></div>';
     }
     var origen = l.origenPrecio === 'nota' ? 'precio de la nota' : l.origenPrecio === 'pactado' ? 'precio pactado con el cliente' : l.origenPrecio === 'catalogo' ? 'precio del catálogo' : l.origenPrecio === 'manual' ? 'precio escrito aquí' : '';
     var cCat = l.producto_id != null ? l.candidatos.find(function(x){ return x.pid === l.producto_id; }) : null;
