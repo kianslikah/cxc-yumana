@@ -229,6 +229,13 @@ async function login(){
 async function cargarUsuario(user){
   currentUser=user;
   var r=await sb.from('usuarios_app').select('*').eq('id',user.id).single();
+  // Sin conexión: no es que no tenga rol. Avisar sin cerrar la sesión.
+  if(r.error && r.error.code!=='PGRST116' && !r.data){
+    document.getElementById('loginMsg').className='login-msg error';
+    document.getElementById('loginMsg').textContent='No se pudo conectar. Revisa tu internet e intenta de nuevo.';
+    var b0=document.getElementById('btnLogin');if(b0){b0.disabled=false;b0.textContent='Entrar';}
+    return;
+  }
   if(r.error || !r.data){
     document.getElementById('loginMsg').className='login-msg error';
     document.getElementById('loginMsg').textContent='Tu usuario no tiene un rol asignado. Contacta al administrador.';
@@ -250,9 +257,10 @@ async function cargarUsuario(user){
   await cargarApps(rol);
 }
 
+function escP(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 async function cargarApps(rol){
   var grid=document.getElementById('appGrid');
-  grid.innerHTML='';
+  grid.innerHTML='<div class="empty-state">Cargando tus herramientas...</div>';
   try{
     // 1) Permisos de este rol
     var rp=await sb.from('portal_permisos').select('app_id, nivel').eq('rol', rol);
@@ -284,17 +292,19 @@ async function cargarApps(rol){
       var destino=(a.url && a.url!=='#') ? a.url : '#';
       var clickable = destino!=='#';
       var tag = clickable ? 'a' : 'div';
-      var href = clickable ? ('href="'+destino+'"') : '';
+      var href = clickable ? ('href="'+escP(destino)+'"') : '';
       html+='<'+tag+' class="app-card" '+href+' style="animation-delay:'+(i*0.05)+'s">'+
         '<div class="app-icon">'+ico(a.icono)+'</div>'+
-        '<div class="app-name">'+a.nombre+'</div>'+
-        '<div class="app-desc">'+(a.descripcion||'')+'</div>'+
+        '<div class="app-name">'+escP(a.nombre)+'</div>'+
+        '<div class="app-desc">'+escP(a.descripcion||'')+'</div>'+
         '<div class="app-foot">'+badge+'<span class="app-go">→</span></div>'+
       '</'+tag+'>';
     });
     grid.innerHTML=html;
   }catch(e){
-    grid.innerHTML='<div class="empty-state">No se pudieron cargar las herramientas: '+e.message+'</div>';
+    grid.innerHTML='<div class="empty-state">No se pudieron cargar tus herramientas. Revisa tu internet.<br><button type="button" id="btnReintentarApps" style="margin-top:14px;padding:12px 22px;border-radius:11px;border:none;background:var(--gold,#d4a24e);color:#1a1206;font-weight:700;font-family:inherit;cursor:pointer;">Reintentar</button></div>';
+    var rb=document.getElementById('btnReintentarApps'); if(rb) rb.addEventListener('click',function(){ cargarApps(rol); });
+    console.error('cargarApps', e);
   }
 }
 

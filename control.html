@@ -85,7 +85,7 @@
   .app-cell .ic svg{width:17px;height:17px;}
   .app-cell .nm{font-weight:600;font-size:14.5px;}
   .app-cell .ds{font-size:11.5px;color:var(--muted);}
-  .perm-select{width:100%;min-width:124px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:13.5px;font-family:inherit;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;transition:all .2s ease;}
+  .perm-select{width:100%;min-width:124px;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 11px;color:var(--text);font-size:16px;font-family:inherit;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;transition:all .2s ease;}
   .perm-select:focus{border-color:var(--gold);box-shadow:var(--glow);}
   .perm-select[data-nivel="completo"]{border-color:rgba(78,168,118,0.5);color:var(--green);}
   .perm-select[data-nivel="consulta"]{border-color:rgba(91,155,213,0.5);color:var(--blue);}
@@ -377,24 +377,19 @@ async function guardar(){
   var btn=document.getElementById('btnSave');
   var cambios=Object.keys(CAMBIOS).map(function(k){ return CAMBIOS[k]; });
   if(cambios.length===0) return;
+  var quitados=cambios.filter(function(c){ return c.nivel==='ninguno'; });
+  if(quitados.length && !confirm('Vas a QUITAR el acceso a '+quitados.length+' herramienta(s):\n\n'+quitados.map(function(c){ return '• '+c.rol+' → '+c.app_id; }).join('\n')+'\n\n¿Guardar los cambios?')) return;
   btn.disabled=true;btn.innerHTML='<span class="loader"></span>';
   try{
-    var aBorrar=cambios.filter(function(c){ return c.nivel==='ninguno'; });
-    var aGuardar=cambios.filter(function(c){ return c.nivel!=='ninguno'; });
-    for(var i=0;i<aBorrar.length;i++){
-      var c=aBorrar[i];
-      var rd=await sb.from('portal_permisos').delete().eq('rol',c.rol).eq('app_id',c.app_id);
-      if(rd.error) throw rd.error;
-    }
-    if(aGuardar.length>0){
-      var ru=await sb.from('portal_permisos').upsert(aGuardar,{onConflict:'rol,app_id'});
-      if(ru.error) throw ru.error;
-    }
+    // Todos los cambios en UNA sola escritura (quitar acceso = nivel 'ninguno', que el portal ya oculta).
+    // Antes se borraba uno por uno y después se guardaba: si fallaba a mitad, la matriz quedaba a medias.
+    var ru=await sb.from('portal_permisos').upsert(cambios.map(function(c){ return {rol:c.rol, app_id:c.app_id, nivel:c.nivel}; }),{onConflict:'rol,app_id'});
+    if(ru.error) throw ru.error;
     cambios.forEach(function(c){ MATRIZ[c.app_id][c.rol]=c.nivel; });
     CAMBIOS={}; actualizarSaveBar();
     toast('Permisos guardados.');
     btn.disabled=false;btn.textContent='Guardar cambios';
-  }catch(e){ toast('Error: '+e.message); btn.disabled=false;btn.textContent='Guardar cambios'; }
+  }catch(e){ toast('No se guardaron los permisos ('+e.message+'). Nada cambió: intenta de nuevo.'); btn.disabled=false;btn.textContent='Guardar cambios'; }
 }
 
 /* ===== USUARIOS ===== */
@@ -518,7 +513,11 @@ async function renderInventario(){
     async function traerTodo(tabla, columnas, filtro){
       var todos=[], desde=0, tam=1000, lote;
       do{
-        var q=sb.from(tabla).select(columnas).range(desde, desde+tam-1);
+        // Orden fijo por las primeras columnas: sin orden, Supabase puede repetir o saltar filas entre páginas
+        var cols=columnas.split(',').map(function(x){ return x.trim(); });
+        var q=sb.from(tabla).select(columnas).order(cols[0]);
+        if(cols[1]) q=q.order(cols[1]);
+        q=q.range(desde, desde+tam-1);
         if(filtro) q=filtro(q);
         var { data, error } = await q;
         if(error) throw error;
@@ -533,7 +532,7 @@ async function renderInventario(){
     var productos = await traerTodo('inv_productos','id,modelo,descripcion,precio_usd,activo',function(q){ return q.eq('activo',true); });
 
     // Existencias por ubicación (todas)
-    var existencias = await traerTodo('inv_existencias','producto_id,existencia',null);
+    var existencias = await traerTodo('inv_existencias','producto_id,ubicacion_id,existencia',null);
 
     // Sumar existencia total por producto_id
     var stockPorProd={};
