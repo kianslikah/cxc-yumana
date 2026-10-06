@@ -111,7 +111,7 @@ select:focus{border-color:var(--gold);box-shadow:var(--glow);}
 .count-card .cdel:hover{opacity:1;background:rgba(220,80,80,0.15);}
 .count-card .ccosto{display:flex;align-items:center;gap:8px;margin-top:11px;}
 .count-card .ccosto-lbl{font-size:12px;color:var(--text2);font-weight:600;white-space:nowrap;}
-.count-card .ccosto input{flex:1;max-width:120px;padding:8px 10px;border-radius:10px;border:1px solid var(--border-soft);background:var(--surface2);color:var(--text);font-size:14px;transition:border-color .3s;}
+.count-card .ccosto input{flex:1;max-width:120px;padding:8px 10px;border-radius:10px;border:1px solid var(--border-soft);background:var(--surface2);color:var(--text);font-size:16px;transition:border-color .3s;}
 .count-card .ccode{color:var(--gold);font-weight:600;letter-spacing:0.5px;}
 .counter{display:flex;align-items:center;gap:11px;}
 .counter button{width:48px;height:48px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--gold-bright);font-size:24px;font-weight:600;cursor:pointer;flex-shrink:0;transition:all .15s ease;display:flex;align-items:center;justify-content:center;}
@@ -134,7 +134,7 @@ select:focus{border-color:var(--gold);box-shadow:var(--glow);}
 .subview{display:none;}
 .subview.active{display:block;}
 .add-prod-box{position:relative;margin-bottom:14px;}
-.add-prod-box input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px 15px 15px 46px;color:var(--text);font-size:15px;font-family:inherit;outline:none;}
+.add-prod-box input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px 15px 15px 46px;color:var(--text);font-size:16px;font-family:inherit;outline:none;}
 .add-prod-box input:focus{border-color:var(--gold);box-shadow:var(--glow);}
 .add-prod-box .icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--gold);opacity:.7;display:flex;}
 .dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-top:6px;max-height:260px;overflow-y:auto;z-index:20;box-shadow:var(--shadow);}
@@ -206,7 +206,7 @@ select:focus{border-color:var(--gold);box-shadow:var(--glow);}
 .cat-code{font-size:11px;color:var(--gold);margin-top:4px;padding-left:2px;}
 .cat-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
 .cat-f label{display:block;font-size:10px;color:var(--text2);font-weight:600;margin-bottom:3px;}
-.cat-f input{width:100%;padding:7px 9px;border-radius:9px;border:1px solid var(--border-soft);background:var(--surface2);color:var(--text);font-size:13px;}
+.cat-f input{width:100%;padding:7px 9px;border-radius:9px;border:1px solid var(--border-soft);background:var(--surface2);color:var(--text);font-size:16px;}
 .cat-actions{display:flex;gap:8px;}
 .cat-save{flex:2;padding:9px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--gold),var(--gold-dim));color:#1a1206;font-weight:700;font-size:13px;cursor:pointer;}
 .cat-del{flex:1;padding:9px;border-radius:10px;border:1px solid rgba(220,80,80,0.4);background:transparent;color:#e08a6e;font-weight:600;font-size:13px;cursor:pointer;}
@@ -275,7 +275,7 @@ select:focus{border-color:var(--gold);box-shadow:var(--glow);}
 .user-card .ur{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-top:3px;}
 .user-card .uact{background:none;border:1px solid var(--border);border-radius:9px;color:var(--red);padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit;}
 .form-row{margin-bottom:12px;}
-.form-row input,.form-row select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--text);font-size:15px;font-family:inherit;outline:none;-webkit-appearance:none;}
+.form-row input,.form-row select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--text);font-size:16px;font-family:inherit;outline:none;-webkit-appearance:none;}
 .form-row input:focus,.form-row select:focus{border-color:var(--gold);box-shadow:var(--glow);}
 .add-user-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--green),#1f9d5e);border:none;border-radius:13px;color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;margin-top:4px;}
 .section-title{font-family:'Fraunces',serif;font-size:17px;font-weight:600;margin:8px 0 14px;color:var(--gold-bright);}
@@ -498,10 +498,10 @@ select:focus{border-color:var(--gold);box-shadow:var(--glow);}
 
 <!-- CATÁLOGO (solo dueño) -->
 <div class="view" id="vCatalogo">
-  <div class="cat-warn">⚠ Zona sensible. Cada cambio queda registrado con tu usuario, fecha y hora. Edita con cuidado.</div>
+  <div class="cat-warn">Zona sensible. Cada cambio queda registrado con tu usuario, fecha y hora. Edita con cuidado.</div>
   <div class="cat-toolbar">
     <button class="cat-modo" id="btnModoVista" onclick="alternarVista()">≡ Vista compacta</button>
-    <button class="cat-modo" id="btnPapelera" onclick="abrirPapelera()">🗑 Papelera</button>
+    <button class="cat-modo" id="btnPapelera" onclick="abrirPapelera()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg> Papelera</button>
   </div>
   <div class="select-wrap"><select id="catCategoria"><option value="">Filtrar por categoría...</option></select></div>
   <div class="add-prod-box">
@@ -562,7 +562,7 @@ select:focus{border-color:var(--gold);box-shadow:var(--glow);}
 
 <div class="login-overlay" id="papeleraModal" style="display:none;z-index:150">
   <div class="login-card" style="max-width:480px;max-height:80vh;display:flex;flex-direction:column">
-    <h2 style="font-size:20px">🗑 Papelera</h2>
+    <h2 style="font-size:20px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M3 6h18M8 6V4h8v2M6 6l1 18h10l1-18"/></svg> Papelera</h2>
     <div class="lsub">Productos eliminados — puedes restaurarlos</div>
     <div id="papeleraList" style="flex:1;overflow-y:auto;margin:12px 0"></div>
     <button class="btn-cancel" onclick="cerrarPapelera()">Cerrar</button>
@@ -812,7 +812,7 @@ function ajustar(pid,delta){
 // Construye el HTML de una tarjeta de conteo (reutilizable: categoría y buscador)
 function tarjetaConteo(p, actual, i){
   const costo=p.costo_usd!=null?p.costo_usd:'';
-  return `<div class="count-card" data-pid="${p.id}" style="animation-delay:${i*0.03}s"><div class="ctop"><div class="cdesc">${p.descripcion}</div><button class="cdel" onclick="eliminarProductoConteo(${p.id},'${p.descripcion.replace(/'/g,"\\'")}')" title="Eliminar producto que no existe">🗑</button></div><div class="cmeta"><span class="ccode">${p.codigo_valery}</span>${p.corriente?' · '+p.corriente:''}</div><div class="counter"><button onclick="ajustar(${p.id},-1)">−</button><input type="number" inputmode="numeric" id="cnt_${p.id}" value="${actual}" min="0"><button onclick="ajustar(${p.id},1)">+</button></div><div class="ccosto"><span class="ccosto-lbl">Costo $</span><input type="number" inputmode="decimal" id="cost_${p.id}" value="${costo}" placeholder="—" onchange="guardarCosto(${p.id},this.value)"></div></div>`;
+  return `<div class="count-card" data-pid="${p.id}" style="animation-delay:${i*0.03}s"><div class="ctop"><div class="cdesc">${p.descripcion}</div><button class="cdel" onclick="eliminarProductoConteo(${p.id},'${p.descripcion.replace(/'/g,"\\'")}')" title="Eliminar producto que no existe"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div><div class="cmeta"><span class="ccode">${p.codigo_valery}</span>${p.corriente?' · '+p.corriente:''}</div><div class="counter"><button onclick="ajustar(${p.id},-1)">−</button><input type="number" inputmode="numeric" id="cnt_${p.id}" value="${actual}" min="0"><button onclick="ajustar(${p.id},1)">+</button></div><div class="ccosto"><span class="ccosto-lbl">Costo $</span><input type="number" inputmode="decimal" id="cost_${p.id}" value="${costo}" placeholder="—" onchange="guardarCosto(${p.id},this.value)"></div></div>`;
 }
 
 // Buscar un producto puntual y agregarlo al conteo (sin necesidad de categoría)
@@ -842,10 +842,19 @@ async function buscarParaContar(){
   }catch(e){listEl.innerHTML='<div class="error">Error: '+e.message+'</div>';}
 }
 
+// supabase-js NO lanza cuando falla: devuelve {error}. chk() lo lanza para que el catch avise
+// (antes la app decía "guardado" aunque la base hubiera rechazado el cambio).
+function chk(r){ if(r&&r.error) throw r.error; return r; }
+// Trae todas las filas paginando de a 1000 (Supabase corta en 1000 sin avisar)
+async function traerPaginado(armar){
+  let todo=[],desde=0;
+  while(true){ const r=chk(await armar().range(desde,desde+999)); const lote=r.data||[]; todo=todo.concat(lote); if(lote.length<1000)break; desde+=1000; }
+  return todo;
+}
 async function guardarCosto(pid,val){
   const costo=parseFloat(val);
   try{
-    await sb.from('inv_productos').update({costo_usd:isNaN(costo)?null:costo}).eq('id',pid);
+    chk(await sb.from('inv_productos').update({costo_usd:isNaN(costo)?null:costo}).eq('id',pid));
     const inp=document.getElementById('cost_'+pid);
     if(inp){inp.style.borderColor='var(--gold)';setTimeout(()=>{inp.style.borderColor='';},800);}
   }catch(e){showToast('Error al guardar costo: '+e.message,true);}
@@ -854,7 +863,7 @@ async function eliminarProductoConteo(pid,desc){
   if(!confirm('¿Eliminar "'+desc+'" del catálogo?\n\nÚsalo solo para productos que NO existen.\nEsta acción lo desactiva del sistema.'))return;
   try{
     // Desactivar (no borrar físico, para no perder historial de movimientos)
-    await sb.from('inv_productos').update({activo:false}).eq('id',pid);
+    chk(await sb.from('inv_productos').update({activo:false}).eq('id',pid));
     const card=document.querySelector('.count-card[data-pid="'+pid+'"]');
     if(card){card.style.opacity='0';setTimeout(()=>card.remove(),300);}
     showToast('Producto eliminado del catálogo');
@@ -875,7 +884,7 @@ async function guardarConteo(){
       if(!ok){btn.disabled=false;return;}
       anularIds=previos.map(p=>p.id);
     }
-    if(anularIds.length>0){await sb.from('inv_movimientos').update({estado:'anulado'}).in('id',anularIds);}
+    // Los conteos anteriores se anulan DESPUÉS de guardar el nuevo (ver abajo): si el guardado falla, no se pierde nada
     const movs=[];
     cards.forEach(c=>{
       const pid=parseInt(c.dataset.pid,10);
@@ -883,8 +892,9 @@ async function guardarConteo(){
       movs.push({producto_id:pid,tipo:'ajuste',cantidad_confirmada:cant,cantidad_solicitada:cant,ubicacion_destino:parseInt(ubic,10),estado:'confirmado',referencia:'Conteo inicial',usuario:sesion.usuario,confirmado_en:new Date().toISOString()});
     });
     const{error}=await sb.from('inv_movimientos').insert(movs);
+    if(!error&&anularIds.length>0){chk(await sb.from('inv_movimientos').update({estado:'anulado'}).in('id',anularIds));}
     if(error)throw error;
-    showToast('✓ Conteo guardado ('+movs.length+' productos)');
+    showToast('Conteo guardado ('+movs.length+' productos)');
     btn.disabled=false;
   }catch(e){showToast('Error: '+e.message,true);btn.disabled=false;}
 }
@@ -977,7 +987,7 @@ async function registrarSalida(){
     const movs=trasladoItems.map(it=>({producto_id:it.id,tipo:'traslado',cantidad_solicitada:it.cantidad,ubicacion_origen:parseInt(origen,10),ubicacion_destino:parseInt(destino,10),estado:'pendiente',referencia:ref,usuario:sesion.usuario}));
     const{error}=await sb.from('inv_movimientos').insert(movs);
     if(error)throw error;
-    showToast('✓ Salida registrada ('+movs.length+' productos). Pendiente de confirmar llegada.');
+    showToast('Salida registrada ('+movs.length+' productos). Pendiente de confirmar llegada.');
     trasladoItems=[];renderLineas();updateSaveBar();
     actualizarBadgePendientes();
     btn.disabled=false;
@@ -1019,9 +1029,9 @@ async function confirmarLlegada(ref){
     for(const pr of prods){
       const mid=parseInt(pr.dataset.mid,10);
       const conf=parseInt(document.getElementById('conf_'+mid).value||'0',10);
-      await sb.from('inv_movimientos').update({cantidad_confirmada:conf,estado:'confirmado',confirmado_en:new Date().toISOString()}).eq('id',mid);
+      chk(await sb.from('inv_movimientos').update({cantidad_confirmada:conf,estado:'confirmado',confirmado_en:new Date().toISOString()}).eq('id',mid));
     }
-    showToast('✓ Traslado confirmado');
+    showToast('Traslado confirmado');
     cargarPendientes();actualizarBadgePendientes();
   }catch(e){showToast('Error: '+e.message,true);}
 }
@@ -1032,7 +1042,7 @@ async function cancelarTraslado(ref){
     const prods=card.querySelectorAll('.trans-prod');
     for(const pr of prods){
       const mid=parseInt(pr.dataset.mid,10);
-      await sb.from('inv_movimientos').update({estado:'anulado'}).eq('id',mid);
+      chk(await sb.from('inv_movimientos').update({estado:'anulado'}).eq('id',mid));
     }
     showToast('Traslado cancelado');
     cargarPendientes();actualizarBadgePendientes();
@@ -1132,7 +1142,7 @@ async function registrarEntrada(){
     if(error)throw error;
     const recibidos=entradaItems.filter(i=>!i.pendiente).length;
     const camino=entradaItems.filter(i=>i.pendiente).length;
-    let msg='✓ Entrada registrada';
+    let msg='Entrada registrada';
     if(camino>0)msg+=` (${recibidos} recibidos, ${camino} en camino)`;
     showToast(msg);
     // Guardar datos para imprimir documento
@@ -1167,16 +1177,17 @@ async function cargarTransito(){
 async function confirmarLlegadaEntrada(mid){
   try{
     const card=document.querySelector(`.trans-card[data-mid="${mid}"]`);
-    const{data:mov}=await sb.from('inv_movimientos').select('cantidad_solicitada').eq('id',mid).single();
-    await sb.from('inv_movimientos').update({estado:'confirmado',cantidad_confirmada:mov.cantidad_solicitada,confirmado_en:new Date().toISOString()}).eq('id',mid);
-    showToast('✓ Entrada confirmada, sumada al inventario');
+    const{data:mov,error:eMov}=await sb.from('inv_movimientos').select('cantidad_solicitada').eq('id',mid).single();
+    if(eMov||!mov) throw (eMov||new Error('No se encontró el movimiento'));
+    chk(await sb.from('inv_movimientos').update({estado:'confirmado',cantidad_confirmada:mov.cantidad_solicitada,confirmado_en:new Date().toISOString()}).eq('id',mid));
+    showToast('Entrada confirmada, sumada al inventario');
     cargarTransito();actualizarBadgeTransito();
   }catch(e){showToast('Error: '+e.message,true);}
 }
 async function cancelarEntrada(mid){
   if(!confirm('¿Anular esta entrada pendiente?'))return;
   try{
-    await sb.from('inv_movimientos').update({estado:'anulado'}).eq('id',mid);
+    chk(await sb.from('inv_movimientos').update({estado:'anulado'}).eq('id',mid));
     showToast('Entrada anulada');
     cargarTransito();actualizarBadgeTransito();
   }catch(e){showToast('Error: '+e.message,true);}
@@ -1226,7 +1237,7 @@ async function guardarProductoNuevo(){
     if(existe){err.textContent='Ya existe un producto con ese código';err.classList.add('show');btn.disabled=false;btn.textContent='Crear y agregar';return;}
     const{data:nuevo,error}=await sb.from('inv_productos').insert([{codigo_valery:codigo,descripcion:desc,categoria:cat||null,precio_usd:isNaN(precio)?null:precio,costo_usd:isNaN(costo)?null:costo,activo:true}]).select('id, codigo_valery, descripcion').single();
     if(error)throw error;
-    showToast('✓ Producto creado: '+desc);
+    showToast('Producto creado: '+desc);
     cerrarCrearProducto();
     agregarEntradaLinea({id:nuevo.id,codigo_valery:nuevo.codigo_valery,descripcion:nuevo.descripcion});
     btn.disabled=false;btn.textContent='Crear y agregar';
@@ -1326,8 +1337,8 @@ async function registrarEntrega(){
         seriales.push({producto_id:it.id,serial:it.serial,movimiento_id:mov?mov.id:null,nota_entrega:ref,garantia_meses:it.garantia,garantia_vence:vence.toISOString().split('T')[0],quien_retira:retira||null,usuario:sesion.usuario});
       }
     });
-    if(seriales.length>0){await sb.from('inv_seriales').insert(seriales);}
-    showToast('✓ Entrega registrada y descontada del inventario');
+    if(seriales.length>0){chk(await sb.from('inv_seriales').insert(seriales));}
+    showToast('Entrega registrada y descontada del inventario');
     // Guardar datos para la nota de garantía
     const hoy=new Date();
     ultimaGarantia={factura:factura,retira:retira,fecha:hoy.toLocaleDateString('es-VE'),items:salidaItems.map(it=>{
@@ -1405,7 +1416,7 @@ let ultimaGarantia=null;
 function mostrarBotonGarantia(){
   const cont=document.getElementById('btnGarantiaCont');
   if(!ultimaGarantia){cont.innerHTML='';return;}
-  cont.innerHTML=`<button class="save-btn" style="margin-top:14px;background:linear-gradient(135deg,var(--gold),var(--gold-dim));color:#1a1206" onclick="imprimirGarantia()">🛡️ Imprimir nota de garantía</button>`;
+  cont.innerHTML=`<button class="save-btn" style="margin-top:14px;background:linear-gradient(135deg,var(--gold),var(--gold-dim));color:#1a1206" onclick="imprimirGarantia()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg> Imprimir nota de garantía</button>`;
 }
 function imprimirGarantia(){
   if(!ultimaGarantia)return;
@@ -1569,7 +1580,7 @@ function renderHistorial(lista){
       `<div class="hist-meta"><b>Serial:</b> ${h.serial}</div>`+
       `<div class="hist-meta"><b>Retiró:</b> ${h.quien_retira||'—'} · ${fecha}</div>`+
       `<div class="hist-meta"><b>Garantía:</b> ${h.garantia_meses>0?h.garantia_meses+' meses (vence '+(h.garantia_vence?new Date(h.garantia_vence).toLocaleDateString('es-VE'):'—')+')':'No aplica'}</div>`+
-      `<button class="btn-confirm" style="margin-top:8px" onclick="reimprimirGarantia(${idx})">🛡️ Reimprimir garantía</button></div>`;
+      `<button class="btn-confirm" style="margin-top:8px" onclick="reimprimirGarantia(${idx})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z"/></svg> Reimprimir garantía</button></div>`;
   });
   el.innerHTML=html;
 }
@@ -1625,8 +1636,8 @@ async function cargarDashboard(){
   el.innerHTML='<div class="loading">Calculando...</div>';
   try{
     // Traer existencias y productos con precio/costo
-    const{data:existencias}=await sb.from('inv_existencias').select('producto_id, existencia');
-    const{data:productos}=await sb.from('inv_productos').select('id, descripcion, precio_usd, costo_usd, activo').eq('activo',true);
+    const existencias=await traerPaginado(()=>sb.from('inv_existencias').select('producto_id, existencia').order('producto_id'));
+    const productos=await traerPaginado(()=>sb.from('inv_productos').select('id, descripcion, precio_usd, costo_usd, activo').eq('activo',true).order('id'));
     const pMap={};(productos||[]).forEach(p=>{pMap[p.id]=p;});
     // Sumar existencia total por producto
     const stockPorProd={};
@@ -1645,7 +1656,7 @@ async function cargarDashboard(){
     let html='';
     // Tarjeta principal: valor a costo
     html+='<div class="dash-hero"><div class="dash-hero-lbl">Valor en inventario (a costo)</div><div class="dash-hero-val">'+fmtDinero(valorCosto)+'</div>';
-    if(sinCosto>0)html+='<div class="dash-hero-warn">⚠ '+sinCosto+' producto(s) con stock aún sin costo cargado. El valor real es mayor.</div>';
+    if(sinCosto>0)html+='<div class="dash-hero-warn">'+sinCosto+' producto(s) con stock aún sin costo cargado. El valor real es mayor.</div>';
     html+='</div>';
     // Tarjetas secundarias
     html+='<div class="dash-grid">';
@@ -1770,7 +1781,7 @@ function renderCatalogo(lista){
     lista.forEach(p=>{
       html+=`<div class="cat-comp" data-pid="${p.id}"><label class="cat-check"><input type="checkbox" onchange="toggleSel(${p.id},this.checked)"><span></span></label>`+
         `<div class="cat-comp-info"><div class="cat-comp-desc">${p.descripcion}</div><div class="cat-comp-code">${p.codigo_valery}${p.costo_usd!=null?' · costo $'+p.costo_usd:''}${p.precio_usd!=null?' · venta $'+p.precio_usd:''}</div></div>`+
-        `<button class="cat-comp-del" onclick="eliminarProductoCat(${p.id})" title="Eliminar">🗑</button></div>`;
+        `<button class="cat-comp-del" onclick="eliminarProductoCat(${p.id})" title="Eliminar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>`;
     });
   }else{
     lista.forEach(p=>{
@@ -1820,10 +1831,10 @@ async function guardarCambiosProducto(pid){
   cambios.forEach(c=>{resumen+='• '+c.campo+': '+(c.ant!=null&&c.ant!==''?c.ant:'(vacío)')+' → '+(c.nue!=null&&c.nue!==''?c.nue:'(vacío)')+'\n';});
   if(!confirm(resumen))return;
   try{
-    await sb.from('inv_productos').update({descripcion:nDesc,costo_usd:nCosto,precio_usd:nPrec}).eq('id',pid);
+    chk(await sb.from('inv_productos').update({descripcion:nDesc,costo_usd:nCosto,precio_usd:nPrec}).eq('id',pid));
     for(const c of cambios){await registrarBitacora(p,'editó',c.campo,c.ant,c.nue);}
     p.descripcion=nDesc;p.costo_usd=nCosto;p.precio_usd=nPrec;
-    showToast('✓ Cambios guardados y registrados');
+    showToast('Cambios guardados y registrados');
     const card=document.querySelector('.cat-row[data-pid="'+pid+'"]');
     if(card){card.style.borderColor='var(--gold)';setTimeout(()=>{card.style.borderColor='';},1000);}
   }catch(e){showToast('Error: '+e.message,true);}
@@ -1832,7 +1843,7 @@ async function eliminarProductoCat(pid){
   const p=catData.find(x=>x.id===pid);if(!p)return;
   if(!confirm('¿Eliminar "'+p.descripcion+'"?\n\nCódigo: '+p.codigo_valery+'\n\nQuedará registrado en la bitácora con tu usuario y fecha. El producto se desactiva (no se borra el historial).'))return;
   try{
-    await sb.from('inv_productos').update({activo:false}).eq('id',pid);
+    chk(await sb.from('inv_productos').update({activo:false}).eq('id',pid));
     await registrarBitacora(p,'eliminó','producto','activo','inactivo');
     catData=catData.filter(x=>x.id!==pid);
     const card=document.querySelector('[data-pid="'+pid+'"]');
@@ -1848,14 +1859,14 @@ async function eliminarSeleccionados(){
     const ids=[...catSeleccionados];
     for(const pid of ids){
       const p=catData.find(x=>x.id===pid);
-      await sb.from('inv_productos').update({activo:false}).eq('id',pid);
+      chk(await sb.from('inv_productos').update({activo:false}).eq('id',pid));
       if(p)await registrarBitacora(p,'eliminó (masivo)','producto','activo','inactivo');
       const card=document.querySelector('[data-pid="'+pid+'"]');
       if(card){card.style.opacity='0';setTimeout(()=>card.remove(),300);}
     }
     catData=catData.filter(x=>!catSeleccionados.has(x.id));
     catSeleccionados.clear();actualizarBarraSel();
-    showToast('✓ '+n+' producto(s) eliminado(s) y registrados');
+    showToast(''+n+' producto(s) eliminado(s) y registrados');
   }catch(e){showToast('Error: '+e.message,true);}
 }
 /* ===== PAPELERA (restaurar eliminados) ===== */
@@ -1878,11 +1889,11 @@ function cerrarPapelera(){document.getElementById('papeleraModal').style.display
 async function restaurarProducto(pid,desc){
   if(!confirm('¿Restaurar "'+desc+'"?\n\nVolverá a aparecer en el catálogo activo.'))return;
   try{
-    await sb.from('inv_productos').update({activo:true}).eq('id',pid);
+    chk(await sb.from('inv_productos').update({activo:true}).eq('id',pid));
     await registrarBitacora({id:pid,codigo_valery:'',descripcion:desc},'restauró','producto','inactivo','activo');
     const row=document.querySelector('.pap-row[data-pid="'+pid+'"]');
     if(row){row.style.opacity='0';setTimeout(()=>row.remove(),300);}
-    showToast('✓ Producto restaurado');
+    showToast('Producto restaurado');
   }catch(e){showToast('Error: '+e.message,true);}
 }
 
@@ -1913,10 +1924,10 @@ async function cargarReservas(){
 async function liberarReserva(rid){
   if(!confirm('¿Liberar esta reserva?\n\nEl producto volverá a estar disponible en el inventario.'))return;
   try{
-    await sb.from('inv_movimientos').update({estado:'anulado'}).eq('id',rid);
+    chk(await sb.from('inv_movimientos').update({estado:'anulado'}).eq('id',rid));
     const card=document.querySelector('.hist-card[data-rid="'+rid+'"]');
     if(card){card.style.opacity='0';setTimeout(()=>card.remove(),300);}
-    showToast('✓ Reserva liberada');
+    showToast('Reserva liberada');
   }catch(e){showToast('Error: '+e.message,true);}
 }
 
