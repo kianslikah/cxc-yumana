@@ -678,22 +678,44 @@ async function traerTodo(tabla, orderCol, asc){
   return todos;
 }
 
+var DATOS_CARGADOS = false;
+function mostrarCargando(){
+  if(DATOS_CARGADOS) return; // ya hay datos en pantalla: la recarga es silenciosa
+  var html = '<div class="empty-state"><h3>Cargando...</h3><p>Trayendo los datos del mayorista</p></div>';
+  ['panelContent','cliList','facList'].forEach(function(id){ var el = document.getElementById(id); if(el) el.innerHTML = html; });
+}
+function mostrarErrorCarga(e){
+  var html = '<div class="empty-state"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><h3>No se pudieron cargar los datos</h3><p>' + (DATOS_CARGADOS ? 'Lo que ves puede estar desactualizado. ' : '') + 'Revisa tu internet y vuelve a intentar.</p><button class="btn btn-primary btn-reintentar" style="margin-top:14px;">Reintentar</button></div>';
+  ['panelContent','cliList','facList'].forEach(function(id){ var el = document.getElementById(id); if(el && !DATOS_CARGADOS) el.innerHTML = html; });
+  if(DATOS_CARGADOS) toast('No se pudieron actualizar los datos. Lo que ves puede estar desactualizado.', 'e');
+  document.querySelectorAll('.btn-reintentar').forEach(function(b){ b.addEventListener('click', function(){ cargarDatos(); }); });
+  if(!CATALOGO.length) CATALOGO_ERROR = true; // el catálogo tampoco llegó: que el buscador no diga "no existe"
+  console.error('cargarDatos', e);
+}
+// Trae todo y SOLO cuando todo llegó reemplaza los datos en memoria (antes, una falla a mitad mezclaba clientes nuevos con facturas viejas).
 async function cargarDatos(){
+  mostrarCargando();
   try {
-    CLIENTES = (await traerTodo('may_clientes', 'nombre', true)).filter(function(c){ return !c.deleted_at; });
-    FACTURAS = (await traerTodo('may_facturas', 'fecha', false)).filter(function(f){ return !f.deleted_at; });
-    ABONOS = (await traerTodo('may_abonos', 'fecha', false)).filter(function(a){ return !a.deleted_at; });
-    ITEMS = await traerTodo('may_factura_items', null, false);
-    try { PRECIOS_CLI = await traerTodo('may_precios_cliente', null, false); } catch(e){ PRECIOS_CLI = []; }
-    if(CURRENT_USER.rol === 'admin'){
-      USUARIOS = await traerTodo('may_usuarios', 'nombre', true);
-    }
+    var cli = (await traerTodo('may_clientes', 'nombre', true)).filter(function(c){ return !c.deleted_at; });
+    var fac = (await traerTodo('may_facturas', 'fecha', false)).filter(function(f){ return !f.deleted_at; });
+    var abo = (await traerTodo('may_abonos', 'fecha', false)).filter(function(a){ return !a.deleted_at; });
+    var its = (await traerTodo('may_factura_items', null, false)).filter(function(it){ return !it.deleted_at; });
+    var usu = USUARIOS;
+    if(CURRENT_USER.rol === 'admin'){ usu = await traerTodo('may_usuarios', 'nombre', true); }
+    var pre = PRECIOS_CLI;
+    try { pre = await traerTodo('may_precios_cliente', null, false); } catch(e){ console.warn('precios pactados', e); }
+    CLIENTES = cli; FACTURAS = fac; ABONOS = abo; ITEMS = its; USUARIOS = usu; PRECIOS_CLI = pre;
+    DATOS_CARGADOS = true;
     await cargarCatalogo();
     renderClientes();
     renderUsuarios();
     renderPanel();
+    renderFacturas();
+    if(currentDetalleId && document.getElementById('view-detalle').style.display !== 'none') renderDetalle();
+    return true;
   } catch(e){
-    toast('Error al cargar datos', 'e');
+    mostrarErrorCarga(e);
+    return false;
   }
 }
 
@@ -858,10 +880,15 @@ async function guardarUsuario(){
 
 // ===== CATÁLOGO DE PRODUCTOS (mismo que usan créditos) =====
 var CATALOGO = [];
+var CATALOGO_ERROR = false; // true = el catálogo NO se pudo cargar (no es que esté vacío)
 async function cargarCatalogo(){
   try {
-    CATALOGO = await traerTodo('inv_productos', 'descripcion', true);
-  } catch(e){ CATALOGO = []; }
+    var cat = await traerTodo('inv_productos', 'descripcion', true);
+    CATALOGO = cat; CATALOGO_ERROR = false; PR_INDICE = null;
+  } catch(e){
+    CATALOGO_ERROR = true;
+    if(!CATALOGO.length) toast('No se pudo cargar el catálogo de productos. Revisa tu internet.', 'e');
+  }
 }
 function buscarEnCatalogo(texto){
   if(!texto || texto.length < 2) return [];
@@ -891,6 +918,12 @@ function bpRender(texto){
   if(t.length >= 2){ document.getElementById('bpManualTxt').textContent = t; manualWrap.style.display='block'; }
   else manualWrap.style.display='none';
   if(t.length < 2){ cont.innerHTML = '<div style="text-align:center; color:var(--muted); padding:30px; font-size:14px;">Escribe al menos 2 letras para buscar.</div>'; return; }
+  if(CATALOGO_ERROR && !CATALOGO.length){
+    cont.innerHTML = '<div style="text-align:center; color:var(--red-soft); padding:30px; font-size:14px;">No se pudo cargar el catálogo. No es que el producto no exista: revisa tu internet.<br><button type="button" class="btn btn-primary" id="bpReintentarCat" style="margin-top:12px;">Reintentar</button></div>';
+    var rb = document.getElementById('bpReintentarCat');
+    if(rb) rb.addEventListener('click', async function(){ rb.disabled = true; rb.textContent = 'Cargando...'; await cargarCatalogo(); bpRender(document.getElementById('bpInput').value); });
+    return;
+  }
   var matches = buscarEnCatalogo(t);
   if(matches.length === 0){ cont.innerHTML = '<div style="text-align:center; color:var(--muted); padding:30px; font-size:14px;">Sin resultados. Usa el botón de arriba para agregarlo como producto libre.</div>'; return; }
   cont.innerHTML = matches.map(function(p){
@@ -1028,7 +1061,10 @@ async function guardarPreciosPactados(cliId, items){
       );
       if(r.error) throw r.error;
     }
-  } catch(e){ /* si la tabla no existe aún, no romper el guardado de la factura */ }
+  } catch(e){
+    console.warn('precios pactados', e);
+    toast('La factura se guardó, pero el precio pactado del cliente no se pudo registrar. La próxima factura saldrá con precio de lista.', 'e');
+  }
 }
 
 async function guardarFactura(){
@@ -1037,86 +1073,47 @@ async function guardarFactura(){
   if(!cliId){ msg.className='modal-msg error'; msg.textContent='Elige un cliente.'; return; }
   var items = NF_ITEMS.filter(function(it){ return it.descripcion && it.precio > 0; });
   if(items.length === 0){ msg.className='modal-msg error'; msg.textContent='Agrega al menos un producto con precio.'; return; }
-  var total = items.reduce(function(s,it){ return s + (it.cantidad||1)*(it.precio||0); }, 0);
+  var esEdicion = !!editingFacturaId;
+  // La factura y sus renglones se guardan en UNA sola transacción en la base (may_guardar_factura):
+  // o queda todo o no queda nada, y "Guardar" otra vez nunca duplica.
+  var factura = {
+    id: editingFacturaId || null,
+    cliente_id: cliId,
+    fecha: document.getElementById('nfFecha').value || null,
+    fecha_vencimiento: document.getElementById('nfVence').value || null,
+    notas: document.getElementById('nfNotas').value.trim() || null,
+    creado_por: CURRENT_USER.id,
+    origen: PR_ORIGEN,                 // 'manual' o 'pedido_rapido'
+    texto_pedido: PR_TEXTO_ORIGINAL    // el pedido tal cual se pegó (para estadísticas y auditoría)
+  };
+  var itemsRpc = items.map(function(it){
+    return { producto_id: it.producto_id || null, descripcion: it.descripcion, cantidad: it.cantidad || 1, precio_unitario: it.precio,
+             costo_unitario: it.costo_unitario != null ? it.costo_unitario : null }; // costo al momento de vender (ganancia)
+  });
+  var res;
   try {
-    if(editingFacturaId){
-      // MODO EDICIÓN: actualizar la factura y reemplazar sus items
-      var fu = await sb.from('may_facturas').update({
-        cliente_id: cliId,
-        fecha: document.getElementById('nfFecha').value,
-        fecha_vencimiento: document.getElementById('nfVence').value || null,
-        monto_total: total,
-        notas: document.getElementById('nfNotas').value.trim() || null
-      }).eq('id', editingFacturaId);
-      if(fu.error) throw fu.error;
-      var di = await sb.from('may_factura_items').delete().eq('factura_id', editingFacturaId);
-      if(di.error) throw di.error;
-      var itemsEd = items.map(function(it){
-        return { factura_id: editingFacturaId, producto_id: it.producto_id || null, descripcion: it.descripcion, cantidad: it.cantidad || 1, precio_unitario: it.precio, subtotal: (it.cantidad||1) * it.precio, costo_unitario: it.costo_unitario != null ? it.costo_unitario : null };
-      });
-      var rie = await sb.from('may_factura_items').insert(itemsEd);
-      if(rie.error) throw rie.error;
-      await guardarPreciosPactados(cliId, items);
-      // Recalcular reparto de abonos del cliente (el total pudo cambiar)
-      await cargarDatos();
-      await recalcularFacturasCliente(cliId, null);
-      await cargarDatos();
-      toast('Factura actualizada', 's');
-      editingFacturaId = null;
-      document.getElementById('modalFactura').classList.remove('active');
-      renderFacturas();
-      if(currentDetalleId) renderDetalle();
-      return;
-    }
-    var facturaData = {
-      cliente_id: cliId,
-      fecha: document.getElementById('nfFecha').value,
-      fecha_vencimiento: document.getElementById('nfVence').value || null,
-      monto_total: total,
-      monto_pagado: 0,
-      estado: 'pendiente',
-      notas: document.getElementById('nfNotas').value.trim() || null,
-      creado_por: CURRENT_USER.id,
-      origen: PR_ORIGEN,                 // 'manual' o 'pedido_rapido'
-      texto_pedido: PR_TEXTO_ORIGINAL    // el pedido tal cual se pegó (para estadísticas y auditoría)
-    };
-    var rf = await sb.from('may_facturas').insert(facturaData).select().single();
-    if(rf.error) throw rf.error;
-    var facturaId = rf.data.id;
-    // insertar items
-    var itemsData = items.map(function(it){
-      return {
-        factura_id: facturaId,
-        producto_id: it.producto_id || null,
-        descripcion: it.descripcion,
-        cantidad: it.cantidad || 1,
-        precio_unitario: it.precio,
-        subtotal: (it.cantidad||1) * it.precio,
-        costo_unitario: it.costo_unitario != null ? it.costo_unitario : null // costo al momento de vender (ganancia)
-      };
-    });
-    var ri = await sb.from('may_factura_items').insert(itemsData);
-    if(ri.error) throw ri.error;
-    await guardarPreciosPactados(cliId, items);
-    // Si el cliente tenía saldo a favor (abonos que superaban sus facturas), aplicarlo a esta nueva factura
-    await cargarDatos();
-    var saldoCli = saldoCliente(cliId);
-    var totalFacturado = facturasDeCliente(cliId).reduce(function(s,f){ return s + parseFloat(f.monto_pagado||0); }, 0);
-    var totalAbonado = abonosDeCliente(cliId).reduce(function(s,a){ return s + parseFloat(a.monto||0); }, 0);
-    if(totalAbonado > totalFacturado + 0.01){
-      await recalcularFacturasCliente(cliId, null);
-      await cargarDatos();
-      toast('Factura creada (se aplicó saldo a favor del cliente)', 's');
-    } else {
-      toast('Factura creada', 's');
-    }
-    document.getElementById('modalFactura').classList.remove('active');
-    renderFacturas();
+    var r = await sb.rpc('may_guardar_factura', { p_factura: factura, p_items: itemsRpc });
+    if(r.error) throw r.error;
+    res = r.data || {};
+  } catch(e){
+    msg.className='modal-msg error';
+    msg.textContent = 'No se guardó la factura (' + e.message + '). Nada quedó registrado: revisa la conexión e intenta de nuevo.';
+    return;
+  }
+  // Desde aquí la factura YA está en la base: lo que sigue es pantalla y extras, y no se revierte si falla.
+  var facturaId = res.factura_id || editingFacturaId;
+  editingFacturaId = null;
+  document.getElementById('modalFactura').classList.remove('active');
+  if(esEdicion) toast('Factura actualizada', 's');
+  else if(parseFloat(res.aplicado_a_esta || 0) > 0.01) toast('Factura #' + res.numero + ' creada (se aplicó saldo a favor del cliente: ' + fmt(res.aplicado_a_esta) + ')', 's');
+  else toast('Factura #' + res.numero + ' creada', 's');
+  await guardarPreciosPactados(cliId, items);
+  var ok = await cargarDatos();
+  if(currentDetalleId) renderDetalle();
+  if(!esEdicion && ok){
     // Ofrecer mandar al grupo del cliente la factura con el saldo total de su cuenta
     var mEnv = mensajeFacturaConSaldo(facturaId);
     if(mEnv) abrirEnviar(mEnv.texto, mEnv.telefono);
-  } catch(e){
-    msg.className='modal-msg error'; msg.textContent = 'Error al guardar: ' + e.message;
   }
 }
 
@@ -1494,7 +1491,7 @@ function prRenderVistaPrevia(){
       '<div class="pr-estado">' + estadoTxt + '</div>' + chips +
       '<div class="pr-fila-bot"><label>Precio c/u<input type="number" class="pr-precio" data-i="' + i + '" value="' + (l.precio != null ? l.precio : '') + '" step="0.01" min="0" inputmode="decimal"></label>' +
         '<span class="pr-origen">' + prEsc(origen) + '</span><span class="pr-sub" id="prSub' + i + '">' + fmt((l.cantidad || 1) * (l.precio || 0)) + '</span>' +
-        (est === 'libre' || (est === 'elegir' && l.producto_id == null) ? '<button type="button" class="btn btn-ghost pr-agregar" data-i="' + i + '">Agregar al catálogo</button>' : '') +
+        ((est === 'libre' || (est === 'elegir' && l.producto_id == null)) && !(CATALOGO_ERROR && !CATALOGO.length) ? '<button type="button" class="btn btn-ghost pr-agregar" data-i="' + i + '">Agregar al catálogo</button>' : '') +
       '</div>' + avisos + '</div>';
   });
   html += '<div class="pr-total"><span style="font-size:14px; color:var(--text-2);">Total calculado · ' + E.lineas.length + ' línea' + (E.lineas.length === 1 ? '' : 's') + '</span><span class="v" id="prTotalV">' + fmt(0) + '</span></div><div class="pr-total-nota" id="prTotalNota"></div>';
@@ -1817,36 +1814,33 @@ async function guardarAbono(){
   var msg = document.getElementById('abMsg');
   var monto = parseFloat(document.getElementById('abMonto').value);
   if(!monto || monto <= 0){ msg.className='modal-msg error'; msg.textContent='Escribe un monto válido.'; return; }
-  try {
-    var abonoData = {
-      cliente_id: abonoClienteId,
-      monto: monto,
-      fecha: document.getElementById('abFecha').value,
-      metodo: ABONO_METODO,
-      notas: document.getElementById('abNotas').value.trim() || null,
-      registrado_por: CURRENT_USER.id
-    };
-    var ra = await sb.from('may_abonos').insert(abonoData);
-    if(ra.error) throw ra.error;
-    var facturas = facturasDeCliente(abonoClienteId).filter(function(f){ return saldoFactura(f) > 0.01; });
-    var restante = monto;
-    for(var i=0; i<facturas.length && restante > 0.01; i++){
-      var f = facturas[i];
-      var saldo = saldoFactura(f);
-      var aplicar = Math.min(saldo, restante);
-      var nuevoPagado = parseFloat(f.monto_pagado||0) + aplicar;
-      var nuevoEstado = (nuevoPagado >= parseFloat(f.monto_total) - 0.01) ? 'pagada' : 'pendiente';
-      var ru = await sb.from('may_facturas').update({ monto_pagado: nuevoPagado, estado: nuevoEstado }).eq('id', f.id);
-      if(ru.error) throw ru.error;
-      restante -= aplicar;
-    }
-    toast('Abono registrado', 's');
-    document.getElementById('modalAbono').classList.remove('active');
-    await cargarDatos();
-    renderDetalle();
-  } catch(e){
-    msg.className='modal-msg error'; msg.textContent = 'Error: ' + e.message;
+  monto = Math.round(monto * 100) / 100;
+  // Aviso de pago repetido (mismo cliente, misma fecha y monto en los últimos 15 min): un doble toque o dos personas a la vez
+  var fechaAb = document.getElementById('abFecha').value || new Date().toISOString().substring(0,10);
+  var hace15 = Date.now() - 15*60*1000;
+  var repetido = ABONOS.some(function(a){ return a.cliente_id === abonoClienteId && a.fecha === fechaAb && Math.abs(parseFloat(a.monto) - monto) < 0.005 && a.creado_en && new Date(a.creado_en).getTime() > hace15; });
+  if(repetido && !confirm('Hace menos de 15 minutos ya se registró un abono de ' + fmt(monto) + ' a este cliente con la misma fecha.\n\n¿Es OTRO pago distinto y quieres registrarlo igual?')) {
+    msg.className='modal-msg error'; msg.textContent = 'No se guardó: era el mismo pago.'; return;
   }
+  var res;
+  try {
+    // El abono y su reparto entre facturas (de la más vieja a la más nueva) se hacen en UNA transacción en la base
+    // con datos frescos (may_registrar_abono): o queda todo o nada, y nunca se reparte sobre lo que había en memoria.
+    var r = await sb.rpc('may_registrar_abono', {
+      p_cliente_id: abonoClienteId, p_monto: monto, p_fecha: fechaAb, p_metodo: ABONO_METODO,
+      p_notas: document.getElementById('abNotas').value.trim() || null, p_registrado_por: CURRENT_USER.id
+    });
+    if(r.error) throw r.error;
+    res = r.data || {};
+  } catch(e){
+    msg.className='modal-msg error'; msg.textContent = 'No se registró el abono (' + e.message + '). Nada quedó guardado: revisa la conexión e intenta de nuevo.';
+    return;
+  }
+  document.getElementById('modalAbono').classList.remove('active');
+  var aFavor = parseFloat(res.saldo_a_favor || 0);
+  toast(aFavor > 0.01 ? 'Abono registrado. El cliente queda con ' + fmt(aFavor) + ' a favor' : 'Abono registrado', 's');
+  await cargarDatos();
+  renderDetalle();
 }
 
 // ===== ANULAR FACTURA (borrado suave) =====
@@ -1855,15 +1849,16 @@ async function anularFactura(facturaId){
   if(!f) return;
   var saldo = saldoFactura(f);
   var msg = '¿Anular la factura #' + f.numero + ' por ' + fmt(f.monto_total) + '?';
-  if(f.monto_pagado > 0.01) msg += '\n\nOJO: esta factura ya tiene ' + fmt(f.monto_pagado) + ' en pagos aplicados. Al anularla, ese monto queda como saldo a favor del cliente (los abonos NO se borran).';
+  if(f.monto_pagado > 0.01) msg += '\n\nOJO: esta factura ya tiene ' + fmt(f.monto_pagado) + ' en pagos aplicados. Al anularla, ese dinero se reparte entre las otras facturas pendientes del cliente o queda a su favor (los abonos NO se borran).';
   if(!confirm(msg)) return;
   try {
-    var r = await sb.from('may_facturas').update({ deleted_at: new Date().toISOString() }).eq('id', facturaId);
+    // Anula (borrado suave) y reparte de nuevo los pagos del cliente, todo en una transacción
+    var r = await sb.rpc('may_anular_factura', { p_factura_id: facturaId });
     if(r.error) throw r.error;
     toast('Factura anulada', 's');
     await cargarDatos();
     renderDetalle();
-  } catch(e){ toast('Error al anular: ' + e.message, 'e'); }
+  } catch(e){ toast('No se pudo anular la factura: ' + e.message, 'e'); }
 }
 
 // ===== ANULAR ABONO (revierte lo aplicado a facturas) =====
@@ -1872,34 +1867,20 @@ async function anularAbono(abonoId){
   if(!a) return;
   if(!confirm('¿Anular el abono de ' + fmt(a.monto) + ' del ' + fmtDate(a.fecha) + '?\n\nSe recalcularán los saldos de las facturas de este cliente.')) return;
   try {
-    // 1. Borrar (suave) el abono
-    var r = await sb.from('may_abonos').update({ deleted_at: new Date().toISOString() }).eq('id', abonoId);
+    // Anula (borrado suave) y recalcula TODAS las facturas del cliente desde cero, en una transacción y con datos frescos
+    var r = await sb.rpc('may_anular_abono', { p_abono_id: abonoId });
     if(r.error) throw r.error;
-    // 2. Recalcular TODAS las facturas del cliente desde cero, con los abonos restantes
-    await recalcularFacturasCliente(a.cliente_id, abonoId);
     toast('Abono anulado y saldos recalculados', 's');
     await cargarDatos();
     renderDetalle();
-  } catch(e){ toast('Error al anular: ' + e.message, 'e'); }
+  } catch(e){ toast('No se pudo anular el abono: ' + e.message, 'e'); }
 }
 
-// Recalcula el monto_pagado de las facturas de un cliente, repartiendo sus abonos (viejo->nuevo) a las facturas (vieja->nueva)
-async function recalcularFacturasCliente(clienteId, abonoExcluidoId){
-  var facturas = FACTURAS.filter(function(f){ return f.cliente_id === clienteId; })
-    .sort(function(a,b){ return new Date(a.fecha) - new Date(b.fecha); });
-  var abonos = ABONOS.filter(function(a){ return a.cliente_id === clienteId && a.id !== abonoExcluidoId; })
-    .sort(function(a,b){ return new Date(a.fecha) - new Date(b.fecha); });
-  var totalAbonos = abonos.reduce(function(s,a){ return s + parseFloat(a.monto||0); }, 0);
-  var restante = totalAbonos;
-  for(var i=0; i<facturas.length; i++){
-    var f = facturas[i];
-    var total = parseFloat(f.monto_total||0);
-    var aplicar = Math.min(total, restante);
-    restante -= aplicar;
-    var estado = (aplicar >= total - 0.01) ? 'pagada' : 'pendiente';
-    var r = await sb.from('may_facturas').update({ monto_pagado: aplicar, estado: estado }).eq('id', f.id);
-    if(r.error) throw r.error;
-  }
+// Reparte los abonos de un cliente entre sus facturas (viejo->nuevo) desde cero, en la base y con datos frescos
+async function recalcularFacturasCliente(clienteId){
+  var r = await sb.rpc('may_recalcular_cliente', { p_cliente_id: clienteId });
+  if(r.error) throw r.error;
+  return r.data;
 }
 
 // ===== NOTA DIGITAL EN PDF =====
@@ -2461,9 +2442,13 @@ initSearchClear();
     if(saved){
       var id = JSON.parse(saved).id;
       var r = await sb.from('may_usuarios').select('*').eq('id', id).eq('activo', true).maybeSingle();
+      if(r.error) throw r.error;
       if(r.data){ CURRENT_USER = r.data; entrarApp(); }
     }
-  } catch(e){}
+  } catch(e){
+    var lm = document.getElementById('loginMsg');
+    if(lm){ lm.textContent = 'No se pudo verificar tu sesión (sin conexión). Revisa el internet e intenta entrar.'; lm.className = 'login-msg error'; }
+  }
 })();
 </script>
 </body>
