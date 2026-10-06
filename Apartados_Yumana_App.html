@@ -1348,7 +1348,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px);}
         <div class="sub" id="statsSub">Resumen del negocio</div>
       </div>
       <div>
-        <button class="btn btn-ghost" id="btnExportExcel" title="Exportar a Excel" style="border-color:#27ae60;color:#27ae60;">' + ic('card',13) + ' Excel</button>
+        <button class="btn btn-ghost" id="btnExportExcel" title="Exportar a Excel" style="border-color:#27ae60;color:#27ae60;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Excel</button>
         <button class="btn btn-ghost" id="btnExportPdf" title="Reporte PDF" style="border-color:#e74c3c;color:#e74c3c;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg> PDF</button>
         <button class="btn btn-ghost" id="btnBackup" title="Descargar backup"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg> Backup</button>
         <button class="btn btn-ghost" id="btnVerificar" title="Revisa que todos los créditos y apartados cuadren (no cambia nada)" style="border-color:var(--green);color:var(--green);"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> Verificar cuadre</button>
@@ -2161,6 +2161,7 @@ var ABONOS_ALL = [];
 var INTERESES = [];
 var USUARIOS_APP = [];
 var HISTORIAL_AUDIT = [];
+var ABONOS_EDITADOS = {}; // ids de abonos con alguna edición en la auditoría (para la marca "editado")
 var CONFIG_APP = {};
 
 function getUserName(userId) {
@@ -2352,10 +2353,17 @@ function descCambios(cambios, labelMap) {
   return partes.join(' · ');
 }
 
-function mostrarHistorialAuditoria(entidad, entidadId) {
-  var historial = HISTORIAL_AUDIT.filter(function(h){
-    return h.entidad === entidad && h.entidad_id === entidadId;
-  });
+async function mostrarHistorialAuditoria(entidad, entidadId) {
+  // Se lee de la base el historial de ESTE registro (la auditoría completa ya no se carga al abrir la app)
+  var historial = [];
+  try {
+    var rh = await sb.from('historial_auditoria').select('*').eq('entidad', entidad).eq('entidad_id', entidadId).order('created_at', {ascending: true}).limit(200);
+    if (rh.error) throw rh.error;
+    historial = rh.data || [];
+  } catch (e) {
+    toast('No se pudo cargar el historial: ' + e.message, 'e');
+    historial = HISTORIAL_AUDIT.filter(function(h){ return h.entidad === entidad && h.entidad_id === entidadId; });
+  }
   // Ordenar cronológicamente (más viejo primero para línea de tiempo)
   historial.sort(function(a,b){
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
@@ -2467,12 +2475,35 @@ function initials(name) {
   var p = name.trim().split(/\s+/);
   return ((p[0] && p[0][0]) || '') + ((p[1] && p[1][0]) || '');
 }
+// Los avisos salen uno detrás de otro (antes el segundo tapaba al primero y el aviso de dinero se perdía).
+// Los errores duran más, los mensajes largos también, y un toque lo cierra para ver el siguiente.
+var TOAST_COLA = [], TOAST_TIMER = null;
 function toast(msg, t) {
-  var el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast ' + (t || 's') + ' show';
-  setTimeout(function() { el.className = 'toast'; }, 3500);
+  msg = String(msg == null ? '' : msg);
+  var ult = TOAST_COLA.length ? TOAST_COLA[TOAST_COLA.length - 1] : null;
+  if (ult && ult.msg === msg) return; // ya está en cola
+  if (!ult && TOAST_TIMER && document.getElementById('toast').textContent === msg) return; // se está mostrando
+  if (TOAST_COLA.length >= 5) TOAST_COLA.shift(); // tope: no acumular minutos de avisos
+  TOAST_COLA.push({ msg: msg, t: t || 's' });
+  if (!TOAST_TIMER) _toastSiguiente();
 }
+function _toastSiguiente() {
+  var el = document.getElementById('toast');
+  var it = TOAST_COLA.shift();
+  if (!it) { TOAST_TIMER = null; el.className = 'toast'; return; }
+  el.textContent = it.msg;
+  el.className = 'toast ' + it.t + ' show';
+  var dur = it.t === 'e' ? 6000 : 3500;
+  if (it.msg.length > 60) dur += Math.min(4000, (it.msg.length - 60) * 40);
+  TOAST_TIMER = setTimeout(function() {
+    el.className = 'toast';
+    TOAST_TIMER = setTimeout(_toastSiguiente, 250);
+  }, dur);
+}
+document.getElementById('toast').addEventListener('click', function() {
+  if (TOAST_TIMER) clearTimeout(TOAST_TIMER);
+  TOAST_TIMER = setTimeout(_toastSiguiente, 0);
+});
 var currentViewId = 'vDashboard';
 var scrollPorVista = {}; // recuerda la posición de scroll de cada lista
 var VISTAS_CON_SCROLL = ['vCreditos', 'vApartados', 'vClientes'];
@@ -2542,12 +2573,12 @@ async function refrescarTodo(silencioso) {
   _refrescando = true;
   // Animar botón de refresco
   var btn = document.getElementById('btnRefresh');
-  if (btn) { btn.style.opacity = '0.5'; btn.textContent = ''; }
+  if (btn) { btn.style.opacity = '0.5'; }
   try {
     if (AUDIT_CARGADA) { try { await cargarAuditoria(true); } catch(e){} }
-    await loadData();
+    var ok = await loadData();
     rerenderVistaActual();
-    if (!silencioso) toast('Actualizado', 's');
+    if (!silencioso && ok) toast('Actualizado', 's');
   } catch (e) {
     if (!silencioso) toast('Error al refrescar: ' + (e.message || e), 'e');
   } finally {
@@ -2605,7 +2636,8 @@ document.getElementById('btnLogin').addEventListener('click', async function() {
     await onLogin(result.data.user);
   } catch (e) {
     log('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M18 6L6 18M6 6l12 12"/></svg> Login fallido: ' + e.message);
-    document.getElementById('loginError').textContent = 'Email o contraseña incorrectos';
+    var esRed = /fetch|network|failed|timeout|load failed/i.test(e.message || '') && !/invalid|credential/i.test(e.message || '');
+    document.getElementById('loginError').textContent = esRed ? 'No se pudo conectar. Revisa tu internet e intenta de nuevo.' : 'Email o contraseña incorrectos';
     document.getElementById('loginError').classList.add('show');
     btn.disabled = false;
     btn.textContent = 'Entrar';
@@ -2625,24 +2657,36 @@ async function onLogin(user) {
     subscribeRealtime();
   } catch (e) {
     log('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M18 6L6 18M6 6l12 12"/></svg> Error perfil: ' + e.message);
-    document.getElementById('loginError').textContent = 'Tu usuario no tiene perfil. Avisa al admin.';
+    var sinPerfil = e && (e.code === 'PGRST116' || /0 rows|multiple \(or no\)/i.test(e.message || ''));
+    document.getElementById('loginError').textContent = sinPerfil ? 'Tu usuario no tiene perfil. Avisa al admin.' : 'No se pudo cargar tu perfil (sin conexión). Intenta de nuevo.';
     document.getElementById('loginError').classList.add('show');
-    await sb.auth.signOut();
+    var btnL = document.getElementById('btnLogin'); if (btnL) { btnL.disabled = false; btnL.textContent = 'Entrar'; }
+    if (sinPerfil) await sb.auth.signOut();
   }
 }
 
+// Varios cambios seguidos en la base (ej. marcarVencidos en otro equipo) = UNA sola recarga, no una por fila
+var RT_TIMER = null;
+function programarRecargaRealtime() {
+  if (RT_TIMER) clearTimeout(RT_TIMER);
+  RT_TIMER = setTimeout(function(){ RT_TIMER = null; loadData(); }, 1500);
+}
 function subscribeRealtime() {
   var tables = ['clientes','apartados','abonos','productos_apartado','creditos','intereses_aplicados','historial_auditoria'];
   tables.forEach(function(table){
     var ch = sb.channel('rt-' + table)
       .on('postgres_changes', {event: '*', schema: 'public', table: table}, function(){
         log('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg> Cambio detectado en ' + table);
-        loadData();
+        programarRecargaRealtime();
       })
       .subscribe(function(status){
         if (status === 'SUBSCRIBED') {
           document.getElementById('liveDot').classList.remove('off');
           document.getElementById('liveText').textContent = 'EN VIVO';
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          // Se cayó el tiempo real: avisar para que no se confíe en que la pantalla se actualiza sola
+          document.getElementById('liveDot').classList.add('off');
+          document.getElementById('liveText').textContent = 'SIN TIEMPO REAL';
         }
       });
     realtimeChannels.push(ch);
@@ -2734,8 +2778,14 @@ async function loadData() {
     var r5 = { data: (await traerTodoBD('creditos')).sort(desc('created_at')) };
     var r6 = { data: (await traerTodoBD('intereses_aplicados')).sort(desc('fecha')) };
     var r7 = await sb.from('usuarios_app').select('*');
-    // La auditoría (miles de filas) solo se carga al abrir la pestaña Auditoría (ver cargarAuditoria)
+    // La auditoría (miles de filas) solo se carga al abrir la pestaña Auditoría (ver cargarAuditoria).
+    // Aquí solo se traen los ids de abonos editados, para la marca "editado" en cada pago.
     var r8 = { data: HISTORIAL_AUDIT };
+    try {
+      var edits = await traerTodoBD('historial_auditoria', 'id,entidad_id', function(q){ return q.eq('entidad', 'abono').eq('accion', 'editar'); });
+      ABONOS_EDITADOS = {};
+      edits.forEach(function(h){ if (h.entidad_id) ABONOS_EDITADOS[h.entidad_id] = true; });
+    } catch (e) { console.warn('abonos editados', e); }
     var r9 = await sb.from('config_app').select('*');
     CLIENTES_ALL = r1.data || [];
     APARTADOS_ALL = r2.data || [];
@@ -2767,9 +2817,11 @@ async function loadData() {
     if (currentCreditoId && document.getElementById('vDetail').classList.contains('active')) {
       renderDetailCredito();
     }
+    return true;
   } catch (e) {
     log('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M18 6L6 18M6 6l12 12"/></svg> Error cargando: ' + e.message);
-    toast('Error cargando datos', 'e');
+    toast('No se pudieron cargar los datos. Lo que ves puede estar desactualizado: toca el botón de refrescar.', 'e');
+    return false;
   }
 }
 
@@ -2803,8 +2855,9 @@ function renderAll() {
 // DASHBOARD
 // =================================================================
 function renderDashboard() {
-  var actAp = APARTADOS.filter(function(a){return a.estado === 'activo';});
-  var actCr = CREDITOS.filter(function(c){return c.estado === 'activo';});
+  // Las cuentas 'vencido' siguen debiendo: cuentan igual que las activas
+  var actAp = APARTADOS.filter(esDeudaViva);
+  var actCr = CREDITOS.filter(esDeudaViva);
   var totalAct = actAp.length + actCr.length;
   document.getElementById('kpiAct').textContent = totalAct;
   var pendAp = actAp.reduce(function(s,a){return s + (parseFloat(a.monto_total) - parseFloat(a.monto_abonado || 0));}, 0);
@@ -2864,7 +2917,7 @@ function renderRecordatorios() {
 
   // 1. Apartados/créditos próximos a cumplir mes (con interés activado, 25-30 días)
   CREDITOS.forEach(function(cr){
-    if (cr.estado !== 'activo' || !cr.aplica_interes) return;
+    if (!esDeudaViva(cr) || !cr.aplica_interes) return;
     var saldo = parseFloat(cr.monto_total) - parseFloat(cr.monto_pagado || 0);
     if (saldo <= 0) return;
     var diasDesdeUlt = diasDesdeUltimoInteres('credito', cr);
@@ -2894,7 +2947,7 @@ function renderRecordatorios() {
   var hoy = today();
   var en7 = dateLocalStr(new Date(Date.now() + 7 * 86400000));
 
-  APARTADOS.filter(function(a){return a.estado === 'activo';}).forEach(function(ap){
+  APARTADOS.filter(esDeudaViva).forEach(function(ap){
     if (ap.fecha_limite >= hoy && ap.fecha_limite <= en7) {
       var saldo = parseFloat(ap.monto_total) - parseFloat(ap.monto_abonado || 0);
       if (saldo > 0) {
@@ -2910,7 +2963,7 @@ function renderRecordatorios() {
     }
   });
 
-  CREDITOS.filter(function(c){return c.estado === 'activo';}).forEach(function(cr){
+  CREDITOS.filter(esDeudaViva).forEach(function(cr){
     if (cr.fecha_limite >= hoy && cr.fecha_limite <= en7) {
       var saldo = parseFloat(cr.monto_total) - parseFloat(cr.monto_pagado || 0);
       if (saldo > 0) {
@@ -3024,7 +3077,7 @@ function renderApartados() {
 
   var cont = document.getElementById('apList');
   if (list.length === 0) {
-    cont.innerHTML = '<div class="empty-state"><div class="ico"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div><h3>No hay apartados ' + (filtroApartados === 'completados' ? 'completados' : 'activos') + '</h3><p>' + (filtroApartados === 'completados' ? 'Aún no se han completado apartados' : 'Crea el primero con el botón "+ Nuevo"') + '</p></div>';
+    cont.innerHTML = '<div class="empty-state"><div class="ico"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div><h3>' + (search ? 'Sin resultados' : 'No hay apartados ' + (filtroApartados === 'completados' ? 'completados' : 'activos')) + '</h3><p>' + (search ? 'Ningún apartado coincide con la búsqueda' : filtroApartados === 'completados' ? 'Aún no se han completado apartados' : 'Crea el primero con el botón "+ Nuevo"') + '</p></div>';
     return;
   }
   var isAdmin = currentUserApp && currentUserApp.rol === 'admin';
@@ -3141,8 +3194,8 @@ function renderClientes() {
   var cont = document.getElementById('clList');
   if (list.length === 0) {
     cont.innerHTML = '<div class="empty-state"><div class="ico">' + (filtroCliente === 'sin_cedula' ? ic('check',40) : ic('user',40)) + '</div><h3>' +
-      (filtroCliente === 'sin_cedula' ? 'Todos tienen cédula' : 'No hay clientes') + '</h3><p>' +
-      (filtroCliente === 'sin_cedula' ? 'No hay clientes pendientes de cédula' : 'Registra el primero con el botón "+ Nuevo"') + '</p></div>';
+      (search ? 'Sin resultados' : filtroCliente === 'sin_cedula' ? 'Todos tienen cédula' : 'No hay clientes') + '</h3><p>' +
+      (search ? 'Ningún cliente coincide con la búsqueda' : filtroCliente === 'sin_cedula' ? 'No hay clientes pendientes de cédula' : 'Registra el primero con el botón "+ Nuevo"') + '</p></div>';
     return;
   }
   var isAdmin = currentUserApp && currentUserApp.rol === 'admin';
@@ -4214,14 +4267,13 @@ async function _entregarProducto(productoId, apartado, p) {
   var cli = CLIENTES.find(function(c){return c.id === apartado.cliente_id;});
   var cantTxt = (p.cantidad || 1) > 1 ? (p.cantidad + 'x ') : '';
 
-  // Recalcular disponible (por si acaso)
-  var abonadoTotal = parseFloat(apartado.monto_abonado || 0);
-  var valorEntregado = 0;
-  PRODUCTOS.forEach(function(x){
-    if (x.apartado_id === apartado.id && x.entregado) {
-      valorEntregado += parseFloat(x.precio_unitario) * (x.cantidad || 1);
-    }
-  });
+  // Lo abonado y lo ya entregado se leen FRESCOS de la base (regla 5): otro equipo pudo anular un abono
+  var rFresh = await sb.from('apartados').select('monto_abonado').eq('id', apartado.id).single();
+  if (rFresh.error || !rFresh.data) return toast('No se pudo leer lo abonado. Refresca e intenta de nuevo.', 'e');
+  var abonadoTotal = parseFloat(rFresh.data.monto_abonado || 0);
+  var rEnt = await sb.from('productos_apartado').select('precio_unitario,cantidad').eq('apartado_id', apartado.id).eq('entregado', true);
+  if (rEnt.error) return toast('No se pudo leer lo entregado. Refresca e intenta de nuevo.', 'e');
+  var valorEntregado = (rEnt.data || []).reduce(function(s, x){ return s + parseFloat(x.precio_unitario) * (x.cantidad || 1); }, 0);
   var disponible = abonadoTotal - valorEntregado;
 
   if (disponible < valorProd - 0.01) {
@@ -5401,10 +5453,11 @@ function deleteApartado(id) {
         if (r.error) throw r.error;
 
         // Soft delete de los pagos asociados
-        await sb.from('abonos').update({
+        var rAbDelAp = await sb.from('abonos').update({
           deleted_at: now,
           deleted_by: currentUserApp.id
         }).eq('apartado_id', id).is('deleted_at', null);
+        if (rAbDelAp.error) throw rAbDelAp.error;
 
         toast('Apartado movido a papelera · Disponible 30 días', 's');
         if (currentApartadoId === id) {
@@ -5443,39 +5496,67 @@ function deleteAbono(id) {
     (advertenciaCompletado ? advertenciaCompletado + '\n\n' : '') + (esGrupo ? 'Este abono es parte de un pago de ' + fmt(totalGrupo) + ' repartido entre ' + partesGrupo.length + ' créditos. Se anulan todas las partes y se recalculan los créditos. ' : '') + 'El pago se moverá a la papelera. Puedes restaurarlo durante 30 días.',
     (esGrupo ? fmt(totalGrupo) + ' en ' + partesGrupo.length + ' partes' : fmt(ab.monto)) + ' · ' + ab.metodo + ' · ' + fmtDate(ab.fecha),
     async function() {
+      var ahoraElim = new Date().toISOString();
+      var anuladas = []; // partes ya anuladas, para revertir si falla a mitad
       try {
-        var ahoraElim = new Date().toISOString();
         for (var pi = 0; pi < partesGrupo.length; pi++) {
           var parte = partesGrupo[pi];
-          // AUDITORÍA
-          await registrarAuditoria('abono', parte.id, 'eliminar',
-            'Eliminó pago de ' + fmt(parte.monto) + ' (' + parte.metodo + ') del ' + fmtDate(parte.fecha) + (esGrupo ? ' [parte de pago a la cuenta de ' + fmt(totalGrupo) + ']' : '') + ' [movido a papelera]',
-            { monto: parte.monto, metodo: parte.metodo, fecha: parte.fecha, grupo_pago: parte.grupo_pago || null });
-
-          // SOFT DELETE
+          // SOFT DELETE (todas las partes con la misma fecha, para poder restaurarlas juntas)
           var r = await sb.from('abonos').update({ deleted_at: ahoraElim, deleted_by: currentUserApp.id }).eq('id', parte.id);
           if (r.error) throw r.error;
-
-          // Recalcular monto pagado del apartado/crédito (con JS, sin depender de RPC)
-          if (parte.apartado_id) { if (!(await recalcularSaldoCuenta('apartado', parte.apartado_id))) throw new Error('No se pudo recalcular el apartado'); }
-          if (parte.credito_id) { if (!(await recalcularSaldoCuenta('credito', parte.credito_id))) throw new Error('No se pudo recalcular el crédito'); }
+          anuladas.push(parte);
+        }
+        // Recalcular cada cuenta tocada (los triggers de la base ya lo hacen; esto asegura el estado)
+        for (var pj = 0; pj < anuladas.length; pj++) {
+          var pa = anuladas[pj];
+          if (pa.apartado_id) { if (!(await recalcularSaldoCuenta('apartado', pa.apartado_id))) throw new Error('No se pudo recalcular el apartado'); }
+          if (pa.credito_id) { if (!(await recalcularSaldoCuenta('credito', pa.credito_id))) throw new Error('No se pudo recalcular el crédito'); }
+        }
+        // AUDITORÍA: solo ahora, cuando ya se sabe que se anuló todo (antes se escribía por parte y mentía si se revertía)
+        for (var pk = 0; pk < anuladas.length; pk++) {
+          var pA = anuladas[pk];
+          await registrarAuditoria('abono', pA.id, 'eliminar',
+            'Eliminó pago de ' + fmt(pA.monto) + ' (' + pA.metodo + ') del ' + fmtDate(pA.fecha) + (esGrupo ? ' [parte de pago a la cuenta de ' + fmt(totalGrupo) + ']' : '') + ' [movido a papelera]',
+            { monto: pA.monto, metodo: pA.metodo, fecha: pA.fecha, grupo_pago: pA.grupo_pago || null });
         }
 
-        toast('Pago movido a papelera · Disponible 30 días', 's');
+        toast(esGrupo ? 'Pago a la cuenta anulado completo (' + anuladas.length + ' partes) · En papelera 30 días' : 'Pago movido a papelera · Disponible 30 días', 's');
         await loadData();
         if (currentApartadoId) renderDetail();
         if (currentCreditoId) renderDetailCredito();
       } catch (e) {
-        toast('Error: ' + e.message, 'e');
+        // Falló a mitad: revertir las partes ya anuladas para que el pago no quede medio anulado
+        if (esGrupo && anuladas.length && anuladas.length < partesGrupo.length) {
+          try {
+            await marcarPartesGrupo(anuladas, null, 'Anulación del pago a la cuenta de ' + fmt(totalGrupo) + ' revertida: falló a mitad (' + (e.message || '') + ')', { partes_revertidas: anuladas.length });
+            toast('No se anuló el pago (' + e.message + '). Todo quedó como estaba; intenta de nuevo.', 'e');
+          } catch (eRev) {
+            toast('ATENCIÓN: el pago quedó anulado A MEDIAS (' + anuladas.length + ' de ' + partesGrupo.length + ' partes) y no se pudo revertir. Refresca y revisa la papelera.', 'e');
+          }
+        } else if (anuladas.length && anuladas.length === partesGrupo.length) {
+          toast('El pago quedó anulado, pero no se pudo recalcular el saldo (' + e.message + '). Toca refrescar.', 'e');
+        } else {
+          toast('No se pudo anular el pago: ' + e.message, 'e');
+        }
+        await loadData();
       }
-    }
+    },
+    { btn: esGrupo ? 'Sí, anular todo' : 'Sí, eliminar' }
   );
 }
 
-function confirmAction(title, msg, what, callback) {
+// opts: { btn: texto del botón, clase: 'btn-red' | 'btn-primary' | 'btn-green' }
+// Sin opts, el botón toma el verbo del título ("¿Aprobar crédito?" -> "Sí, aprobar"); antes decía siempre "Sí, eliminar".
+function confirmAction(title, msg, what, callback, opts) {
+  opts = opts || {};
   document.getElementById('confirmTitle').textContent = title;
   document.getElementById('confirmMsg').textContent = msg;
   document.getElementById('confirmWhat').textContent = what;
+  var btn = document.getElementById('btnConfirmYes');
+  var verbo = (String(title).replace(/^[¿\s]+/, '').split(/\s+/)[0] || 'continuar').toLowerCase();
+  btn.textContent = opts.btn || ('Sí, ' + verbo);
+  btn.className = 'btn ' + (opts.clase || 'btn-red');
+  btn.disabled = false;
   confirmCallback = callback;
   showModal('mConfirm');
 }
@@ -5484,8 +5565,11 @@ document.getElementById('btnConfirmYes').addEventListener('click', async functio
   if (confirmCallback) {
     var cb = confirmCallback;
     confirmCallback = null;
-    closeModal('mConfirm');
-    await cb();
+    // El modal se queda abierto con "Procesando..." hasta que termine (antes parecía que no pasaba nada)
+    var btn = this, txt = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Procesando...';
+    try { await cb(); }
+    finally { btn.disabled = false; btn.textContent = txt; closeModal('mConfirm'); }
   }
 });
 
@@ -5582,11 +5666,11 @@ protegerBoton('btnSaveAp', async function(){
       }).eq('id', editingApartadoId);
       if (ru.error) throw ru.error;
 
-      // Borrar productos viejos
-      var rDel = await sb.from('productos_apartado').delete().eq('apartado_id', editingApartadoId);
-      if (rDel.error) throw rDel.error;
-
-      // Insertar productos nuevos
+      // Primero se insertan los productos nuevos y DESPUÉS se borran los viejos (por id):
+      // si falla a mitad, el apartado nunca queda sin productos.
+      var rViejos = await sb.from('productos_apartado').select('id').eq('apartado_id', editingApartadoId);
+      if (rViejos.error) throw rViejos.error;
+      var idsViejos = (rViejos.data || []).map(function(x){ return x.id; });
       var prodsInsert = validProds.map(function(p){
         return {
           apartado_id: editingApartadoId,
@@ -5597,11 +5681,21 @@ protegerBoton('btnSaveAp', async function(){
           producto_id: p.producto_id || null
         };
       });
-      var rIns = await sb.from('productos_apartado').insert(prodsInsert);
+      var rIns = await sb.from('productos_apartado').insert(prodsInsert).select('id');
       if (rIns.error) throw rIns.error;
+      if (idsViejos.length) {
+        var rDel = await sb.from('productos_apartado').delete().in('id', idsViejos);
+        if (rDel.error) {
+          // Quedarían viejos + nuevos (el total se doblaría): quitar los nuevos y dejar todo como estaba
+          var idsNuevos = (rIns.data || []).map(function(x){ return x.id; });
+          var rUndoP = idsNuevos.length ? await sb.from('productos_apartado').delete().in('id', idsNuevos) : { error: null };
+          if (rUndoP.error) throw new Error('Los productos quedaron DUPLICADOS en el apartado #' + (APARTADOS.find(function(x){ return x.id === editingApartadoId; }) || {}).numero + '. No apliques interés ni edites hasta refrescar y revisar. (' + rDel.error.message + ')');
+          throw new Error('No se guardaron los cambios de productos (' + rDel.error.message + '). El apartado quedó como estaba; intenta de nuevo.');
+        }
+      }
       try { await crearReservasInventario(validProds, {id: editingApartadoId}, clienteNombreParaReserva()); } catch(e) { console.error(e); }
       // El total cambió: recalcular pagado y estado desde los abonos reales
-      await recalcularSaldoCuenta('apartado', editingApartadoId);
+      await recalcularOAvisar('apartado', editingApartadoId);
 
       closeModal('mNewAp');
       toast('Apartado actualizado con ' + validProds.length + ' producto(s)', 's');
@@ -5616,6 +5710,8 @@ protegerBoton('btnSaveAp', async function(){
       }).select().single();
       if (r1.error) throw r1.error;
       var ap = r1.data;
+      // Si algo de lo que sigue falla, el apartado recién creado se manda a la papelera: así "Crear" otra vez no duplica
+      try {
 
       // Insertar todos los productos
       var prodsInsert2 = validProds.map(function(p){
@@ -5630,7 +5726,6 @@ protegerBoton('btnSaveAp', async function(){
       });
       var r2 = await sb.from('productos_apartado').insert(prodsInsert2);
       if (r2.error) throw r2.error;
-      try { await crearReservasInventario(validProds, ap, clienteNombreParaReserva()); } catch(e) { console.error(e); }
 
       if (inicial > 0) {
         var naAbRefVal = document.getElementById('naAbRef').value.trim();
@@ -5646,6 +5741,11 @@ protegerBoton('btnSaveAp', async function(){
         });
         if (r3.error) throw r3.error;
       }
+      } catch (eMitad) {
+        throw await anularCreacionIncompleta('apartado', ap, notas, eMitad, 'revísalo en la lista de apartados.');
+      }
+      // Reservar en inventario solo cuando el apartado quedó creado completo
+      try { await crearReservasInventario(validProds, ap, clienteNombreParaReserva()); } catch(e) { console.error(e); }
 
       closeModal('mNewAp');
       toast('Apartado #' + ap.numero + ' creado con ' + validProds.length + ' producto(s)', 's');
@@ -5690,7 +5790,11 @@ function renderCreditos() {
 
   var cont = document.getElementById('crList');
   if (list.length === 0) {
-    cont.innerHTML = '<div class="empty-state"><div class="ico">' + ic('card',40) + '</div><h3>No hay créditos activos</h3><p>Crea el primero con el botón "+ Nuevo"</p></div>';
+    var hayFiltroCr = search || vendedorCreditos !== 'todos';
+    cont.innerHTML = '<div class="empty-state"><div class="ico">' + ic(hayFiltroCr ? 'search' : 'card',40) + '</div>' +
+      (hayFiltroCr ? '<h3>Sin resultados</h3><p>Ningún crédito coincide con la búsqueda o el vendedor elegido</p>' :
+       filtroCreditos === 'completados' ? '<h3>No hay créditos completados</h3><p>Aquí aparecen los créditos ya pagados</p>' :
+       '<h3>No hay créditos activos</h3><p>Crea el primero con el botón "+ Nuevo"</p>') + '</div>';
     return;
   }
   var isAdmin = currentUserApp && currentUserApp.rol === 'admin';
@@ -6210,7 +6314,7 @@ protegerBoton('btnSaveCr', async function(){
       var ru = await sb.from('creditos').update(updateData).eq('id', editingCreditoId);
       if (ru.error) throw ru.error;
       // El total cambió: recalcular pagado y estado desde los abonos reales
-      await recalcularSaldoCuenta('credito', editingCreditoId);
+      await recalcularOAvisar('credito', editingCreditoId);
 
       closeModal('mNewCr');
       toast('Crédito actualizado', 's');
@@ -6234,8 +6338,10 @@ protegerBoton('btnSaveCr', async function(){
       if (r1.error) throw r1.error;
       var cr = r1.data;
 
-      // Si es admin y hay abono inicial, registrarlo
+      // Si es admin y hay abono inicial, registrarlo. Si falla, el crédito recién creado se manda a la papelera
+      // para que "Crear" otra vez no duplique la deuda.
       if (esAdmin && inicial > 0) {
+        try {
         var ncrAbRefVal = document.getElementById('ncrAbRef').value.trim();
         var ncrAbCuentaVal = document.getElementById('ncrAbCuenta').value.trim();
         var r2 = await sb.from('abonos').insert({
@@ -6248,6 +6354,9 @@ protegerBoton('btnSaveCr', async function(){
           confirmado: true, fecha_confirmacion: new Date().toISOString()
         });
         if (r2.error) throw r2.error;
+        } catch (eMitad) {
+          throw await anularCreacionIncompleta('credito', cr, notas, eMitad, 'quedó sin su abono inicial; regístralo desde su detalle.');
+        }
       }
 
       closeModal('mNewCr');
@@ -6355,10 +6464,13 @@ function aplicarInteres(tipo, obj) {
       if (saldoFresco == null) throw new Error('No se pudo leer el saldo actual');
       if (saldoFresco <= 0.005) throw new Error('La cuenta ya no tiene saldo pendiente');
       if (Math.abs(saldoFresco - saldoActual) > 0.005) {
+        var montoNuevo = Math.round(saldoFresco * 0.10 * 100) / 100;
+        if (!confirm('El saldo cambió desde que abriste la pantalla.\n\nSaldo real ahora: ' + fmt(saldoFresco) + '\nInterés (10%): ' + fmt(montoNuevo) + ' (antes decía ' + fmt(monto) + ')\n\n¿Aplicar el interés con el saldo real?')) {
+          throw new Error('No se aplicó el interés');
+        }
         saldoActual = saldoFresco;
-        monto = Math.round(saldoActual * 0.10 * 100) / 100;
+        monto = montoNuevo;
         saldoDespues = redondear2(saldoActual + monto);
-        toast('El saldo cambió desde que abriste la pantalla: interés calculado sobre ' + fmt(saldoActual), 's');
       }
       // 1. Insertar registro en intereses_aplicados
       var data = {
@@ -6377,11 +6489,21 @@ function aplicarInteres(tipo, obj) {
         data.apartado_id = obj.id;
         data.credito_id = null;
       }
-      var r1 = await sb.from('intereses_aplicados').insert(data);
+      var r1 = await sb.from('intereses_aplicados').insert(data).select('id').single();
       if (r1.error) throw r1.error;
 
-      // 2. Reconstruir monto_total desde la FUENTE DE VERDAD: productos reales + intereses vivos
-      await reconstruirTotalCuenta(tipo, obj.id, 'aplicar interés');
+      // 2. Reconstruir monto_total desde la FUENTE DE VERDAD: productos reales + intereses vivos.
+      //    Si esto falla, el interés recién insertado se quita para no dejar la cuenta descuadrada.
+      try {
+        await reconstruirTotalCuenta(tipo, obj.id, 'aplicar interés');
+      } catch (eRec) {
+        var rQ = await sb.from('intereses_aplicados').delete().eq('id', r1.data.id);
+        if (rQ.error) throw new Error('El interés se guardó pero el total de la cuenta no se actualizó (' + eRec.message + '). Toca "Verificar cuadre" o vuelve a abrir la cuenta.');
+        // El total pudo haberse actualizado con el interés antes de fallar: reconstruirlo sin él (idempotente)
+        try { await reconstruirTotalCuenta(tipo, obj.id, 'deshacer interés fallido'); }
+        catch (e3) { throw new Error('No se aplicó el interés, pero el total de la cuenta puede haber quedado con el 10% sumado (' + eRec.message + '). Toca "Verificar cuadre".'); }
+        throw new Error('No se aplicó el interés (' + eRec.message + '). Intenta de nuevo.');
+      }
       await registrarAuditoria(tipo, obj.id, 'editar', 'Aplicó interés de ' + fmt(monto) + ' (10% sobre ' + fmt(saldoActual) + ') con fecha ' + fmtDate(fechaInt), { interes: monto, saldo_antes: saldoActual, fecha: fechaInt });
 
       toast('Interés de ' + fmt(monto) + ' aplicado', 's');
@@ -6389,11 +6511,47 @@ function aplicarInteres(tipo, obj) {
       if (currentViewId === 'vDetail') { if (tipo === 'credito') renderDetailCredito(); else renderDetail(); }
       else rerenderVistaActual();
     } catch (e) {
-      toast('Error: ' + e.message, 'e');
+      toast(e.message === 'No se aplicó el interés' ? e.message : ('No se aplicó el interés: ' + e.message), 'e');
     } finally {
       APLICANDO_INTERES = false;
     }
   })();
+}
+
+// Una cuenta "debe todavía" si está activa o vencida (vencida = pasó la fecha límite, pero sigue debiendo)
+function esDeudaViva(x) { return x.estado === 'activo' || x.estado === 'vencido'; }
+
+// Recalcula pagado/estado y, si no se pudo, avisa con UN solo mensaje igual en toda la app. Devuelve true/false.
+async function recalcularOAvisar(tipo, id, numero) {
+  var ok = await recalcularSaldoCuenta(tipo, id);
+  if (!ok) toast('Se guardó, pero no se pudo recalcular el saldo del ' + (tipo === 'credito' ? 'crédito' : 'apartado') + (numero ? ' #' + numero : '') + '. Toca refrescar.', 'e');
+  return ok;
+}
+
+// Una cuenta recién creada quedó a medias (falló el paso siguiente): se manda a la papelera con rastro,
+// para que "Crear" otra vez no duplique. Devuelve el Error que debe lanzar quien llamó.
+async function anularCreacionIncompleta(tipo, fila, notas, eMitad, consejo) {
+  var tabla = tipo === 'credito' ? 'creditos' : 'apartados';
+  var nombre = tipo === 'credito' ? 'crédito' : 'apartado';
+  var rUndo = await sb.from(tabla).update({ deleted_at: new Date().toISOString(), deleted_by: currentUserApp.id, notas: ((notas || '') + ' [Creación incompleta, anulada automáticamente]').trim() }).eq('id', fila.id);
+  if (rUndo.error) {
+    return new Error('El ' + nombre + ' #' + fila.numero + ' quedó creado a medias y no se pudo anular. NO lo crees de nuevo: ' + consejo + ' (' + eMitad.message + ')');
+  }
+  await registrarAuditoria(tipo, fila.id, 'eliminar', 'Creación incompleta del ' + nombre + ' #' + fila.numero + ' anulada automáticamente: ' + (eMitad.message || ''), { numero: fila.numero, motivo: eMitad.message || null });
+  return new Error('No se creó el ' + nombre + ' (' + eMitad.message + '). Revisa la conexión e intenta de nuevo.');
+}
+
+// Marca (deletedAt = fecha ISO) o desmarca (deletedAt = null) varias partes de un pago, recalcula cada cuenta tocada
+// y deja UN registro en auditoría. Lanza si el update falla.
+async function marcarPartesGrupo(partes, deletedAt, descripcionAudit, cambios) {
+  var ids = partes.map(function(x){ return x.id; });
+  var r = await sb.from('abonos').update({ deleted_at: deletedAt, deleted_by: deletedAt ? currentUserApp.id : null }).in('id', ids).select('id');
+  if (r.error) throw r.error;
+  for (var i = 0; i < partes.length; i++) {
+    if (partes[i].credito_id) await recalcularSaldoCuenta('credito', partes[i].credito_id);
+    if (partes[i].apartado_id) await recalcularSaldoCuenta('apartado', partes[i].apartado_id);
+  }
+  if (descripcionAudit) await registrarAuditoria('abono', partes[0].grupo_pago || ids[0], deletedAt ? 'eliminar' : 'crear', descripcionAudit, cambios || { ids: ids });
 }
 
 // Saldo FRESCO de una cuenta leído de la base (null si no se pudo leer)
@@ -6442,7 +6600,7 @@ async function reconstruirTotalCuenta(tipo, id, motivo) {
     await registrarAuditoria(tipo, id, 'editar', 'Corrección de subtotal al ' + (motivo || 'recalcular') + ': el total guardado no coincidía con los productos',
       { subtotal: { antes: subtotalGuardado, despues: subtotal }, monto_total: { antes: parseFloat(rAct.data.monto_total || 0), despues: nuevoTotal } });
   }
-  await recalcularSaldoCuenta(tipo, id);
+  if (!(await recalcularSaldoCuenta(tipo, id))) throw new Error('El total se actualizó pero no se pudo recalcular el saldo/estado');
   return nuevoTotal;
 }
 function nuevoUUID() {
@@ -6475,9 +6633,10 @@ function perdonarInteres(id) {
         if (currentCreditoId) renderDetailCredito();
         if (currentApartadoId) renderDetail();
       } catch (e) {
-        toast('Error: ' + e.message, 'e');
+        toast('No se pudo perdonar el interés: ' + e.message, 'e');
       }
-    }
+    },
+    { btn: 'Sí, perdonar', clase: 'btn-primary' }
   );
 }
 
@@ -6508,9 +6667,10 @@ function restaurarInteres(id) {
         if (currentCreditoId) renderDetailCredito();
         if (currentApartadoId) renderDetail();
       } catch (e) {
-        toast('Error: ' + e.message, 'e');
+        toast('No se pudo restaurar el interés: ' + e.message, 'e');
       }
-    }
+    },
+    { btn: 'Sí, volver a cobrar', clase: 'btn-primary' }
   );
 }
 
@@ -6616,9 +6776,10 @@ function aprobarCredito(cr) {
         await loadData();
         if (currentCreditoId === cr.id) renderDetailCredito();
       } catch (e) {
-        toast('Error: ' + e.message, 'e');
+        toast('No se pudo aprobar el crédito: ' + e.message, 'e');
       }
-    }
+    },
+    { btn: 'Sí, aprobar', clase: 'btn-primary' }
   );
 }
 
@@ -6627,7 +6788,7 @@ function rechazarCredito(cr) {
   var cli = CLIENTES.find(function(c){return c.id === cr.cliente_id;});
   confirmAction(
     '¿Rechazar crédito?',
-    'El crédito será eliminado y no se podrá recuperar.',
+    'La solicitud se mueve a la papelera (30 días) y deja de aparecer en las listas.',
     'Crédito #' + cr.numero + ' · ' + ((cli && cli.nombre) || '?') + ' · ' + fmt(cr.monto_total),
     async function() {
       try {
@@ -6691,7 +6852,7 @@ function renderDetailCredito() {
         var waAbBtn = (cli && cli.telefono) ? '<button class="del-mini" data-wa-ab="' + ab.id + '" title="Enviar confirmación por WhatsApp" style="background:rgba(37,211,102,0.12);border-color:rgba(37,211,102,0.3);color:#25d366;">' + ic('phone',14) + '</button>' : '';
         var fotoMini = ab.foto_comprobante ? '<div class="foto-preview" onclick="verFoto(\'' + ab.foto_comprobante + '\')"><img src="' + ab.foto_comprobante + '"></div>' : '';
         var horaTxt = ab.created_at ? ' a las ' + new Date(ab.created_at).toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'}) : '';
-        var fueEditado = HISTORIAL_AUDIT.some(function(h){return h.entidad === 'abono' && h.entidad_id === ab.id && h.accion === 'editar';});
+        var fueEditado = !!ABONOS_EDITADOS[ab.id];
         var marcaEdit = fueEditado ? ' <span title="Pago editado" style="color:#f39c12;font-size:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M11 4H5a2 2 0 00-2 2v13a2 2 0 002 2h13a2 2 0 002-2v-6"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg> editado</span>' : '';
         return '<div class="abono-item">' +
           '<div class="ab-top">' +
@@ -7873,7 +8034,7 @@ function renderDetail() {
       var waAbBtn = (cli && cli.telefono) ? '<button class="btn-icon" data-wa-ab="' + ab.id + '" title="Enviar confirmación por WhatsApp" style="color:#25d366;border-color:rgba(37,211,102,0.3);background:rgba(37,211,102,0.12);">' + ic('phone',14) + '</button>' : '';
       var fotoMini = ab.foto_comprobante ? '<div class="foto-preview" onclick="verFoto(\'' + ab.foto_comprobante + '\')"><img src="' + ab.foto_comprobante + '"></div>' : '';
       var horaTxt = ab.created_at ? ' a las ' + new Date(ab.created_at).toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'}) : '';
-      var fueEditado = HISTORIAL_AUDIT.some(function(h){return h.entidad === 'abono' && h.entidad_id === ab.id && h.accion === 'editar';});
+      var fueEditado = !!ABONOS_EDITADOS[ab.id];
       var marcaEdit = fueEditado ? ' <span title="Pago editado" style="color:#f39c12;font-size:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M11 4H5a2 2 0 00-2 2v13a2 2 0 002 2h13a2 2 0 002-2v-6"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg> editado</span>' : '';
       return '<div class="abono-item">' +
         '<div class="ab-top">' +
@@ -8684,35 +8845,50 @@ async function restaurarItem(tipo, id) {
       deleted_by: null
     }).eq('id', id);
     if (r.error) throw r.error;
+    var avisos = [];
 
-    // Si es apartado/crédito, restaurar también sus pagos eliminados con la misma fecha
+    // Si es apartado/crédito, restaurar también sus pagos eliminados con la misma fecha (se COMPRUEBA)
     if (tipo === 'apartado' && obj) {
       var fechaElim = obj.deleted_at;
-      await sb.from('abonos').update({deleted_at: null, deleted_by: null})
-        .eq('apartado_id', id).eq('deleted_at', fechaElim);
-      await recalcularSaldoCuenta('apartado', id);
+      var rA1 = await sb.from('abonos').update({deleted_at: null, deleted_by: null}).eq('apartado_id', id).eq('deleted_at', fechaElim).select('id');
+      if (rA1.error) throw new Error('El apartado volvió pero sus pagos no: ' + rA1.error.message + '. Restáuralos desde la papelera.');
+      await recalcularOAvisar('apartado', id, obj.numero);
     }
     if (tipo === 'credito' && obj) {
       var fechaElimC = obj.deleted_at;
-      await sb.from('abonos').update({deleted_at: null, deleted_by: null})
-        .eq('credito_id', id).eq('deleted_at', fechaElimC);
-      await recalcularSaldoCuenta('credito', id);
+      var rA2 = await sb.from('abonos').update({deleted_at: null, deleted_by: null}).eq('credito_id', id).eq('deleted_at', fechaElimC).select('id');
+      if (rA2.error) throw new Error('El crédito volvió pero sus pagos no: ' + rA2.error.message + '. Restáuralos desde la papelera.');
+      await recalcularOAvisar('credito', id, obj.numero);
     }
     // Si es abono suelto, recalcular su apartado/crédito (y avisar si la cuenta sigue en papelera)
     if (tipo === 'abono' && obj) {
+      var cuentasRecalc = [];
+      // Parte de un "pago a la cuenta": vuelven TODAS las partes anuladas junto con ella (se anularon juntas)
+      if (obj.grupo_pago) {
+        var rG = await sb.from('abonos').update({deleted_at: null, deleted_by: null}).eq('grupo_pago', obj.grupo_pago).eq('deleted_at', obj.deleted_at).neq('id', id).select('id, credito_id, apartado_id');
+        if (rG.error) throw new Error('Esta parte volvió pero las otras del pago a la cuenta no: ' + rG.error.message);
+        (rG.data || []).forEach(function(x){ cuentasRecalc.push(x); });
+        if (rG.data && rG.data.length) avisos.push('Era un pago a la cuenta: volvieron también sus otras ' + rG.data.length + ' parte(s).');
+      }
+      cuentasRecalc.push(obj);
       var tablaPadre = obj.credito_id ? 'creditos' : 'apartados';
       var rPadre = await sb.from(tablaPadre).select('deleted_at').eq('id', obj.credito_id || obj.apartado_id).single();
-      if (rPadre.data && rPadre.data.deleted_at) toast('Ojo: la cuenta de este pago sigue en la papelera. Restáurala también.', 'e');
-      if (obj.apartado_id) await recalcularSaldoCuenta('apartado', obj.apartado_id);
-      if (obj.credito_id) await recalcularSaldoCuenta('credito', obj.credito_id);
+      if (rPadre.data && rPadre.data.deleted_at) avisos.push('Ojo: la cuenta de este pago sigue en la papelera. Restáurala también.');
+      for (var ci = 0; ci < cuentasRecalc.length; ci++) {
+        var cx = cuentasRecalc[ci];
+        if (cx.apartado_id) await recalcularOAvisar('apartado', cx.apartado_id);
+        if (cx.credito_id) await recalcularOAvisar('credito', cx.credito_id);
+      }
     }
 
     await registrarAuditoria(tipo, id, 'crear', 'Restauró desde papelera', null);
     toast('Restaurado correctamente', 's');
+    avisos.forEach(function(a){ toast(a, 'e'); });
     await loadData();
     renderPapelera();
   } catch (e) {
-    toast('Error: ' + e.message, 'e');
+    toast('No se pudo restaurar: ' + e.message, 'e');
+    await loadData();
   }
 }
 
@@ -8757,24 +8933,30 @@ async function autoLimpiezaPapelera() {
   try {
     // Primero los hijos de las cuentas que se van a borrar (si no, quedarían huérfanos o fallaría por FK)
     var rc = await sb.from('creditos').select('id').lt('deleted_at', corte);
+    if (rc.error) throw rc.error;
     var ra = await sb.from('apartados').select('id').lt('deleted_at', corte);
+    if (ra.error) throw ra.error;
     var idsC = (rc.data || []).map(function(x){ return x.id; });
     var idsA = (ra.data || []).map(function(x){ return x.id; });
+    var pasos = [];
     if (idsC.length) {
-      await sb.from('abonos').delete().in('credito_id', idsC);
-      await sb.from('intereses_aplicados').delete().in('credito_id', idsC);
-      await sb.from('productos_apartado').delete().in('credito_id', idsC);
+      pasos.push(sb.from('abonos').delete().in('credito_id', idsC));
+      pasos.push(sb.from('intereses_aplicados').delete().in('credito_id', idsC));
+      pasos.push(sb.from('productos_apartado').delete().in('credito_id', idsC));
     }
     if (idsA.length) {
-      await sb.from('abonos').delete().in('apartado_id', idsA);
-      await sb.from('intereses_aplicados').delete().in('apartado_id', idsA);
-      await sb.from('productos_apartado').delete().in('apartado_id', idsA);
+      pasos.push(sb.from('abonos').delete().in('apartado_id', idsA));
+      pasos.push(sb.from('intereses_aplicados').delete().in('apartado_id', idsA));
+      pasos.push(sb.from('productos_apartado').delete().in('apartado_id', idsA));
     }
+    for (var s0 = 0; s0 < pasos.length; s0++) { var rp = await pasos[s0]; if (rp.error) throw rp.error; }
+    // Solo si los hijos se borraron bien se borran las cuentas (si no, quedarían huérfanos)
     var tablas = ['abonos', 'apartados', 'creditos', 'clientes'];
     for (var t = 0; t < tablas.length; t++) {
-      try { await sb.from(tablas[t]).delete().lt('deleted_at', corte); } catch (e) {}
+      var rt = await sb.from(tablas[t]).delete().lt('deleted_at', corte);
+      if (rt.error) throw rt.error;
     }
-  } catch (e) { console.warn('autoLimpiezaPapelera', e); }
+  } catch (e) { console.warn('autoLimpiezaPapelera: no se pudo vaciar la papelera hoy', e); }
 }
 
 // =================================================================
@@ -9701,8 +9883,9 @@ async function guardarPagoCuenta(){
   }
   var grupoPago = nuevoUUID();
   var creditosTocados = [];
+  var partesGuardadas = []; // {id, credito_id, grupo_pago} de cada parte ya insertada, por si hay que deshacer
+  var restante = monto, partes = 0, detalleReparto = [];
   try {
-    var restante = monto, partes = 0, detalleReparto = [];
     for (var i = 0; i < crs.length && restante > 0.009; i++) {
       var cr = crs[i].cr;
       var aplicar = Math.round(Math.min(crs[i].saldo, restante) * 100) / 100;
@@ -9717,6 +9900,7 @@ async function guardarPagoCuenta(){
       }).select().single();
       if (r.error) throw r.error;
       creditosTocados.push(cr.id);
+      partesGuardadas.push({ id: r.data.id, credito_id: cr.id, grupo_pago: grupoPago });
       await registrarAuditoria('abono', r.data.id, 'crear',
         'Pago a la cuenta: ' + fmt(aplicar) + ' aplicado al crédito #' + cr.numero + ' (pago global de ' + fmt(monto) + ')',
         { monto: aplicar, metodo: PC_METODO, fecha: fecha, pago_global: monto });
@@ -9725,21 +9909,35 @@ async function guardarPagoCuenta(){
       restante = Math.round((restante - aplicar) * 100) / 100;
       partes++;
     }
-    closeModal('mPagoCuenta');
-    toast('Pago de ' + fmt(monto) + ' repartido entre ' + partes + ' crédito' + (partes === 1 ? '' : 's'), 's');
+  } catch (e) {
+    // Falló a mitad del reparto: deshacer las partes ya guardadas para no dejar un pago a medias.
+    // El deshacer se COMPRUEBA: si también falla, se dice la verdad (el pago quedó parcial) en vez de "no se registró".
+    var deshecho = !partesGuardadas.length;
+    if (partesGuardadas.length) {
+      try {
+        await marcarPartesGrupo(partesGuardadas, new Date().toISOString(),
+          'Pago a la cuenta de ' + fmt(monto) + ' anulado automáticamente: falló a mitad del reparto (' + (e.message || '') + ')',
+          { grupo_pago: grupoPago, partes_anuladas: partesGuardadas.length });
+        deshecho = true;
+      } catch (e2) { console.error(e2); }
+    }
+    msg.style.display='block';
+    msg.textContent = deshecho
+      ? 'No se registró el pago (' + e.message + '). Revisa la conexión e intenta de nuevo.'
+      : 'ATENCIÓN: el pago quedó registrado A MEDIAS (' + creditosTocados.length + ' parte(s) guardadas) y no se pudo deshacer. NO lo registres otra vez: refresca y revisa la cuenta del cliente.';
+    return;
+  }
+  // El pago ya quedó completo en la base. Lo que sigue es solo pantalla: si falla, NO se deshace el pago.
+  closeModal('mPagoCuenta');
+  toast('Pago de ' + fmt(monto) + ' repartido entre ' + partes + ' crédito' + (partes === 1 ? '' : 's'), 's');
+  try {
     await loadData();
     renderClienteDetalle(PC_CLIENTE);
     // Ofrecer enviar la confirmación al cliente
     abrirEnviarMsg(mensajeConfirmacionPago(PC_CLIENTE, monto, PC_METODO, fecha, detalleReparto, Math.max(0, Math.round((deuda - monto) * 100) / 100)), PC_CLIENTE);
-  } catch (e) {
-    // Falló a mitad del reparto: deshacer las partes ya guardadas para no dejar un pago a medias
-    if (creditosTocados.length) {
-      try {
-        await sb.from('abonos').update({ deleted_at: new Date().toISOString(), deleted_by: currentUserApp.id }).eq('grupo_pago', grupoPago);
-        for (var k = 0; k < creditosTocados.length; k++) await recalcularSaldoCuenta('credito', creditosTocados[k]);
-      } catch (e2) { console.error(e2); }
-    }
-    msg.style.display='block'; msg.textContent = 'Error: ' + e.message + '. No se registró el pago; intenta de nuevo.';
+  } catch (e3) {
+    console.error(e3);
+    toast('El pago quedó registrado, pero la pantalla no se pudo actualizar. Toca refrescar.', 'e');
   }
 }
 
@@ -9798,6 +9996,7 @@ async function recalcularSaldos() {
     // APARTADOS — traer desde BD (no usar memoria)
     // Todo paginado (Supabase corta en 1000 sin avisar) y leído de una vez, no una consulta por cuenta.
     var sinBorrar = function(q){ return q.is('deleted_at', null); };
+    var fallidos = [];
     var apartadosBD = await traerTodoBD('apartados', 'id,numero,monto_abonado,monto_total,estado', sinBorrar);
     var creditosBD = await traerTodoBD('creditos', 'id,numero,monto_pagado,monto_total,estado', sinBorrar);
     var abonosBD = await traerTodoBD('abonos', 'id,monto,credito_id,apartado_id', sinBorrar);
@@ -9811,14 +10010,15 @@ async function recalcularSaldos() {
       var a = apartadosBD[i];
       var sumaReal = redondear2(sumaAbonos[a.id] || 0);
       var actual = parseFloat(a.monto_abonado || 0);
-      var nuevoEstado = (sumaReal >= parseFloat(a.monto_total) - 0.005) ? 'completado' : 'activo';
-      var estadoEditable = (a.estado === 'activo' || a.estado === 'completado');
+      var nuevoEstado = (sumaReal >= parseFloat(a.monto_total) - 0.005) ? 'completado' : (a.estado === 'vencido' ? 'vencido' : 'activo');
+      var estadoEditable = (a.estado === 'activo' || a.estado === 'vencido' || a.estado === 'completado');
 
       if (Math.abs(sumaReal - actual) > 0.005 || (estadoEditable && a.estado !== nuevoEstado)) {
         var updData = { monto_abonado: sumaReal };
         if (estadoEditable) updData.estado = nuevoEstado;
         var r = await sb.from('apartados').update(updData).eq('id', a.id);
-        if (!r.error) {
+        if (r.error) { fallidos.push('Apartado #' + a.numero); }
+        else {
           corregidos++;
           if (Math.abs(sumaReal - actual) > 0.005) {
             detalleCambios.push('Apartado #' + a.numero + ': ' + fmt(actual) + ' → ' + fmt(sumaReal));
@@ -9834,14 +10034,15 @@ async function recalcularSaldos() {
       var actualC = parseFloat(c.monto_pagado || 0);
       // monto_total YA incluye los intereses aplicados; no sumarlos de nuevo.
       var totalC = parseFloat(c.monto_total);
-      var nuevoEstadoC = (sumaRealC >= totalC - 0.005) ? 'completado' : 'activo';
-      var estadoEditableC = (c.estado === 'activo' || c.estado === 'completado');
+      var nuevoEstadoC = (sumaRealC >= totalC - 0.005) ? 'completado' : (c.estado === 'vencido' ? 'vencido' : 'activo');
+      var estadoEditableC = (c.estado === 'activo' || c.estado === 'vencido' || c.estado === 'completado');
 
       if (Math.abs(sumaRealC - actualC) > 0.005 || (estadoEditableC && c.estado !== nuevoEstadoC)) {
         var updDataC = { monto_pagado: sumaRealC };
         if (estadoEditableC) updDataC.estado = nuevoEstadoC;
         var r2 = await sb.from('creditos').update(updDataC).eq('id', c.id);
-        if (!r2.error) {
+        if (r2.error) { fallidos.push('Crédito #' + c.numero); }
+        else {
           corregidos++;
           if (Math.abs(sumaRealC - actualC) > 0.005) {
             detalleCambios.push('Crédito #' + c.numero + ': ' + fmt(actualC) + ' → ' + fmt(sumaRealC));
@@ -9852,9 +10053,12 @@ async function recalcularSaldos() {
 
     await loadData();
 
-    if (corregidos === 0) {
+    if (fallidos.length) {
+      alert('No se pudieron corregir ' + fallidos.length + ' cuenta(s):\n' + fallidos.slice(0, 15).join('\n') + (fallidos.length > 15 ? '\n...' : '') + '\n\nRevisa la conexión y vuelve a intentar.');
+    }
+    if (corregidos === 0 && !fallidos.length) {
       toast('Todo cuadra. No hubo descuadres.', 's');
-    } else {
+    } else if (corregidos > 0) {
       alert('Saldos recalculados\n\n' + corregidos + ' cuenta(s) corregida(s).\n\n' + (detalleCambios.length > 0 ? detalleCambios.slice(0, 15).join('\n') + (detalleCambios.length > 15 ? '\n... y ' + (detalleCambios.length - 15) + ' más' : '') : 'Estados actualizados.'));
     }
   } catch (e) {
@@ -9873,11 +10077,14 @@ var VERIFICANDO = false;
 // Se toma el último "$monto" de cada línea (en "2x ... $7.00 c/u = $14.00" es el subtotal).
 function totalProductosDeTexto(txt) {
   if (!txt) return null;
-  var total = 0, alguno = false;
+  var total = 0, alguno = false, sinPrecio = false;
   String(txt).split('\n').forEach(function(l){
+    if (!l.trim()) return;
     var m = l.match(/\$([0-9][0-9.,]*)\s*$/);
     if (m) { total += parseFloat(m[1].replace(/,/g, '')) || 0; alguno = true; }
+    else sinPrecio = true; // una línea con texto y sin precio: el texto no es confiable como total
   });
+  if (sinPrecio) return null;
   return alguno ? redondear2(total) : null;
 }
 
