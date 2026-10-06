@@ -19,6 +19,7 @@ Ecosistema de apps web internas de **Mercantil Yumana**: tienda de electrodomés
 - **Validar antes de entregar**: extraer los `<script>` y correr `node --check`. Probar visualmente cuando se pueda.
 - Decir claramente cuándo una tarea terminó y cuándo empieza otra.
 - - **Publicación directa (autorizado por Kinan):** después de validar (`node --check` + prueba visual cuando se pueda), Claude Code sube los cambios directo a `main` sin pedir confirmación en cada entrega. Una entrega = un commit claro, para poder deshacerla con `git revert` si Kinan dice "deshaz lo último".
+- **Revisión antes de publicar (skills en `.claude/skills/`, ver `LEEME.md`):** en una entrega grande o que toque dinero, correr `/thermos` sobre el diff y corregir lo que marque antes de subir; en una vista nueva o rediseñada, correr `/anti-slop-audit <archivo>` y `/anti-slop-fix`. Para cambios chicos no hace falta.
 - **Claves y API keys:** el repo es PÚBLICO. Nunca escribir claves secretas en el código ni en commits; solo la key pública de Supabase puede ir en los HTML.
 
 

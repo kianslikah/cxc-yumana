@@ -1,0 +1,322 @@
+---
+name: anti-slop-audit
+description: |
+  Audita una pantalla o app del ecosistema Yumana (HTML/CSS/JS puro) buscando
+  marcas de trabajo sin terminar: estados vacíos sin cuidar, textos genéricos,
+  foco sin declarar, títulos y metadatos flojos, incoherencias visuales.
+  Usar cuando Kinan pida "revisa esta pantalla", "audita la vista X",
+  "por qué se ve genérico", "qué le falta", o antes de publicar una vista
+  nueva o rediseñada. Corre completa o por eje (surface, craft, states,
+  words, finish). Solo reporta; para corregir usar `/anti-slop-fix`.
+license: MIT
+metadata:
+  version: "0.5.0-yumana"
+  origen: "https://github.com/luantaraschi/anti-slop (skill audit, adaptado)"
+---
+
+# anti-slop-audit
+
+## Reglas de la casa (Mercantil Yumana) — mandan sobre todo lo de abajo
+
+Este skill es una copia adaptada del `audit` de anti-slop. Antes de aplicar el
+catálogo, leer esto:
+
+1. **El reporte sale en español.** Veredicto, hallazgos y la línea final.
+   Identificadores, rutas, ids de tells (`A1`, `C4`...) y código quedan como están.
+2. **El estándar visual del CLAUDE.md es la raíz ya decidida.** Tipografías
+   Fraunces (títulos) + Outfit (cuerpo); paleta fondo `#0d0f14`, dorado
+   `#d4a24e`, dorado claro `#e8c583`, dorado oscuro `#9c7330`, superficies
+   `#1a1f2b` / `#212838`, bordes `#2a3344`, texto sobre dorado `#1a1206`;
+   íconos SVG monocromáticos; cero emojis en la interfaz; layout de referencia
+   = sidebar de `mayorista.html` y `Proveedores_yumana.html`. Por tanto:
+   - Los tells de "paleta/tipografía/radio que nadie eligió" (A1, A5 y afines)
+     **no disparan** si la vista usa esos valores. Sí disparan si una vista se
+     aparta del estándar (un gris suelto, otra fuente, un emoji, un color
+     hexadecimal inventado en vez de la variable).
+   - **Nunca proponer cambiar la paleta, las fuentes ni el layout.** La
+     corrección siempre es "volver al estándar", no "elegir otro".
+3. **Son apps internas, un archivo HTML por app, sin build ni framework.**
+   No hay `tailwind.config`, `node_modules` ni rutas: el "tema" es el bloque
+   `:root` / las variables CSS al inicio del archivo, y "componentes" son las
+   clases y las funciones `render*`. Los tells de SEO, Open Graph, sitemap,
+   páginas legales y 404 (F3, F4, F6, F8 y afines) **no aplican**: declararlos
+   fuera de alcance, no reportarlos.
+4. **Usuarios reales:** Kinan y Fayssal desde iPad/iPhone (Safari) y la cajera
+   en una PC vieja con Windows 7. Pesar más: inputs de 16px mínimo (iOS hace
+   zoom), `input[type=date]` desbordado, áreas de toque pequeñas, listas sin
+   paginar, estados de carga/vacío/error en las vistas con datos de Supabase.
+5. **Alcance:** solo los archivos vivos de la tabla del CLAUDE.md. Los archivos
+   muertos (`CxC_Yumana_App.html`, `Apartados_Yumana.html`, `Apartados_v2.html`,
+   `Proveedores_Yumana_App.html`, `Diagnostico.html`, `TestLogin.html`,
+   `Cargador.html`, `subir fotos.html`) no se auditan nunca.
+6. Los mensajes que van al cliente por WhatsApp (texto con emojis dentro de
+   `mensaje*`, `wa.me`) no son interfaz: no contarlos como tells de Words.
+7. `anti-slop build` y `anti-slop text` **no están instalados**; donde el
+   catálogo los mencione, ignorar la derivación o escribir el texto en
+   español directamente.
+8. Si hay Playwright disponible en la sesión, abrir la vista a 390px (iPhone)
+   y 1280px con un stub de `window.supabase` (ver `/tmp/.../chk/shot_*.js`
+   de sesiones anteriores como modelo) y marcar qué hallazgos vienen de mirar
+   y cuáles de leer.
+
+Lo que sigue es el catálogo original, en inglés, con las invocaciones
+renombradas a `/anti-slop-audit` y `/anti-slop-fix`.
+
+---
+
+## What this is
+
+This skill audits interface code that already exists and reports the marks
+of work nobody finished. It reads a React, Tailwind, or shadcn project and
+returns a verdict plus a ranked list of findings across five axes: Surface
+(the visual layer), Craft (whether anyone looked at the rendered result),
+States (whether the interface exists off the path that was demonstrated),
+Words (the copy inside the interface), and Finish (the shipping details a
+browser or a search engine checks first). Surface asks whether anyone
+decided, and its evidence lives in the theme file. Craft asks whether
+anyone looked, and its evidence lives in the relationship between
+elements — a radius against the radius nested inside it, a number against
+the layout it sits in, a border in one theme against the same border in
+the other. It does not generate an interface from scratch. For that, use
+`anti-slop build`, which forces the decisions this catalog looks for and
+holds the floor it now checks.
+
+## What it never claims
+
+Nothing in this catalog proves a model wrote the code. It proves nobody came
+back to it. A tell fires on absence and repetition, not on origin, and the
+same absence shows up whether a person typed every line or an agent did.
+Never write that a file was AI-generated, vibecoded, or generated by any
+tool. Report what is missing, not who (or what) left it that way.
+
+## Invocation modes
+
+| Invocation | Axes | References to load |
+|---|---|---|
+| `/anti-slop-audit` | Surface, Craft, States, Words, Finish | `surface.md`, `craft.md`, `states.md`, `words.md`, `finish.md`, `molds.md` |
+| `/anti-slop-audit surface` | Surface | `surface.md`, `molds.md` |
+| `/anti-slop-audit craft` | Craft | `craft.md` |
+| `/anti-slop-audit states` | States | `states.md` |
+| `/anti-slop-audit words` | Words | `words.md` |
+| `/anti-slop-audit finish` | Finish | `finish.md` |
+
+A path alongside the mode restricts the scope to that file or directory.
+Without a path, the target is the project root. `molds.md` travels with the
+Surface axis because it is what lets the verdict name the mold instead of
+just listing symptoms.
+
+## Process
+
+1. **Scope.** Exclude `node_modules`, third-party code, Storybook, and any
+   generated output before reading anything.
+2. **Finish first.** It is the cheapest axis and the most objective (nearly
+   every check is greppable), and it sets the floor the other three axes get
+   read against.
+3. **Surface, theme before components.** Read `tailwind.config`,
+   `globals.css`, and any tokens file before opening a single component. Three
+   of the fourteen Surface tells (A1, A3, A5) are absences that live in the theme,
+   and starting from components collects symptoms while missing the cause.
+4. **Craft, the relationship between elements, after the theme is known.**
+   Knowing what the theme declares is what lets a nested radius, a scale
+   value, or a repeated border read as concentric on purpose rather than as
+   a coincidence — so Craft comes after Surface, not before it.
+5. **States.** Follow every request, every piece of view state, and every
+   destructive action off the happy path. This axis reads branches rather than
+   values, so it is the one place where what is absent from the code is the
+   whole finding.
+6. **Words.** Read the copy inside the interface itself: labels, toasts,
+   empty states, error messages.
+7. **False positive filter.** Run every candidate finding through the rule
+   below before it counts.
+8. **Verdict.** Name the dominant pattern and rank what survived the filter.
+
+## The false positive rule
+
+Look for evidence of a decision in four places before a Surface tell is
+allowed to fire. The four are roles rather than filenames, and every project
+has them somewhere:
+
+1. **Where the project declares its own values** — a `theme.extend` block, a
+   Sass or Less variables file, a `:root` or `@theme` custom-property block, a
+   design-tokens file, or a stylesheet that names its colours and sizes instead
+   of repeating literals.
+2. **Whether those names came from the subject** — a colour named for the
+   material or the document rather than for its rank or its hex.
+3. **Whether shared components**, if the project has any, differ from whatever
+   they were installed or copied as.
+4. **Anywhere a choice is written down** in the code beside the value it
+   governs.
+
+Find evidence in any of the four, and the tell does not fire.
+A pattern present is not a finding. A finding is a pattern present **and**
+no evidence anyone chose it.
+
+On the Craft axis the rule takes a different form, because almost every
+Craft tell fires on absence rather than on a pattern present. There, the
+`Not slop when` clause opens two doors instead of one: the condition the
+tell looks for never arises at all, or the project already handles the same
+detail correctly somewhere else, which is that axis's own evidence that
+someone looked.
+
+## How a Signal reads
+
+Two conventions, because calibration found auditors inventing both of them and
+inventing them differently.
+
+**A Signal's clauses are a conjunction unless it says otherwise.** All of them
+have to hold. Where a Signal lists examples rather than requirements it says so
+in its own text, and where it means "any one of these" it says that too. A tell
+that lists three symptoms and fires on one is a tell that fires on a third of
+the trees it was written for.
+
+**A counting clause has to name what it counts and what count decides.** "Count
+the sites" without a threshold hands the verdict to whoever is reading. Three
+tells still fail this and are recorded rather than guessed at: A3 counts distinct
+radii and names no threshold, C2 says "otherwise asymmetric" and names no
+magnitude, C4's count decides a case at a population of one where it can only
+ever come out the same way, and S1 and S2 both count without saying what the
+count settles. Fixing those means picking numbers, and a number picked without
+measurement is the thing this catalog exists to object to.
+
+**The threshold does not have to live in the Signal.** A10 passes this convention
+because its number sits in its `Not slop when` — a single importer among a dozen
+hand-rolled ones does not earn the exemption — and a run measuring it decided
+cleanly with nothing supplied. Anywhere in the tell is enough.
+
+## Output
+
+```
+Verdict — stock shadcn dashboard, installed and never touched: the palette,
+the page title, the missing lang attribute, the decorative sparkles and the
+empty-state copy are all still whatever the scaffold produced.
+
+ROOT
+A1  Palette nobody picked         tailwind.config.ts:12   fixes A2, A4, A5
+F2  One title across 6 routes     app/layout.tsx:14
+
+THEN
+F1  <html> without lang           app/layout.tsx:8
+A7  Sparkles decorating 4 heads   components/hero.tsx:23
+W3  "No items found" on 3 screens components/table.tsx:88
+```
+
+One row, one id, one location, four columns at most. A finding that lives at
+three sites still gets one row — name the site you would open first, and put the
+other two in the paragraph below it. Never continue a row onto a second line
+with the first columns left blank: it renders as a broken table and the reader
+cannot tell a second site from a second finding.
+
+## Who reads this
+
+Assume the reader can change the code and does not know the vocabulary. They
+know their site looks like every other site. They may not know what a type
+scale is, that `tabular-nums` exists, or why a radius would ignore what it
+wraps.
+
+That splits the report in two, and the split is the point.
+
+**What you detect stays precise.** The `Signal` fields are written for whoever
+runs the check, and they name properties, attributes and classes because that is
+what makes a finding land on a line instead of on a feeling. Never soften a
+Signal to make a report friendlier.
+
+**What you write is for the person.** Every finding says, in plain words, what
+is wrong and what it costs them — and then, beside it, where. "The numbers in
+your dashboard jitter every time they update, because most fonts give each digit
+a different width" is the finding. `components/stat-card.tsx:45` is where. A
+reader who has never heard of tabular figures understands the first half, and
+the second half is what an agent needs to fix it.
+
+The `Principle` field is already written this way and is the model: *a single
+word alone on a heading's last line is the clearest sign nobody ever resized the
+window to check.* Report at that altitude. If a finding cannot be stated without
+a class name, state the consequence first and the class name second, in the same
+breath.
+
+## Report rules
+
+The verdict is one sentence naming the dominant pattern across axes, not a
+summary of each axis in turn. It has to survive being read aloud: name the
+pattern in words, and leave the identifiers, paths and class names for the
+findings underneath. A sentence carrying eight inline code spans obeys the
+one-sentence rule and defeats its purpose.
+
+A full invocation reports at most ten findings. A single-axis invocation has no
+cap: whoever typed `/anti-slop-audit craft` asked for that axis, and a Craft finding
+held back there is the thing they came for.
+
+Whatever the cap cuts gets counted. Under the last finding, say how many were
+dropped and from which axis — "4 further Craft findings not listed". A
+finding judged real and then cut for length is still something the reader is
+entitled to know exists.
+
+Order the findings by how much fixing them delivers, never by severity and
+never grouped by axis. Separate root findings from the ones they cause, and
+state which symptoms each root's fix kills. Every finding carries a file and
+a line.
+
+The fourth column carries tell ids and nothing else — `fixes A2, A4`. It is the
+one place a reader learns that repairs collapse into each other, so a count of
+sites, a severity, or a note written there costs them that. How many places a
+single finding touches belongs in its paragraph.
+
+**The report is written in the language of the request.** Identifiers, paths,
+tell ids, class names and code stay exactly as they are in the source. Somebody
+who typed "audita essa interface" gets the verdict and every finding in
+Portuguese, with `components/table.tsx:88` still spelled that way. The `Signal`
+fields in this catalog are written in English because that is where they are
+maintained; what reaches the reader is not.
+
+## What happens after the report
+
+Close the report with one line naming what repairs it and over what scope:
+`/anti-slop-fix`, or `/anti-slop-fix surface mayorista.html`. This skill does not change
+code, and a reader holding ten findings and no next step is holding a list.
+
+Two things that line has to be honest about.
+
+**How many the fixer can take on its own.** Say the number. A repair that needs
+a root, a fact, a redesign or a change with no bounded size is refused by name at
+the other end, and it is cheaper for the person to learn that here. The fourth
+class is the one an auditor forgets: `.claude/skills/anti-slop-fix/references/repairs.md` marks
+those rows `unsettled`, because the change is well understood and can touch
+every consumer of the thing it changes, and A8, A10, A14 and S2 all sit there. A
+count that leaves them on the fixer's side is wrong the moment one of them
+fires.
+
+**Which findings those are.** Name their ids in the same line. The palette, the
+type families and the legal pages are the usual three, and all three need an
+answer this report cannot produce by reading code.
+
+Never offer to repair inside this skill. The separation is what keeps a blind
+run able to score this report: a run that scored a mutated tree would be
+scoring two skills at once and attributing the result to one.
+
+## Out of scope
+
+**A rendered pass, unless the session has browser tooling.** The Craft axis asks
+whether anyone looked and answers it by reading code, which is a limit this
+catalog carries by construction. Where a browser is available, open the page at
+375, 768 and 1440, in both themes, and mark every finding that came from
+looking rather than from reading. A finding stated as observed and a finding
+stated as read are worth different amounts to whoever has to reproduce it, and
+the report is the only place that distinction can be made.
+
+A real console error, and running the Finish axis against a site published over
+HTTP, stay out of scope.
+
+**Stack is not a scope limit.** Forty-two of the fifty-four tells never
+mention a framework at all: every tell on States, seven of the eight on Words,
+fourteen of the sixteen on Craft, eleven of the fourteen on Surface and seven
+of the thirteen on Finish. The twelve that do — most of them on Surface — name
+Tailwind classes as *examples of a pattern*, because that is the ecosystem the
+pattern was measured in. The pattern is what fires. `theme.extend` stands for wherever this project
+declares its values, one `rounded-2xl` everywhere stands for one radius
+everywhere, `text-gray-500` stands for a neutral nobody chose. Read the example,
+find its equivalent, audit that.
+
+**Say when you translated.** Open the report with one line naming the stack you
+found and what you mapped onto what, so a reader can weigh a verdict reached
+through a translation rather than directly. And where a tell genuinely does not
+survive the crossing — A10 has nothing to say about a project with no component
+library at all — decline it and name it rather than stretching it.
