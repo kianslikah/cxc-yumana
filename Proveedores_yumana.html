@@ -78,7 +78,7 @@
 
   .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
   .search-box{flex:1;min-width:200px;position:relative;}
-  .search-box input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:13px 16px 13px 42px;color:var(--text);font-size:15px;font-family:inherit;outline:none;transition:all .2s ease;}
+  .search-box input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:13px 16px 13px 42px;color:var(--text);font-size:16px;font-family:inherit;outline:none;transition:all .2s ease;}
   .search-box input:focus{border-color:var(--gold);box-shadow:var(--glow);}
   .search-box svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted);}
 
@@ -149,6 +149,7 @@
 
   .toast{position:fixed;bottom:30px;left:calc(50% + 124px);transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:13px 20px;border-radius:11px;font-size:13.5px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:40;}
   .toast.show{opacity:1;}
+  .toast.error{border-color:#c0392b;color:#ff8a7a;}
   .loader{display:inline-block;width:17px;height:17px;border:2px solid rgba(26,18,6,0.3);border-top-color:#1a1206;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;}
   @keyframes spin{to{transform:rotate(360deg);}}
 
@@ -167,7 +168,7 @@
   .modal-sub{font-size:13px;color:var(--text-2);margin-top:4px;}
   .fg{margin-bottom:15px;}
   .fg label{display:block;font-size:11.5px;color:var(--text-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;font-weight:600;}
-  .fg input,.fg select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:13px 14px;color:var(--text);font-size:15px;font-family:inherit;outline:none;transition:all .2s ease;}
+  .fg input,.fg select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:13px 14px;color:var(--text);font-size:16px;font-family:inherit;outline:none;transition:all .2s ease;}
   .fg input:focus,.fg select:focus{border-color:var(--gold);box-shadow:var(--glow);}
   .fg input[type="date"]{-webkit-appearance:none;appearance:none;min-height:50px;height:50px;line-height:1.2;text-align:left;display:flex;align-items:center;box-sizing:border-box;}
   .fg input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0;}
@@ -658,7 +659,18 @@ function diasHasta(d){
   var f=new Date(d+'T00:00:00');
   return Math.round((f-hoy)/86400000);
 }
-function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); },2600); }
+var TOAST_T=null;
+function toast(m, tipo){
+  var t=document.getElementById('toast'); t.textContent=m;
+  t.className='toast show'+(tipo==='error'?' error':'');
+  if(TOAST_T) clearTimeout(TOAST_T);
+  TOAST_T=setTimeout(function(){ t.classList.remove('show'); }, tipo==='error'?6000:(String(m).length>60?4500:2600));
+}
+// Rastro de cambios de dinero (tabla prov_auditoria). Nunca interrumpe la operación si falla.
+async function auditarProv(accion, detalle){
+  try{ await sb.from('prov_auditoria').insert({ fecha:new Date().toISOString(), usuario:(currentUserApp&&currentUserApp.nombre)||'app', accion:accion, detalle:detalle }); }
+  catch(e){ console.warn('auditoría', e); }
+}
 
 async function traerTodo(tabla, columnas){
   var todo=[], desde=0, tam=1000;
@@ -700,7 +712,8 @@ async function refrescarProveedor(provId){
     }
   }catch(e){
     // si falla o tarda demasiado, no colgar: intentar refresco global pero sin bloquear indefinido
-    try{ await conTimeout(cargarDatos(true), 12000); }catch(e2){}
+    try{ await conTimeout(cargarDatos(true), 12000); }
+    catch(e2){ toast('Se guardó, pero no se pudo actualizar la pantalla. Lo que ves puede estar desactualizado: recarga la página.','error'); }
   }
 }
 
@@ -825,7 +838,7 @@ function renderLista(){
     return '<div class="prov-card" data-id="'+esc(p.id)+'">'+
       '<div class="prov-av">'+ini(p.proveedor)+'</div>'+
       '<div class="prov-info">'+
-        '<div class="prov-nom">'+esc(p.proveedor||'Sin nombre')+(p.favorito?'<span class="prov-star">★</span>':'')+'</div>'+
+        '<div class="prov-nom">'+esc(p.proveedor||'Sin nombre')+(p.favorito?'<span class="prov-star"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg></span>':'')+'</div>'+
         '<div class="prov-sub">'+(p.telefono?esc(p.telefono)+' · ':'')+x.total+' factura'+(x.total!==1?'s':'')+'</div>'+
       '</div>'+
       '<div class="prov-right">'+
@@ -980,7 +993,7 @@ function renderDetalle(){
     '<div class="det-head">'+
       '<div class="det-head-top">'+
         '<div class="det-av">'+ini(p.proveedor)+'</div>'+
-        '<div><div class="det-nom">'+esc(p.proveedor||'Sin nombre')+(p.favorito?' <span class="prov-star">★</span>':'')+'</div>'+
+        '<div><div class="det-nom">'+esc(p.proveedor||'Sin nombre')+(p.favorito?' <span class="prov-star"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg></span>':'')+'</div>'+
         '<div class="det-tel">'+(p.telefono?esc(p.telefono):'Sin teléfono registrado')+'</div></div>'+
       '</div>'+
       '<div class="det-stats">'+
@@ -1695,9 +1708,10 @@ async function confirmarAbono(){
   var btn=document.getElementById('aConfirm'); btn.disabled=true; btn.innerHTML='<span class="loader"></span>';
   var listo=false;
   function liberarBoton(){ btn.disabled=false; btn.textContent='Registrar abono'; }
-  // Seguridad: si en 20 segundos no terminó, liberar el botón y avisar (nunca se queda pegado)
+  // Si en 20 s no terminó, AVISAR pero NO reactivar el botón: el pago puede estar llegando a la base,
+  // y tocar otra vez lo duplicaba. El botón se libera solo cuando la base responde (bien o mal).
   var guardia=setTimeout(function(){
-    if(!listo){ liberarBoton(); msg.className='modal-msg error'; msg.textContent='La conexión tardó demasiado. Verifica tu internet e intenta de nuevo.'; }
+    if(!listo){ msg.className='modal-msg error'; msg.textContent='La conexión está lenta. El pago puede estar registrándose: NO lo registres otra vez. Espera la respuesta o cierra y revisa el historial de abonos de la factura.'; }
   },20000);
   try{
     var r=await sb.rpc('prov_registrar_abono',{
@@ -1723,7 +1737,7 @@ async function confirmarAbono(){
     else irDetalle(PROV_ACTUAL);
   }catch(e){
     listo=true; clearTimeout(guardia);
-    msg.className='modal-msg error'; msg.textContent='Error: '+(e.message||e);
+    msg.className='modal-msg error'; msg.textContent='No se registró el abono ('+(e.message||e)+'). Revisa la conexión e intenta de nuevo.';
     liberarBoton();
   }
 }
@@ -1928,39 +1942,21 @@ async function aplicarSaldoAFavor(facId){
     'Se aplicará: '+fmtUSD(aplicar)+'\n'+
     'Quedará a favor: '+fmtUSD(restante)+'\n\n'+
     'Esto queda registrado como un abono en "Ver abonos".')) return;
+  if(APLICANDO_FAVOR) return; // doble toque
+  APLICANDO_FAVOR=true;
   try{
-    // 1) Registrar el abono por el RPC (el trigger recalcula el saldo de la factura)
-    var r=await sb.rpc('prov_registrar_abono',{
-      p_factura_id:facId,
-      p_monto:aplicar,
-      p_fecha:new Date().toISOString().slice(0,10),
-      p_metodo:'Saldo a favor',
-      p_titular_zelle:null,
-      p_cambiador:null,
-      p_observaciones:'Aplicación de saldo a favor del proveedor',
-      p_en_transito:false,
-      p_efectivo_salido:null,
-      p_ganancia:null,
-      p_tasa_comision:null
-    });
+    // Abono + baja del crédito + historial en UNA transacción, con el crédito leído FRESCO en la base
+    var r=await sb.rpc('prov_aplicar_saldo_favor',{ p_factura_id:facId, p_usuario:(currentUserApp&&currentUserApp.nombre)||null });
     if(r.error) throw r.error;
-    // 2) Bajar el credito_a_favor del proveedor. Si falla, revertir el abono.
-    var ru=await sb.from('prov_proveedores').update({credito_a_favor:restante}).eq('id',PROV_ACTUAL);
-    if(ru.error){
-      // revertir: buscar el abono recién creado (por factura, método y monto) y borrarlo
-      try{
-        var rb=await sb.from('prov_abonos').select('id').eq('factura_id',facId).eq('metodo','Saldo a favor').eq('monto',aplicar).limit(1);
-        if(rb.data&&rb.data[0]) await sb.from('prov_abonos').delete().eq('id',rb.data[0].id);
-      }catch(_){}
-      throw ru.error;
-    }
-    toast('Saldo a favor aplicado: '+fmtUSD(aplicar)+'.');
+    var d=r.data||{};
+    toast('Saldo a favor aplicado: '+fmtUSD(d.aplicado)+'. Queda a favor: '+fmtUSD(d.credito_restante)+'.');
     await refrescarProveedor(PROV_ACTUAL);
     irDetalle(PROV_ACTUAL);
   }catch(e){
-    toast('Error al aplicar saldo a favor: '+(e.message||e),'error');
-  }
+    toast('No se aplicó el saldo a favor: '+(e.message||e),'error');
+  }finally{ APLICANDO_FAVOR=false; }
 }
+var APLICANDO_FAVOR=false;
 
 /* ---------- eliminar factura ---------- */
 async function eliminarFactura(facId){
@@ -2013,7 +2009,7 @@ async function toggleHistorial(facId){
           '<div class="ab-meta">'+fmtFecha(a.fecha)+extra+'</div>'+
           cascada+
           '<div class="ab-acciones">'+
-            (transito?'<button class="ab-mini confirmar" data-confabono="'+esc(a.id)+'" data-fac="'+esc(facId)+'">✓ Confirmar recibido</button>':'')+
+            (transito?'<button class="ab-mini confirmar" data-confabono="'+esc(a.id)+'" data-fac="'+esc(facId)+'">Confirmar recibido</button>':'')+
             '<button class="ab-mini edit" data-edabono="'+esc(a.id)+'" data-fac="'+esc(facId)+'">Editar</button>'+
             '<button class="ab-mini del" data-delabono="'+esc(a.id)+'" data-fac="'+esc(facId)+'" data-monto="'+a.monto+'">Eliminar</button>'+
           '</div>'+
@@ -2054,8 +2050,22 @@ async function confirmarTransito(abonoId, facId){
 }
 
 async function eliminarAbono(abonoId, facId, monto){
-  if(!confirm('¿Seguro que quieres ELIMINAR este abono de '+fmtUSD(monto)+'?\n\nEsto sumará ese monto de vuelta al saldo pendiente de la factura. Esta acción no se puede deshacer.')) return;
+  var a=null, partes=0;
   try{
+    var ra=await sb.from('prov_abonos').select('*').eq('id',abonoId).single();
+    if(ra.error) throw ra.error;
+    a=ra.data;
+    if(a.operacion_id){
+      var rp=await sb.from('prov_abonos').select('id').eq('operacion_id',a.operacion_id);
+      if(!rp.error) partes=(rp.data||[]).length;
+    }
+  }catch(e){ toast('No se pudo leer el abono: '+(e.message||e),'error'); return; }
+  var aviso='¿Seguro que quieres ELIMINAR este abono de '+fmtUSD(a.monto)+'?\n\nEsto sumará ese monto de vuelta al saldo pendiente de la factura. Queda copia en la auditoría.';
+  if(partes>1) aviso+='\n\nOJO: este abono es 1 de '+partes+' partes de un mismo pago repartido entre varias facturas. Solo se elimina esta parte; las otras siguen igual.';
+  if(!confirm(aviso)) return;
+  try{
+    // Rastro ANTES de borrar (el borrado es físico): copia completa del abono
+    await auditarProv('eliminar_abono', 'Eliminó abono de $'+a.monto+' ('+(a.metodo||'')+') del '+a.fecha+' en factura '+facId+'. Copia: '+JSON.stringify(a));
     // Borrar el abono. El trigger de la base recalcula el abonado de la factura automáticamente.
     var rd=await sb.from('prov_abonos').delete().eq('id',abonoId);
     if(rd.error) throw rd.error;
@@ -2089,10 +2099,24 @@ async function guardarEditAbono(){
   var fecha=document.getElementById('edAbFecha').value;
   var obs=document.getElementById('edAbObs').value.trim()||null;
   if(isNaN(nuevoMonto)||nuevoMonto<=0){ msg.className='modal-msg error'; msg.textContent='Monto inválido.'; return; }
+  nuevoMonto=r2(nuevoMonto);
   var btn=document.getElementById('edAbGuardar'); btn.disabled=true; btn.innerHTML='<span class="loader"></span>';
   try{
+    // Tope: lo que la factura debe AHORA (leído fresco) + lo que ya tenía este abono
+    var rf=await sb.from('prov_facturas').select('monto,abonado').eq('id',EDIT_ABONO_FAC).single();
+    if(rf.error) throw rf.error;
+    var rAnt=await sb.from('prov_abonos').select('*').eq('id',EDIT_ABONO_ID).single();
+    if(rAnt.error) throw rAnt.error;
+    var ant=rAnt.data;
+    var cuenta=!ant.en_transito; // un abono en tránsito no está sumado en el abonado
+    var tope=r2((rf.data.monto||0)-(rf.data.abonado||0)+(cuenta?Number(ant.monto||0):0));
+    if(nuevoMonto>tope+0.01){
+      msg.className='modal-msg error'; msg.textContent='El monto supera lo que debe la factura (máximo '+fmtUSD(tope)+').';
+      btn.disabled=false; btn.textContent='Guardar cambios'; return;
+    }
     var ru=await sb.from('prov_abonos').update({monto:nuevoMonto,fecha:fecha,observaciones:obs}).eq('id',EDIT_ABONO_ID);
     if(ru.error) throw ru.error;
+    await auditarProv('editar_abono', 'Editó abono '+EDIT_ABONO_ID+' de factura '+EDIT_ABONO_FAC+': monto $'+ant.monto+' → $'+nuevoMonto+', fecha '+ant.fecha+' → '+fecha);
     // El trigger de la base recalcula el abonado de la factura automáticamente.
     cerrarEditAbono();
     toast('Abono actualizado.');
@@ -2143,21 +2167,27 @@ async function guardarDevol(){
       desc_dev:desc, motivo:motivo, estado:estado, notas:notas
     });
     if(ri.error) throw ri.error;
-    // 2. si aceptada, descontar del saldo (sube abonado). Si falla, revertir la devolucion.
+    // 2. si aceptada, se descuenta del saldo registrándola como ABONO con método "Devolución".
+    //    Antes se sumaba al abonado a mano y el trigger de la base lo borraba en el siguiente pago (se perdía).
+    //    Si la devolución supera el saldo, el excedente pasa a otras facturas o a saldo a favor (igual que un abono).
     if(estado==='aceptada'){
-      var nuevoAbonado=r2((DEVOL_FAC.abonado||0)+monto);
-      var ru=await sb.from('prov_facturas').update({abonado:nuevoAbonado}).eq('id',DEVOL_FAC.id);
+      var ru=await sb.rpc('prov_registrar_abono',{
+        p_factura_id:DEVOL_FAC.id, p_monto:r2(monto), p_fecha:fecha, p_metodo:'Devolución',
+        p_titular_zelle:null, p_cambiador:null, p_observaciones:'Devolución: '+desc+(notas?' — '+notas:''),
+        p_en_transito:false, p_efectivo_salido:null, p_ganancia:null, p_tasa_comision:null
+      });
       if(ru.error){
         await sb.from('prov_devoluciones').delete().eq('id',devId); // revertir
         throw ru.error;
       }
+      await auditarProv('devolucion_aceptada', 'Devolución aceptada de $'+r2(monto)+' en factura '+DEVOL_FAC.id+' ('+desc+')');
     }
     cerrarDevol();
     toast(estado==='aceptada'?'Devolución registrada (saldo actualizado).':'Devolución registrada.');
     await refrescarProveedor(PROV_ACTUAL);
     irDetalle(PROV_ACTUAL);
   }catch(e){
-    msg.className='modal-msg error'; msg.textContent='Error: '+(e.message||e);
+    msg.className='modal-msg error'; msg.textContent='No se registró la devolución ('+(e.message||e)+'). Intenta de nuevo.';
     btn.disabled=false; btn.textContent='Registrar devolución';
   }
 }
