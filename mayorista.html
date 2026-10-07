@@ -171,6 +171,12 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
 .cli-card .saldo .l{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
 
 .empty-state{text-align:center; padding:50px 20px; color:var(--muted);}
+.det-plegable{margin-top:18px; border:1px solid var(--border); border-radius:12px; background:var(--surface); padding:0 12px;}
+.det-plegable > summary{cursor:pointer; list-style:none; padding:14px 2px; font-family:'Fraunces',serif; font-size:16px; color:var(--gold); display:flex; justify-content:space-between; align-items:center;}
+.det-plegable > summary::-webkit-details-marker{display:none;}
+.det-plegable > summary::after{content:''; width:9px; height:9px; border-right:2px solid var(--gold); border-bottom:2px solid var(--gold); transform:rotate(45deg); margin-right:4px; transition:transform .2s ease;}
+.det-plegable[open] > summary::after{transform:rotate(-135deg);}
+.det-plegable[open]{padding-bottom:10px;}
 .empty-state svg{opacity:0.4; margin-bottom:12px;}
 .empty-state h3{font-size:17px; color:var(--text-2); margin-bottom:6px; font-family:'Fraunces';}
 .empty-state p{font-size:13px;}
@@ -1721,11 +1727,14 @@ function renderDetalle(){
         '</div>' +
         '<div style="text-align:right; flex-shrink:0;">' +
           '<div style="font-size:16px; font-weight:800; color:' + (pagada?'var(--green-soft)':'var(--gold)') + ';">' + fmt(pagada?f.monto_total:saldo) + '</div>' +
-          '<div style="font-size:10px; color:var(--muted);">' + (pagada?'Total':'Debe') + '</div>' +
-          '<button class="btn btn-ghost fac-nota" data-fid="' + f.id + '" style="margin-top:6px; padding:5px 10px; font-size:11px;">Nota PDF</button>' +
-          '<button class="btn btn-ghost fac-wa" data-fid="' + f.id + '" style="margin-top:6px; margin-left:4px; padding:5px 10px; font-size:11px; border-color:var(--green); color:var(--green-soft);">WhatsApp</button>' +
-          (CURRENT_USER.rol === 'admin' ? '<button class="btn btn-ghost fac-editar" data-fid="' + f.id + '" style="margin-top:6px; margin-left:4px; padding:5px 10px; font-size:11px; border-color:var(--orange); color:var(--orange);">Editar</button><button class="btn btn-ghost fac-anular" data-fid="' + f.id + '" style="margin-top:6px; margin-left:4px; padding:5px 10px; font-size:11px; border-color:var(--red); color:var(--red-soft);">Anular</button>' : '') +
+          '<div style="font-size:10px; color:var(--muted);">' + (pagada?'Total':(parseFloat(f.monto_pagado||0) > 0.01 ? 'Debe de ' + fmt(f.monto_total) : 'Debe')) + '</div>' +
         '</div>' +
+      '</div>' +
+      // Botones en su propia fila a lo ancho (antes apretaban el texto en una columna angosta en el iPhone)
+      '<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">' +
+          '<button class="btn btn-ghost fac-nota" data-fid="' + f.id + '" style="padding:5px 10px; font-size:11px;">Nota PDF</button>' +
+          '<button class="btn btn-ghost fac-wa" data-fid="' + f.id + '" style="padding:5px 10px; font-size:11px; border-color:var(--green); color:var(--green-soft);">WhatsApp</button>' +
+          (CURRENT_USER.rol === 'admin' ? '<button class="btn btn-ghost fac-editar" data-fid="' + f.id + '" style="padding:5px 10px; font-size:11px; border-color:var(--orange); color:var(--orange);">Editar</button><button class="btn btn-ghost fac-anular" data-fid="' + f.id + '" style="padding:5px 10px; font-size:11px; border-color:var(--red); color:var(--red-soft);">Anular</button>' : '') +
       '</div>' +
     '</div>';
   }
@@ -1756,16 +1765,19 @@ function renderDetalle(){
     '</div>' +
     '<h3 style="font-size:16px; margin:18px 0 10px; color:var(--gold);">Facturas pendientes (' + pendientes.length + ')</h3>' +
     (pendientes.length ? pendientes.map(filaFactura).join('') : '<div style="color:var(--muted); font-size:13px; padding:10px;">No tiene facturas pendientes.</div>') +
-    '<h3 style="font-size:16px; margin:22px 0 10px; color:var(--gold);">Facturas pagadas (' + pagadas.length + ')</h3>' +
-    (pagadas.length ? pagadas.map(filaFactura).join('') : '<div style="color:var(--muted); font-size:13px; padding:10px;">Aún no tiene facturas pagadas.</div>') +
-    '<h3 style="font-size:16px; margin:22px 0 10px; color:var(--gold);">Historial de abonos (' + abonos.length + ')</h3>' +
+    // Pagadas e historial de abonos plegados: con cuentas grandes (50+ facturas, 100+ abonos) la pantalla se hacía eterna
+    '<details class="det-plegable"><summary>Facturas pagadas (' + pagadas.length + ')</summary>' +
+    (pagadas.length ? pagadas.slice().reverse().map(filaFactura).join('') : '<div style="color:var(--muted); font-size:13px; padding:10px;">Aún no tiene facturas pagadas.</div>') +
+    '</details>' +
+    '<details class="det-plegable"><summary>Historial de abonos (' + abonos.length + ' · ' + fmt(totalPagado) + ')</summary>' +
     (abonos.length ? abonos.map(function(a){
       return '<div class="card" style="padding:12px 14px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">' +
         '<div><div style="font-weight:600;">' + fmtDate(a.fecha) + '</div><div style="font-size:12px; color:var(--muted);">' + a.metodo + (a.notas?' · '+a.notas:'') + '</div></div>' +
         '<div style="display:flex; align-items:center; gap:10px;"><div style="font-size:16px; font-weight:800; color:var(--green-soft);">' + fmt(a.monto) + '</div>' +
         (CURRENT_USER.rol === 'admin' ? '<button class="btn btn-ghost abono-anular" data-aid="' + a.id + '" style="padding:4px 8px; font-size:11px; border-color:var(--red); color:var(--red-soft);">Anular</button>' : '') + '</div>' +
       '</div>';
-    }).join('') : '<div style="color:var(--muted); font-size:13px; padding:10px;">Sin abonos registrados.</div>');
+    }).join('') : '<div style="color:var(--muted); font-size:13px; padding:10px;">Sin abonos registrados.</div>') +
+    '</details>';
 
   document.getElementById('detalleContent').innerHTML = html;
   var btnAb = document.getElementById('btnAbonarCli');

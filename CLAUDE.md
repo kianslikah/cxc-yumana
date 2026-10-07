@@ -96,7 +96,7 @@ Si una tarea menciona "créditos" o "proveedores" sin dar el nombre de archivo, 
     - **Correcciones de dinero con rastro:** toda corrección de montos deja el valor de antes y el de después en `historial_auditoria`.
     - Usar `apply_migration` para cambios de estructura, para que queden registrados.
     - **El conector se cuelga con `DELETE`** (se queda esperando una confirmación que nunca llega y la transacción se deshace sola). Para quitar algo: borrado suave (`deleted_at`) o dejar la fila en $0 con nota explicativa (ej. intereses perdonados). Nunca `DELETE` desde el conector.
-    - Respaldos hechos: `respaldo_20261004`, `respaldo_20261004b`, `respaldo_20261004c`, `respaldo_20261004d`, `respaldo_20261004e`, `respaldo_20261006`.
+    - Respaldos hechos: `respaldo_20261004`, `respaldo_20261004b`, `respaldo_20261004c`, `respaldo_20261004d`, `respaldo_20261004e`, `respaldo_20261006`, `respaldo_20261007`.
 
 ## Lo que ya está hecho (no rehacer)
 
@@ -117,6 +117,7 @@ El detalle completo de cada entrega (funciones, columnas, decisiones) está en *
 5. **Seguridad:** hay una API key de Google expuesta en el código de CxC y la key de Supabase sin restricción de dominio.
 6. **Limpiar archivos muertos del repo** (ver tabla arriba). Borrarlos requiere confirmación de Kinan.
 7. ~~Tarjeta `gestion.html` 404~~ **HECHO el 2026-10-06** (`activa=false`).
+14. **Migrar el resto de clientes del sistema de cobros anterior** al mayorista (9 clientes en el respaldo del 2026-10-05; ver `docs/HISTORIAL.md`). PEDRAZA tiene 2 abonos USDT de $13 el 2026-06-02 con 4 s de diferencia: confirmar si fue uno solo.
 12. **Devoluciones de proveedores perdidas (confirmar con Fayssal):** las devoluciones aceptadas Salcar $200,17 (jun) y Gtronic $905 (may) se sumaron al abonado a mano y el trigger las borró; sus facturas figuran pagadas solo con abonos. Si esos montos no se cobraron de otra forma, son saldo a favor que falta registrar.
 13. **Venta y Zona** (`Venta_prueba.html`, `zona_prueba.html`) no se usan todavía. Antes de estrenarlas: conectar `inv_registrar_venta`, revisar errores ignorados en Zona (lista pendientes, búsqueda `.or()`, revertir entrega sin confirmación), emojis e inputs.
 8. Etapa 2 mayorista: descuento de stock real del inventario al facturar.
