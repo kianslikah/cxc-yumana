@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JABELLA Store</title>
+<meta name="description" content="Inventario, ventas y dinero de JABELLA Store">
+<meta name="theme-color" content="#fbf7fa">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Jabella">
+<link rel="apple-touch-icon" href="img/icono-180.png?v=1">
+<link rel="icon" type="image/png" href="img/favicon-32.png?v=1">
+<link rel="manifest" href="manifest.webmanifest?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@500;600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css?v=1">
+</head>
+<body>
+
+<!-- Entrada -->
+<section id="pantallaLogin" class="login" hidden>
+  <div class="login-caja">
+    <img src="img/logo.png" alt="JABELLA" class="login-logo">
+    <form id="formLogin" class="tarjeta pila" autocomplete="on">
+      <h2>Entrar</h2>
+      <label class="campo"><span>Usuario</span>
+        <input id="loginUsuario" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required>
+      </label>
+      <label class="campo"><span>Clave</span>
+        <input id="loginClave" name="password" type="password" autocomplete="current-password" required>
+      </label>
+      <div id="loginError" class="login-error" hidden></div>
+      <button class="btn btn-ancho" id="btnEntrar" type="submit">Entrar</button>
+    </form>
+  </div>
+</section>
+
+<!-- Aplicación -->
+<div id="app" class="app" hidden>
+  <aside class="lateral">
+    <img src="img/logo.png" alt="JABELLA" class="marca">
+    <nav id="navLateral"></nav>
+    <div class="pie" id="pieLateral"></div>
+  </aside>
+  <div>
+    <header class="barra-sup">
+      <img src="img/logo.png" alt="" class="marca">
+      <h1 id="tituloVista">Vender</h1>
+      <button class="tasa-chip" id="chipTasa" type="button">Tasa —</button>
+    </header>
+    <main id="vista" class="contenido"></main>
+  </div>
+  <nav class="barra-tabs" id="navTabs"></nav>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js" integrity="sha384-rwykjmWNwVxboyFmvK9OXN0wj9hnMHA2aAHtits54DuACyCq0M2PrSNxhRb+hvXT" crossorigin="anonymous"></script>
+<script src="js/config.js?v=1"></script>
+<script src="js/base.js?v=1"></script>
+<script src="js/pagos.js?v=1"></script>
+<script src="js/clientes.js?v=1"></script>
+<script src="js/vender.js?v=1"></script>
+<script src="js/inventario.js?v=1"></script>
+<script src="js/ventas.js?v=1"></script>
+<script src="js/dinero.js?v=1"></script>
+<script src="js/ajustes.js?v=1"></script>
+<script src="js/app.js?v=1"></script>
+</body>
+</html>

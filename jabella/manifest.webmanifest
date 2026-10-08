@@ -1,0 +1,15 @@
+{
+  "name": "JABELLA Store",
+  "short_name": "Jabella",
+  "start_url": "./#vender",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbf7fa",
+  "theme_color": "#fbf7fa",
+  "lang": "es",
+  "icons": [
+    { "src": "img/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/icono-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "img/icono-mask-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

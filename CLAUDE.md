@@ -57,6 +57,8 @@ El diseño del Portal es el estándar de TODO el ecosistema. Kinan exige **idén
 | `Venta_prueba.html`, `zona_prueba.html` | Ventas/caja y zona de entrega | Supabase Auth |
 | `mapa_yumana.html` | Mapa 3D de operaciones, análisis y protocolos. **Va cifrado:** se edita con `herramientas/mapa/` (ver su `LEEME.md`); nunca subir las piezas sin cifrar | Clave propia (candado) + tarjeta solo admin |
 
+**JABELLA Store (negocio aparte, solo alojado aquí):** la carpeta `jabella/` es el sistema de la tienda de ropa de Albany (app.mercantilyumana.com/jabella/). Usa este mismo Supabase pero **aislado con prefijo `jab_`** (tablas, funciones, bucket `jab-fotos`, Edge Function `jab-usuarios`) y sus propios usuarios. No es parte de Yumana: no mezclar datos, no tocar objetos `jab_` desde las apps de Yumana ni objetos de Yumana desde Jabella. Su contexto está en `jabella/CLAUDE.md`. Plan futuro: mudarlo a su propio proyecto.
+
 ⚠️ **ARCHIVOS VIEJOS EN EL REPO — NO EDITARLOS NUNCA.** Quedaron versiones anteriores con nombres parecidos. Los vivos son los de la tabla de arriba. Estos están muertos:
 
 | Archivo muerto | Por qué | Reemplazado por |
@@ -97,7 +99,7 @@ Si una tarea menciona "créditos" o "proveedores" sin dar el nombre de archivo, 
     - **Correcciones de dinero con rastro:** toda corrección de montos deja el valor de antes y el de después en `historial_auditoria`.
     - Usar `apply_migration` para cambios de estructura, para que queden registrados.
     - **El conector se cuelga con `DELETE`** (se queda esperando una confirmación que nunca llega y la transacción se deshace sola). Para quitar algo: borrado suave (`deleted_at`) o dejar la fila en $0 con nota explicativa (ej. intereses perdonados). Nunca `DELETE` desde el conector.
-    - Respaldos hechos: `respaldo_20261004`, `respaldo_20261004b`, `respaldo_20261004c`, `respaldo_20261004d`, `respaldo_20261004e`, `respaldo_20261006`, `respaldo_20261007`, `respaldo_20261008` (trae además `funciones_antes_seguridad`, `vistas_antes_seguridad` y `politicas_antes_seguridad`).
+    - Respaldos hechos: `respaldo_20261004`, `respaldo_20261004b`, `respaldo_20261004c`, `respaldo_20261004d`, `respaldo_20261004e`, `respaldo_20261006`, `respaldo_20261007`, `respaldo_20261008` (trae además `funciones_antes_seguridad`, `vistas_antes_seguridad` y `politicas_antes_seguridad`), `respaldo_20261008b` (antes de crear lo de JABELLA).
     - **Usuarios (desde 2026-10-08):** una cuenta creada desde Créditos nace **inactiva y de solo lectura**; un admin la activa y le da su rol en Usuarios. Nadie que no sea admin puede cambiarse el rol ni activarse (trigger `trg_usuarios_app_proteger_rol`).
 
 ## Lo que ya está hecho (no rehacer)
