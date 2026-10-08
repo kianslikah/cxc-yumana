@@ -259,7 +259,21 @@
   .pr-pos{flex:1;text-align:center;font-size:14px;color:var(--text-2);font-variant-numeric:tabular-nums;}
   .btn[disabled]{opacity:0.4;pointer-events:none;}
   .pi-cuerpo{position:relative;}
-  .vista-mapa.sin-escena .btn-recorrido,.vista-mapa.sin-escena .panel-recorrido{display:none !important;}
+  .vista-mapa.sin-escena .btn-recorrido,.vista-mapa.sin-escena .panel-recorrido,.vista-mapa.sin-escena .panel-guia{display:none !important;}
+
+  /* Guía "Qué mirar": una tarjeta abajo a la izquierda, una cosa a la vez */
+  .panel-guia{position:absolute;z-index:29;left:calc(16px + var(--sa-l));bottom:calc(16px + var(--sa-b));width:340px;max-width:calc(100% - 32px);border-radius:20px;display:flex;flex-direction:column;overflow:hidden;}
+  .pg-cab{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 10px 0 18px;}
+  .pg-titulo{font-family:'Fraunces',serif;font-size:21px;font-weight:600;line-height:1.2;padding:4px 18px 0;text-wrap:balance;}
+  .pg-texto{font-size:15px;line-height:1.5;color:var(--text-2);padding:8px 18px 12px;text-wrap:pretty;}
+  .pg-accion{padding:0 18px 12px;}
+  .pg-accion:empty{display:none;}
+  .pg-accion .btn{width:100%;justify-content:center;}
+  .vista-mapa.con-guia .kpis-mapa,.vista-mapa.con-guia .nota-mapa{display:none;}
+  .vista-mapa.limpio .panel-guia{display:none;}
+  /* iPad vertical: la guía va a lo ancho abajo, así el mapa usa toda la parte de arriba */
+  @media (min-width:641px) and (orientation:portrait){.panel-guia{right:calc(16px + var(--sa-r));width:auto;max-width:none;}}
+  @media (max-width:430px){.txt-ancho{display:none;}}
 
   /* Panel de información: lateral en iPad horizontal y PC; hoja inferior en vertical y iPhone */
   .panel-info{position:absolute;z-index:30;top:16px;right:calc(16px + var(--sa-r));bottom:16px;width:var(--info-w);border-radius:20px;display:flex;flex-direction:column;overflow:hidden;visibility:hidden;transform:translateX(calc(100% + 32px));transition:transform .28s cubic-bezier(.2,.7,.3,1),visibility 0s linear .28s,height .22s ease;background:rgba(22,27,37,0.94);}
@@ -577,6 +591,10 @@
     .pc-cab{padding-top:0;}
     .mapa-abajo{display:flex;gap:8px;position:absolute;left:calc(10px + var(--sa-l));right:calc(10px + var(--sa-r));bottom:10px;}
     .mapa-abajo .btn-recorrido{flex:1;min-width:0;padding:0 10px;}
+    .panel-guia{left:calc(10px + var(--sa-l));right:calc(10px + var(--sa-r));bottom:66px;width:auto;max-width:none;}
+    .vista-mapa.con-guia .mapa-derecha{display:none;}
+    .pg-titulo{font-size:19px;}
+    .pg-texto{font-size:14px;padding:6px 18px 10px;}
     .no-movil{display:none !important;}
     .mapa-derecha{top:auto;bottom:66px;left:calc(10px + var(--sa-l));right:calc(10px + var(--sa-r));max-width:none;align-items:stretch;}
     .vista-mapa.info-abierta .mapa-derecha{right:calc(10px + var(--sa-r));}
@@ -724,6 +742,7 @@
       </div>
 
       <div class="mapa-derecha" id="mapaDerecha">
+        <button type="button" class="btn-recorrido vidrio no-movil" data-accion="guia" aria-pressed="false" aria-controls="panelGuia"><svg class="ico" aria-hidden="true"><use href="#i-objetivo" xlink:href="#i-objetivo"></use></svg>Qué mirar</button>
         <button type="button" class="btn-recorrido vidrio no-movil" data-accion="recorrido" aria-pressed="false" aria-controls="panelRecorrido"><svg class="ico" aria-hidden="true"><use href="#i-cliente" xlink:href="#i-cliente"></use></svg>Recorrido del cliente</button>
         <p class="nota-mapa vidrio">Caso con datos reales y supuestos <span style="white-space:nowrap">marcados · <a href="#supuestos">ver Supuestos</a></span></p>
         <div class="banner-fase2" id="bannerFase2" role="status" hidden><svg class="ico" aria-hidden="true"><use href="#i-alerta" xlink:href="#i-alerta"></use></svg><span>Fase 2: escenario futuro, no es la realidad actual.</span></div>
@@ -758,7 +777,8 @@
 
       <div class="mapa-abajo">
         <button type="button" class="btn-vidrio vidrio" id="btnControles" aria-controls="panelControles" aria-expanded="false"><svg class="ico" aria-hidden="true"><use href="#i-ajustes" xlink:href="#i-ajustes"></use></svg>Controles</button>
-        <button type="button" class="btn-recorrido vidrio" data-accion="recorrido" aria-pressed="false" aria-controls="panelRecorrido"><svg class="ico" aria-hidden="true"><use href="#i-cliente" xlink:href="#i-cliente"></use></svg>Recorrido del cliente</button>
+        <button type="button" class="btn-recorrido vidrio" data-accion="recorrido" aria-pressed="false" aria-controls="panelRecorrido"><svg class="ico" aria-hidden="true"><use href="#i-cliente" xlink:href="#i-cliente"></use></svg>Recorrido<span class="txt-ancho"> del cliente</span></button>
+        <button type="button" class="btn-recorrido vidrio" data-accion="guia" aria-pressed="false" aria-controls="panelGuia"><svg class="ico" aria-hidden="true"><use href="#i-objetivo" xlink:href="#i-objetivo"></use></svg>Qué mirar</button>
       </div>
 
       <aside class="panel-info vidrio" id="panelInfo" aria-labelledby="piTitulo" aria-hidden="true">
@@ -788,6 +808,21 @@
           <button type="button" class="btn" id="prAnterior"><svg class="ico" aria-hidden="true"><use href="#i-izq" xlink:href="#i-izq"></use></svg>Anterior</button>
           <span class="pr-pos" id="prPos" aria-live="polite"></span>
           <button type="button" class="btn btn-oro" id="prSiguiente">Siguiente<svg class="ico" aria-hidden="true"><use href="#i-der" xlink:href="#i-der"></use></svg></button>
+        </div>
+      </aside>
+
+      <aside class="panel-guia vidrio" id="panelGuia" aria-labelledby="pgTitulo" aria-hidden="true" hidden>
+        <div class="pg-cab">
+          <div class="pi-tipo"><svg class="ico" aria-hidden="true"><use href="#i-objetivo" xlink:href="#i-objetivo"></use></svg>Qué mirar · <span id="pgPos"></span></div>
+          <button type="button" class="btn-icono" id="btnCerrarGuia" aria-label="Cerrar la guía"><svg class="ico" aria-hidden="true"><use href="#i-cerrar" xlink:href="#i-cerrar"></use></svg></button>
+        </div>
+        <h2 class="pg-titulo" id="pgTitulo"></h2>
+        <p class="pg-texto" id="pgTexto" aria-live="polite"></p>
+        <div class="pg-accion" id="pgAccion"></div>
+        <div class="pr-pie">
+          <button type="button" class="btn" id="pgAnterior"><svg class="ico" aria-hidden="true"><use href="#i-izq" xlink:href="#i-izq"></use></svg>Anterior</button>
+          <span class="pr-pos"></span>
+          <button type="button" class="btn btn-oro" id="pgSiguiente">Siguiente<svg class="ico" aria-hidden="true"><use href="#i-der" xlink:href="#i-der"></use></svg></button>
         </div>
       </aside>
     </div>
