@@ -99,7 +99,7 @@ Si una tarea menciona "créditos" o "proveedores" sin dar el nombre de archivo, 
     - **Correcciones de dinero con rastro:** toda corrección de montos deja el valor de antes y el de después en `historial_auditoria`.
     - Usar `apply_migration` para cambios de estructura, para que queden registrados.
     - **El conector se cuelga con `DELETE`** (se queda esperando una confirmación que nunca llega y la transacción se deshace sola). Para quitar algo: borrado suave (`deleted_at`) o dejar la fila en $0 con nota explicativa (ej. intereses perdonados). Nunca `DELETE` desde el conector.
-    - Respaldos hechos: `respaldo_20261004`, `respaldo_20261004b`, `respaldo_20261004c`, `respaldo_20261004d`, `respaldo_20261004e`, `respaldo_20261006`, `respaldo_20261007`, `respaldo_20261008` (trae además `funciones_antes_seguridad`, `vistas_antes_seguridad` y `politicas_antes_seguridad`), `respaldo_20261008b` (antes de crear lo de JABELLA).
+    - Respaldos hechos: `respaldo_20261004`, `respaldo_20261004b`, `respaldo_20261004c`, `respaldo_20261004d`, `respaldo_20261004e`, `respaldo_20261006`, `respaldo_20261007`, `respaldo_20261008` (trae además `funciones_antes_seguridad`, `vistas_antes_seguridad` y `politicas_antes_seguridad`), `respaldo_20261008b` (antes de crear lo de JABELLA), `respaldo_20261008c` (antes de las entregas 2 y 3 de JABELLA).
     - **Usuarios (desde 2026-10-08):** una cuenta creada desde Créditos nace **inactiva y de solo lectura**; un admin la activa y le da su rol en Usuarios. Nadie que no sea admin puede cambiarse el rol ni activarse (trigger `trg_usuarios_app_proteger_rol`).
 
 ## Lo que ya está hecho (no rehacer)
