@@ -10,13 +10,21 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Jabella">
-<link rel="apple-touch-icon" href="img/icono-180.png?v=1">
-<link rel="icon" type="image/png" href="img/favicon-32.png?v=1">
-<link rel="manifest" href="manifest.webmanifest?v=1">
+<link rel="apple-touch-icon" href="img/icono-180.png?v=3">
+<link rel="icon" type="image/png" href="img/favicon-32.png?v=3">
+<link rel="manifest" href="manifest.webmanifest?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@500;600&family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=1">
+<script>
+  // Tema antes de pintar (evita el destello blanco en modo noche): auto | claro | noche
+  (function () {
+    var t = 'auto';
+    try { t = localStorage.getItem('jabella-tema') || 'auto'; } catch (e) {}
+    document.documentElement.setAttribute('data-tema', t);
+  })();
+</script>
+<link rel="stylesheet" href="css/app.css?v=3">
 </head>
 <body>
 
@@ -59,15 +67,17 @@
 <div id="toasts" class="toasts" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js" integrity="sha384-rwykjmWNwVxboyFmvK9OXN0wj9hnMHA2aAHtits54DuACyCq0M2PrSNxhRb+hvXT" crossorigin="anonymous"></script>
-<script src="js/config.js?v=1"></script>
-<script src="js/base.js?v=1"></script>
-<script src="js/pagos.js?v=1"></script>
-<script src="js/clientes.js?v=1"></script>
-<script src="js/vender.js?v=1"></script>
-<script src="js/inventario.js?v=1"></script>
-<script src="js/ventas.js?v=1"></script>
-<script src="js/dinero.js?v=1"></script>
-<script src="js/ajustes.js?v=1"></script>
-<script src="js/app.js?v=1"></script>
+<script src="js/config.js?v=3"></script>
+<script src="js/base.js?v=3"></script>
+<script src="js/pagos.js?v=3"></script>
+<script src="js/clientes.js?v=3"></script>
+<script src="js/vender.js?v=3"></script>
+<script src="js/inventario.js?v=3"></script>
+<script src="js/ventas.js?v=3"></script>
+<script src="js/dinero.js?v=3"></script>
+<script src="js/compras.js?v=3"></script>
+<script src="js/reportes.js?v=3"></script>
+<script src="js/ajustes.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>

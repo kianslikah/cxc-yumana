@@ -112,6 +112,7 @@ var ICONOS = {
   usuario: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/>',
   candado: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
   reloj: '<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>',
+  reportes: '<path d="M4 20h16"/><path d="M7 16.5v-5M12 16.5V7M17 16.5v-8"/>',
   entregar: '<path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7z"/><path d="m4 8.5 8 4.5 8-4.5M12 13v7"/>'
 };
 function icono(n, clase) {
@@ -199,6 +200,16 @@ function tasaDeHoy() {
   return !!(ST.cfg && ST.cfg.tasa_bs && ST.cfg.tasa_actualizada_en && fechaCaracas(ST.cfg.tasa_actualizada_en) === hoyCaracas());
 }
 function tasaVigente() { return tasaDeHoy() ? ST.cfg.tasa_bs : 0; }
+
+// Apariencia: 'auto' (sigue al teléfono), 'claro' o 'noche'. Se guarda en este equipo.
+function temaActual() { try { return localStorage.getItem('jabella-tema') || 'auto'; } catch (e) { return 'auto'; } }
+function aplicarTema(t) {
+  try { localStorage.setItem('jabella-tema', t); } catch (e) { /* modo privado */ }
+  document.documentElement.setAttribute('data-tema', t);
+  var oscuro = t === 'noche' || (t === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', oscuro ? '#141016' : '#fbf7fa');
+}
 
 function esDuena() { return !!(ST.yo && ST.yo.rol === 'duena' && ST.yo.activo); }
 

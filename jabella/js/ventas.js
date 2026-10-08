@@ -72,11 +72,12 @@ var VistaVentas = {
       '<div class="fila" style="margin-bottom:12px;flex-wrap:wrap">' +
         '<label class="campo crece" style="min-width:170px"><span>Día</span><input type="date" id="vtFecha" value="' + this.fecha + '" max="' + hoyCaracas() + '"></label>' +
         (esDuena() ? '<button type="button" class="btn btn-sec" id="vtCambioLibre" style="align-self:flex-end">' + icono('cambio', 'ic-chico') + ' Cambio sin venta</button>' : '') +
+        (esHoy ? '<button type="button" class="btn btn-sec" id="vtCierre" style="align-self:flex-end">' + icono('dinero', 'ic-chico') + ' Cerrar caja</button>' : '') +
       '</div>' +
       '<div class="tenue" style="margin-bottom:8px">' + esc(esHoy ? 'Hoy, ' + fmtFechaLarga(this.fecha) : fmtFechaLarga(this.fecha)) + '</div>' +
       '<div class="tarjetas-kpi">' +
         '<div class="kpi"><div class="t">Vendido</div><div class="v">' + fmtUSD(r.vendido) + '</div><div class="s">' + r.ventas + ' venta' + (r.ventas === 1 ? '' : 's') + ' · ' + r.prendas + ' prenda' + (r.prendas === 1 ? '' : 's') + '</div></div>' +
-        '<div class="kpi"><div class="t">Entró en dinero</div><div class="v">' + fmtUSD(r.cobrado_usd) + '</div><div class="s">contando abonos</div></div>' +
+        (r.cobrado_usd != null ? '<div class="kpi"><div class="t">Entró en dinero</div><div class="v">' + fmtUSD(r.cobrado_usd) + '</div><div class="s">contando abonos</div></div>' : '') +
       '</div>' +
       (r.por_metodo.length ? '<div class="lista" style="margin-top:10px">' + r.por_metodo.map(function (m) {
         return '<div class="item"><div class="crece">' + esc(m.metodo) + ' <span class="tenue">(' + m.n + ')</span></div>' +
@@ -89,6 +90,8 @@ var VistaVentas = {
     $('#vtFecha').addEventListener('change', function (e) { if (e.target.value) { self.fecha = e.target.value; self.pintar(); } });
     var cl = $('#vtCambioLibre');
     if (cl) cl.onclick = function () { hojaCambio(null, []); };
+    var ci = $('#vtCierre');
+    if (ci) ci.onclick = hojaCierre;
   },
   async pintarApartados(c) {
     var lista = await traerTodo('jab_ventas', '*', function (q) { return q.eq('tipo', 'apartado').eq('estado', 'activa').eq('entregada', false); });

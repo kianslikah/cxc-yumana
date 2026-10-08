@@ -78,6 +78,10 @@ var VistaAjustes = {
         '<div class="num" style="font-size:1.5rem;font-weight:600;margin-top:4px">' + (cfg.tasa_bs ? fmtTasa(cfg.tasa_bs) + ' Bs/$' : 'Sin tasa') + '</div>' +
         '<div class="tenue">' + (cfg.tasa_actualizada_en ? 'Actualizada ' + fmtFechaHora(cfg.tasa_actualizada_en) : 'Ponla antes de cobrar en bolívares') + '</div></div>' +
         '<button type="button" class="btn btn-sec" data-a="tasa">Cambiar</button></div></div>' +
+      '<div class="tarjeta"><h3>Apariencia</h3><p class="ayuda" style="margin:4px 0 10px">En este equipo. "Automático" usa el modo del teléfono o la laptop.</p>' +
+        '<div class="seg" id="ajTema">' + [['auto', 'Automático'], ['claro', 'Claro'], ['noche', 'Noche']].map(function (x) {
+          return '<button type="button" data-tema="' + x[0] + '"' + (temaActual() === x[0] ? ' class="activo"' : '') + '>' + x[1] + '</button>';
+        }).join('') + '</div></div>' +
       '<div class="tarjeta"><h3>Mi cuenta</h3>' +
         '<p style="margin:6px 0 12px">' + esc(ST.yo.nombre) + ' <span class="tenue">(' + esc(ST.yo.usuario) + ' · ' + (esDuena() ? 'dueña' : 'vendedora') + ')</span></p>' +
         '<div class="botonera"><button type="button" class="btn btn-sec btn-chico" data-a="clave">' + icono('candado', 'ic-chico') + ' Cambiar mi clave</button>' +
@@ -86,6 +90,7 @@ var VistaAjustes = {
         '<div class="tarjeta"><h3>Reglas de la tienda</h3><div class="pila" style="margin-top:10px">' +
           '<div class="campos-2"><label class="campo"><span>Días para retirar un apartado</span><input id="ajDias" inputmode="numeric" value="' + cfg.dias_apartado + '"></label>' +
           '<label class="campo"><span>Abono mínimo para apartar (%)</span><input id="ajPct" inputmode="decimal" value="' + fmtNum(cfg.abono_minimo_pct).replace(/,00$/, '') + '"></label></div>' +
+          '<label class="campo"><span>Flete por libra del courier ($)</span><input id="ajTarifa" inputmode="decimal" value="' + fmtNum(cfg.tarifa_libra) + '"></label>' +
           '<label class="fila"><input type="checkbox" id="ajFia"' + (cfg.vendedora_fia ? ' checked' : '') + ' style="width:20px;height:20px"> La vendedora puede vender fiado</label>' +
           '<button type="button" class="btn btn-chico" data-a="reglas" style="align-self:flex-start">Guardar reglas</button></div></div>' +
         '<div class="tarjeta"><h3>Historial de la tasa</h3><div id="ajTasas" style="margin-top:8px"><div class="cargando">Cargando…</div></div></div>' +
@@ -99,6 +104,12 @@ var VistaAjustes = {
     '</div>';
     var self = this;
     $('#ajRaiz').addEventListener('click', async function (e) {
+      var tb = e.target.closest('#ajTema [data-tema]');
+      if (tb) {
+        aplicarTema(tb.dataset.tema);
+        $$('#ajTema button').forEach(function (x) { x.classList.toggle('activo', x === tb); });
+        return;
+      }
       var b = e.target.closest('[data-a]'); if (!b) return;
       var a = b.dataset.a;
       try {
@@ -130,12 +141,13 @@ var VistaAjustes = {
     }).join('') + '</div>' : '<div class="tenue">Todavía no se ha puesto ninguna tasa.</div>';
   },
   async guardarReglas(btn) {
-    var dias = Number($('#ajDias').value), pct = parseNum($('#ajPct').value);
+    var dias = Number($('#ajDias').value), pct = parseNum($('#ajPct').value), tarifa = parseNum($('#ajTarifa').value);
+    if (isNaN(tarifa) || tarifa < 0) throw new Error('Revisa el flete por libra.');
     if (!Number.isInteger(dias) || dias < 1 || dias > 120) throw new Error('Los días deben estar entre 1 y 120.');
     if (isNaN(pct) || pct < 0 || pct > 100) throw new Error('El porcentaje debe estar entre 0 y 100.');
     btn.disabled = true;
     try {
-      await rpc('jab_actualizar_config', { p: { dias_apartado: dias, abono_minimo_pct: pct, vendedora_fia: $('#ajFia').checked } });
+      await rpc('jab_actualizar_config', { p: { dias_apartado: dias, abono_minimo_pct: pct, vendedora_fia: $('#ajFia').checked, tarifa_libra: redondear2(tarifa) } });
       await cargarConfig();
       toast('Reglas guardadas', 'ok');
     } finally { btn.disabled = false; }
@@ -224,6 +236,7 @@ function hojaCuenta(c) {
       cerrarFuera: false,
       html: '<div class="pila"><label class="campo"><span>Nombre</span><input id="cuNombre" value="' + esc(c ? c.nombre : '') + '" placeholder="Ej.: Banesco"></label>' +
         '<label class="campo"><span>Moneda</span><select id="cuMoneda"' + (c ? ' disabled' : '') + '><option value="USD">Dólares</option><option value="VES"' + (c && c.moneda === 'VES' ? ' selected' : '') + '>Bolívares</option></select></label>' +
+        '<label class="fila"><input type="checkbox" id="cuCierre"' + (c ? (c.cuenta_en_cierre ? ' checked' : '') : '') + ' style="width:20px;height:20px"> Se cuenta en el cierre de caja (efectivo)</label>' +
         (c ? '<label class="fila"><input type="checkbox" id="cuActiva"' + (c.activa ? ' checked' : '') + ' style="width:20px;height:20px"> Activa</label>' : '') + '</div>',
       pie: '<button type="button" class="btn btn-ancho" id="cuOk">Guardar</button>',
       alCerrar: function () { if (!listo) resolver(false); }
@@ -231,8 +244,9 @@ function hojaCuenta(c) {
     protegerBoton(h.$('#cuOk'), async function () {
       var nombre = h.$('#cuNombre').value.trim();
       if (!nombre) throw new Error('Escribe el nombre.');
-      var r = c ? await sb.from('jab_cuentas').update({ nombre: nombre, activa: h.$('#cuActiva').checked }).eq('id', c.id)
-                : await sb.from('jab_cuentas').insert({ nombre: nombre, moneda: h.$('#cuMoneda').value, orden: ST.cuentas.length + 1 });
+      var enCierre = h.$('#cuCierre').checked;
+      var r = c ? await sb.from('jab_cuentas').update({ nombre: nombre, activa: h.$('#cuActiva').checked, cuenta_en_cierre: enCierre }).eq('id', c.id)
+                : await sb.from('jab_cuentas').insert({ nombre: nombre, moneda: h.$('#cuMoneda').value, orden: ST.cuentas.length + 1, cuenta_en_cierre: enCierre });
       if (r.error) throw r.error;
       listo = true; h.cerrar(); resolver(true);
     });

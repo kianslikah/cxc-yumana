@@ -7,6 +7,8 @@ var VISTAS = {
   inventario: { v: VistaInventario, icono: 'inventario', nombre: 'Inventario' },
   ventas: { v: VistaVentas, icono: 'ventas', nombre: 'Ventas' },
   dinero: { v: VistaDinero, icono: 'dinero', nombre: 'Dinero', soloDuena: true },
+  compras: { v: VistaCompras, icono: 'entregar', nombre: 'Compras', soloDuena: true },
+  reportes: { v: VistaReportes, icono: 'reportes', nombre: 'Reportes', soloDuena: true },
   clientes: { v: VistaClientes, icono: 'clientes', nombre: 'Clientas' },
   ajustes: { v: VistaAjustes, icono: 'ajustes', nombre: 'Ajustes' }
 };
@@ -181,6 +183,13 @@ document.addEventListener('click', function (e) {
 window.addEventListener('hashchange', function () {
   if (ST.yo) { var n = location.hash.slice(1); if (VISTAS[n] && VISTAS[n].v !== VistaActual) ir(n); }
 });
+
+aplicarTema(temaActual());
+if (window.matchMedia) {
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  var alCambiarModo = function () { if (temaActual() === 'auto') aplicarTema('auto'); };
+  if (mq.addEventListener) mq.addEventListener('change', alCambiarModo); else if (mq.addListener) mq.addListener(alCambiarModo);
+}
 
 (async function iniciar() {
   try {

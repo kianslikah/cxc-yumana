@@ -50,7 +50,9 @@ Colores del logo: lila `#e6b8dd`, ciruela `#8e4f84` (acciones), fondo `#fbf7fa`.
 - `cuentas` (dónde está el dinero, USD o VES) y `metodos_pago` (cada método va a una cuenta; "Saldo a favor" es especial).
 - `clientes` (borrado suave `deleted_at`), `saldo_favor_mov` (saldo = suma).
 - `productos` (código JB-0001 automático), `variantes` (talla/color/stock), `producto_costos` (solo dueña), `movimientos_inventario` (todo cambio de existencia queda aquí).
-- `ventas` (`numero` corrido sin huecos vía `contadores`; tipo contado/apartado/fiado/cambio; estado activa/cancelada/anulada), `venta_items` (cantidad negativa = devuelta en un cambio, `item_origen_id`), `venta_item_costos` (costo al momento, solo dueña), `pagos` (en $ y Bs con tasa), `movimientos_dinero` (gastos, retiros, transferencias, ajustes), `auditoria`.
+- `ventas` (`numero` corrido sin huecos vía `contadores`; tipo contado/apartado/fiado/cambio; estado activa/cancelada/anulada), `venta_items` (cantidad negativa = devuelta en un cambio, `item_origen_id`), `venta_item_costos` (costo al momento, solo dueña), `pagos` (en $ y Bs con tasa), `movimientos_dinero` (gastos, retiros, transferencias, ajustes; `es_inversion` = mercancía/flete/reembolso, no gasto del local; `compra_id`/`envio_id`/`compra_item_id`), `auditoria`.
+- Compras (entrega 2, solo dueña): `compras` (pedido SHEIN, `total_pagado` reparte impuestos/descuentos con un factor), `compra_items` (recibidas/faltantes, `costo_real`, `reembolsado` recalculado por trigger desde los movimientos vivos, `clave` por artículo), `paquetes` (camino/casillero, `envio_id`, `clave`), `envios` (caja de reempaque: reempaque → transito → aduana → llegada → recibido; flete = mayor(peso, volumétrico) × tarifa). Al recibir: costo = precio × factor + flete/piezas de la caja; costo promedio ponderado de la prenda.
+- Reportes (entrega 3, solo dueña): `cierres` (conteo ciego de las cuentas con `cuentas.cuenta_en_cierre`), `jab_reporte(desde, hasta)` y `jab_sin_movimiento(dias)`.
 
 ## REGLAS (no romper)
 
@@ -64,9 +66,12 @@ Colores del logo: lila `#e6b8dd`, ciruela `#8e4f84` (acciones), fondo `#fbf7fa`.
 
 ## Pruebas
 
-- `supabase/pruebas/escenarios.sql`: 111 escenarios de negocio para correr en un Postgres local con los stubs de `supabase/pruebas/stubs.sql` (simulan `auth.uid()`, roles y storage). Todo debe dar `ok`.
+- `supabase/pruebas/escenarios.sql` (111), `escenarios_compras.sql` (85) y `escenarios_reportes.sql` (18): escenarios de negocio para correr en orden en un Postgres local con los stubs de `supabase/pruebas/stubs.sql` (simulan `auth.uid()`, roles y storage) y las migraciones 001→003. Todo debe dar `ok` (los fallos salen con `!!!`).
+- Antes de aplicar una migración a producción: respaldo de todo `public` (regla de Yumana) y, después, comparar la huella de cada función (`md5` del código sin comentarios ni espacios) con la base local y la huella de las funciones, tablas, políticas y triggers de Yumana (deben quedar iguales).
 - El conector de Supabase se cuelga con `DELETE` (regla de Yumana): en la base real probar dentro de un bloque `do $$ … raise exception … $$` para que todo se deshaga.
 
 ## Entregas
 
-Ver `docs/HISTORIAL.md`. Pendiente: entrega 2 (compras SHEIN, paquetes, reempaque, embarque, aduana, recepción y costo real con flete repartido por pieza) y entrega 3 (reportes de ganancia, cierre de caja de la vendedora, gastos del mes).
+Ver `docs/HISTORIAL.md`. Hechas: 1 (base), 2 (compras SHEIN y modo noche) y 3 (reportes y cierre de caja). Manuales para Albany (Claude Docs): rápido https://claude.ai/code/artifact/6e12073f-9ab1-4ca3-9240-bb879e13e619 y completo https://claude.ai/code/artifact/2eea04b6-d7ed-40db-b750-07f6e33f02b1 — actualizarlos cuando cambie la forma de usar algo.
+
+Ideas pendientes: tope de fiado por clienta; aviso de apartados por vencer por WhatsApp; valor de faltantes no reembolsados en Reportes; sugerir prenda existente al recibir si el nombre ya existe en el catálogo; modo sin conexión.
