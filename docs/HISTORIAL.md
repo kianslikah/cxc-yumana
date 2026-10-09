@@ -69,6 +69,15 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - **YONDER PERNIA:** particular, V-18989358, tel. 04125457658, Socopó, delante de la bomba Villarreal.
     - Plazo normal 30; la factura #146 del 27/08 tiene 60 y vence el 26/10.
     - Es el pedido de WhatsApp. Se entregaron 19 sillas playeras, no 20, así que el total es $2.931 y no $2.945.
+  - **ADRIANA MORA:** negocio, V-19056774, Guayanito, plazo 60, grupo "Pagos Adriana". En Valery figura como ADRIANA SOFIA MORA CONTRERAS.
+    - Teléfonos: `Adriana 04262689370 / Tatiana 04161366484`. Tatiana trabaja con ella.
+    - #148 del 25/06: saldo pendiente de $1.788,08.
+    - #149 del 16/07 ($1.681), #150 del 21/07 ($5.530), #151 del 10/08 ($9.604), #152 del 17/08 ($2.085) y #153 del 22/08 ($1.706): salen del resumen del grupo y no traen detalle.
+    - #154 del 09/09: nota Valery 0000029716, 37 renglones, $10.380. 33 están enlazados al catálogo.
+    - #155 del 22/09 ($790) y #156 del 09/10 ($760): pedidos con detalle.
+    - **Abonos:** la recopilación del grupo, sin fechas individuales, cargada como 4 totales con fecha 30/09: Bs $4.941,23, Zelle $8.369, USDT $342, y $455 de "Descuento/devolución" (no es dinero: aire SJ 14mil $230, TV 32 $105, colchón $20, cama $20 y ollas $80).
+    - Pagan completas la #148, la #149 y la #150, y $5.108,15 de la #151, que queda debiendo $4.495,85, como en el resumen del grupo.
+    - Debe $20.216,85.
   - Regla para cargar notas de Valery: el sello "PAGADO" o "CONTADO" no significa que esté pagada. Es el justificante para el camino.
   - Los números #137 a #140 se gastaron en pruebas de la papelera que se deshicieron. No falta ninguna factura.
 - **Mayorista, entrega del 2026-10-09 (`?v=20261009d`):** correcciones de la revisión `/thermos` (dos revisores) y lo que pidió Kinan.
