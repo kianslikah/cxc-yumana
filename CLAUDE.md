@@ -107,7 +107,7 @@ Si una tarea menciona "créditos" o "proveedores" sin dar el nombre de archivo, 
 El detalle completo de cada entrega (funciones, columnas, decisiones) está en **`docs/HISTORIAL.md`**. Leerlo antes de tocar una parte que ya se trabajó. Resumen:
 
 - **Créditos:** cuenta consolidada, pago a la cuenta con `grupo_pago`, cobranza por días sin pagar, intereses perdonables, verificador de cuadre, operaciones que se deshacen si fallan a mitad. Helpers clave: `traerTodoBD`, `redondear2`, `saldoFrescoCuenta`, `reconstruirTotalCuenta`, `recalcularSaldoCuenta`/`recalcularOAvisar`, `esDeudaViva`, `marcarPartesGrupo`, `toast` en cola, `confirmAction(..., opts)`.
-- **Mayorista:** completo + pedido rápido desde Notas. Abono/factura/anular por RPC atómicos (`may_registrar_abono`, `may_guardar_factura`, `may_anular_*`, `may_recalcular_cliente`).
+- **Mayorista:** completo + pedido rápido desde Notas. Abono/factura/anular por RPC atómicos (`may_registrar_abono`, `may_guardar_factura`, `may_anular_*`, `may_recalcular_cliente`). Eliminar cliente y **Papelera** con restaurar (`may_eliminar_cliente`, `may_restaurar`).
 - **Proveedores:** `prov_registrar_abono` y `prov_aplicar_saldo_favor` (RPC), devoluciones como abono, rastro en `prov_auditoria`.
 - **Inventario, Portal, Control:** errores de guardado visibles, paginación con orden fijo, estados de carga.
 - **Skills de revisión:** `.claude/skills/` (`/thermos`, `/anti-slop-audit`, `/anti-slop-fix`).

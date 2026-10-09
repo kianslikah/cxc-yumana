@@ -31,10 +31,30 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
 - **Ajustes (2026-10-09):** ALMACÉN ROMA — WUALTER AL BOUNAY vuelve a plazo normal 30 días para facturas nuevas (las #126 y #127 quedan a 60 días). Zona de Tío Badia y de Wualter: Santa Bárbara de Barinas (campo `direccion`); Kinan pide tener la zona de cada cliente para usarla después.
 - **Cliente nuevo (2026-10-09): SAMER EL BOUNNAY** (V-19491715, tel. 04147585020, Santa Bárbara de Barinas, plazo 30, sin grupo). Factura #128 del 08/10 = nota 0000031054, 6 renglones, $2.483, sin abonos. Su cédula 19491715 es la misma persona del RIF de Tío Badia (V-19491715-1): Kinan confirmó que se llevan como cuentas separadas. Se enlazó al catálogo el exhibidor Mystic 290L de la factura #124 (MY-ENF290FCU).
 - **Cliente nuevo (2026-10-09): ZYAD MAN AL DEN** (E-84567607, tel. 04261735555, hijo LEITH 04261033635, Santa Bárbara de Barinas, plazo 30, sin grupo). Antes se le llevaba la cuenta en un cuaderno; se cargó la historia completa:
-  - **#129** (08/09): saldo anterior del cuaderno, $6.707. El cuaderno no trae la fecha; se puso 08/09.
+  - **#129** (08/09): saldo anterior del cuaderno, $6.707. El cuaderno no trae la fecha; se puso 08/09 (Kinan la dio por buena).
   - **#130** (13/09): $608.
   - **#131** (24/09): $359.
   - **9 abonos** del 09/09 al 04/10 que suman $6.351: Bs $80, Binance $50 y $33 (cargados como USDT), Zelle $100, $150, $138, $100 y $100, y efectivo $5.600. El saldo viejo queda en $1.323, igual que en el cuaderno.
   - **#132** (04/10, cuaderno): $3.952, almohadas incluidas, de modo que la deuda del cuaderno queda en $5.275. Quien escribe ese cuaderno hace el 1 parecido al 7: el split Says es $215, no $275. Al principio lo leí como $275 y dejé fuera las almohadas; se corrigió el mismo día, con rastro en `historial_auditoria`, y el total no cambió.
   - **#133** (08/10): nota Valery 0000031053, $7.190. 12 renglones enlazados al catálogo; el aire Khaled 220v (AW12CM2FMC) y la nevera Hamilton Beach (HBR8TSV26D) no están en el catálogo y van como texto.
   - Deuda total: $12.465.
+- **Cliente nuevo (2026-10-09): CREDIMUEBLES — ANDERSON** (tel. 04147591679, Socopó, plazo 60, grupo "Pagos CREDIMUEBLES", donde también está Hugo). Datos del mensaje fijado en el grupo, sin detalle de productos:
+  - Facturas: #134 del 11/07 por $3.478, #135 del 08/08 por $8.122 y #136 del 19/08 por $28.850.
+  - Abonos: Zelle $1.000 el 23/09, USDT $2.000 el 08/10 y Zelle $500 el 08/10.
+  - Debe $36.950.
+- **Ajustes (2026-10-09):**
+  - "Franklin Solano" era un cliente de prueba y quedó en la papelera. Tenía como teléfono el número de Fran.
+  - Las dos cuentas de Daniel y Fran llevan los dos teléfonos: `Fran 04127734302 / Daniel 04162684726`.
+  - Las 4 mesas MOSERPLAS de Tío Badia quedan en su factura aparte (#125) del 07/10: Kinan confirmó la fecha. No se juntaron con la #124 para que esa siga igual a la nota de Valery.
+- **Mayorista, entrega del 2026-10-09 (`?v=20261009c`):**
+  - **Barra lateral:** ya no es `position:fixed`. En iPad y escritorio, la página queda quieta y solo se desplaza el contenido (`.layout` de alto 100dvh y `.layout-main` con su propio scroll). Antes, en el iPad, después de desplazar la página el mouse marcaba una opción distinta de la que tenía debajo. En el teléfono sigue igual: cajón con `.scrim`.
+  - **Productos de la factura:** en la ficha del cliente se ven como tabla Cantidad → Producto → Precio → Subtotal (`productosFactura`). Antes eran un párrafo corrido separado por comas. Con más de 3 renglones la tabla va plegada ("Ver los N productos").
+  - **Varios teléfonos por cliente:** en el campo teléfono se escriben separados por `/`, `,` o `;`, con el nombre delante (`telefonosDe`). El modal de envío muestra un botón por número ("Enviar a Fran", "Enviar a Daniel").
+  - **Eliminar cliente:** botón "Eliminar" en la ficha, solo para admin. Llama al RPC `may_eliminar_cliente`, que en una transacción pasa a la papelera al cliente, sus facturas y sus abonos, todos con la misma marca `deleted_at`. Con historial pide confirmación mostrando facturas, abonos y deuda; si debe, pide una segunda confirmación.
+  - **Papelera:** nueva vista, solo para admin. Lista los clientes eliminados (con lo que se fue con ellos y cuánto debían), las facturas anuladas y los abonos anulados. "Restaurar" llama al RPC `may_restaurar(tipo, id)`, que recalcula al cliente desde cero.
+    - Restaurar un cliente trae solo lo que tiene su misma marca, no lo que se anuló antes por separado.
+    - No deja restaurar una factura o un abono mientras su cliente esté en la papelera.
+    - Tampoco deja restaurar un cliente si hay otro activo con el mismo nombre.
+    - `may_eliminar_cliente` usa `clock_timestamp()` para que la marca no choque con algo anulado antes en la misma transacción.
+    - Las dos funciones son `SECURITY DEFINER` con `EXECUTE` para anon, igual que los demás `may_*`, mientras el mayorista siga con su login propio.
+  - Se reemplazaron por íconos SVG la luna y el sol del tema y el aviso de facturas vencidas.
