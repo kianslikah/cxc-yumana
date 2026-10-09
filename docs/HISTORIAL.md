@@ -78,6 +78,15 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - **Abonos:** la recopilación del grupo, sin fechas individuales, cargada como 4 totales con fecha 30/09: Bs $4.941,23, Zelle $8.369, USDT $342, y $455 de "Descuento/devolución" (no es dinero: aire SJ 14mil $230, TV 32 $105, colchón $20, cama $20 y ollas $80).
     - Pagan completas la #148, la #149 y la #150, y $5.108,15 de la #151, que queda debiendo $4.495,85, como en el resumen del grupo.
     - Debe $20.216,85.
+  - **MULTIINVERSIONES YESSIMAR 121:** negocio, J-40745422-6, Cantón, tel. 04145611836, plazo 60, grupo "Pagos Yessimar" (ahí está Luis Omar).
+    - #157 del 11/06 ($11.004) y #158 del 09/07 ($15.022): salen del resumen y quedan pagadas.
+    - #159 del 11/08: nota Valery 0000028284, $13.481 (Valery dice $13.480,99 por redondeo). Debe $12.434.
+    - #160 del 22/08: nota 0000028887, $5.830.
+    - #161 del 09/09: pedido de Notas, $17.390. Incluye el centro de lavado LG 22 kg de $1.800, que era crédito personal y se sumó a la cuenta.
+    - #162 del 11/09: nota 0000029857, $7.179, más un renglón de $120 por el arreglo de un TV. Total $7.299.
+    - **Abonos:** 2 totales del resumen con fecha 30/09: efectivo $12.477 y Zelle $14.596, sin contar los Zelle repetidos ni los que no cayeron.
+    - Debe $42.953.
+    - **Pendiente** (anotado en la ficha): descontar 1 TV 32" Royal y 1 Split 12mil BTU Mabe, falta el monto; entregarles 1 TV 32" TCL y 1 TV 32" Salcar arreglados.
   - Regla para cargar notas de Valery: el sello "PAGADO" o "CONTADO" no significa que esté pagada. Es el justificante para el camino.
   - Los números #137 a #140 se gastaron en pruebas de la papelera que se deshicieron. No falta ninguna factura.
 - **Mayorista, entrega del 2026-10-09 (`?v=20261009d`):** correcciones de la revisión `/thermos` (dos revisores) y lo que pidió Kinan.
