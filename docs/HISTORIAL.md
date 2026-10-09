@@ -30,3 +30,12 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
 - **Plazo de WUALTER AL BOUNAY a 60 días (2026-10-09)** y vencimientos recalculados (#126 → 28/09, #127 → 06/12). **Cambiar el plazo de un cliente** desde Editar ahora pregunta si aplicar el plazo nuevo a sus facturas pendientes (RPC `may_aplicar_plazo(cliente, plazo)`: vencimiento = fecha + plazo).
 - **Ajustes (2026-10-09):** ALMACÉN ROMA — WUALTER AL BOUNAY vuelve a plazo normal 30 días para facturas nuevas (las #126 y #127 quedan a 60 días). Zona de Tío Badia y de Wualter: Santa Bárbara de Barinas (campo `direccion`); Kinan pide tener la zona de cada cliente para usarla después.
 - **Cliente nuevo (2026-10-09): SAMER EL BOUNNAY** (V-19491715, tel. 04147585020, Santa Bárbara de Barinas, plazo 30, sin grupo). Factura #128 del 08/10 = nota 0000031054, 6 renglones, $2.483, sin abonos. Su cédula 19491715 es la misma persona del RIF de Tío Badia (V-19491715-1): Kinan confirmó que se llevan como cuentas separadas. Se enlazó al catálogo el exhibidor Mystic 290L de la factura #124 (MY-ENF290FCU).
+- **Cliente nuevo (2026-10-09): ZYAD MAN AL DEN** (E-84567607, tel. 04261735555, hijo LEITH 04261033635, Santa Bárbara de Barinas, plazo 30, sin grupo). Antes se le llevaba la cuenta en un cuaderno; se cargó la historia completa:
+  - **#129** (08/09): saldo anterior del cuaderno, $6.707. El cuaderno no trae la fecha; se puso 08/09.
+  - **#130** (13/09): $608.
+  - **#131** (24/09): $359.
+  - **9 abonos** del 09/09 al 04/10 que suman $6.351: Bs $80, Binance $50 y $33 (cargados como USDT), Zelle $100, $150, $138, $100 y $100, y efectivo $5.600. El saldo viejo queda en $1.323, igual que en el cuaderno.
+  - **#132** (04/10, cuaderno): $3.952, de modo que la deuda del cuaderno queda en $5.275.
+  - **#133** (08/10): nota Valery 0000031053, $7.190. 12 renglones enlazados al catálogo; el aire Khaled 220v (AW12CM2FMC) y la nevera Hamilton Beach (HBR8TSV26D) no están en el catálogo y van como texto.
+  - Deuda total: $12.465.
+  - **Pendiente:** en la página del 04/10 hay 2 almohadas a $30 ($60) que no entran en el total de $5.275 del cuaderno. No se cargaron; Kinan debe confirmar.
