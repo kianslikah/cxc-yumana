@@ -814,9 +814,19 @@ async function guardarCliente(){
   };
   try {
     if(editingClienteId){
+      var cAntes = CLIENTES.find(function(x){ return x.id === editingClienteId; });
+      var plazoAntes = cAntes ? (parseInt(cAntes.plazo_dias) || 30) : data.plazo_dias;
       var r = await sb.from('may_clientes').update(data).eq('id', editingClienteId);
       if(r.error) throw r.error;
       toast('Cliente actualizado', 's');
+      // Si cambió el plazo y tiene facturas pendientes, ofrecer recalcular sus vencimientos con el plazo nuevo
+      var pendCli = facturasDeCliente(editingClienteId).filter(function(f){ return saldoFactura(f) > 0.01; });
+      if(data.plazo_dias !== plazoAntes && pendCli.length &&
+         confirm('Cambiaste el plazo de ' + plazoAntes + ' a ' + data.plazo_dias + ' días.\n\n¿Aplicar el nuevo plazo también a sus ' + pendCli.length + ' factura(s) pendientes? (vencimiento = fecha de la factura + ' + data.plazo_dias + ' días)')){
+        var rp = await sb.rpc('may_aplicar_plazo', { p_cliente_id: editingClienteId, p_plazo: data.plazo_dias });
+        if(rp.error) toast('El cliente se guardó, pero no se pudieron actualizar los vencimientos: ' + rp.error.message, 'e');
+        else toast('Vencimientos actualizados en ' + (rp.data && rp.data.facturas) + ' factura(s)', 's');
+      }
     } else {
       var r2 = await sb.from('may_clientes').insert(data).select('id').single();
       if(r2.error) throw r2.error;
