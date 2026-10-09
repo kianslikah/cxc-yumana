@@ -88,7 +88,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
 .login-msg.error{color:var(--red-soft);}
 
 /* ===== APP LAYOUT (sidebar lateral) ===== */
-#appView{display:none; min-height:100vh;}
+#appView{display:none;}
 /* La barra va en la misma fila que el contenido y solo se desplaza el contenido. Antes la barra era
    position:fixed y se desplazaba la página entera: en el iPad, después de desplazar o de cerrar el teclado,
    Safari corría la zona tocable de la barra y el mouse marcaba otra opción en vez de la que estaba debajo. */
@@ -170,6 +170,10 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
 .tag{display:inline-block; font-size:10px; padding:3px 8px; border-radius:6px; font-weight:600; letter-spacing:0.3px;}
 .tag.negocio{background:rgba(75,163,224,0.15); color:var(--blue);}
 .tag.particular{background:rgba(168,114,232,0.15); color:var(--purple);}
+.tag.no-vender{background:rgba(232,93,76,0.15); color:var(--red-soft);}
+.chk-linea{display:flex; align-items:center; gap:10px; font-size:14px; color:var(--text); margin:-4px 0 16px; cursor:pointer;}
+.chk-linea input{width:20px; height:20px; accent-color:var(--gold); flex-shrink:0;}
+.aviso-no-vender{display:none; background:rgba(232,93,76,0.12); border:1px solid var(--red); color:var(--red-soft); border-radius:10px; padding:10px 12px; font-size:13.5px; margin:-6px 0 14px;}
 .cli-card .saldo{text-align:right; flex-shrink:0;}
 .cli-card .saldo .v{font-size:18px; font-weight:800; color:var(--gold);}
 .cli-card .saldo .l{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
@@ -471,6 +475,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
         <input type="number" id="ncPlazo" value="30" inputmode="numeric">
       </div>
     </div>
+    <label class="chk-linea"><input type="checkbox" id="ncNoVender"> No venderle más (pide confirmación antes de hacerle una factura nueva)</label>
     <div class="fg">
       <label>RIF / Cédula (opcional)</label>
       <input type="text" id="ncRif" placeholder="J-12345678-9">
@@ -523,6 +528,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
       <label>Cliente *</label>
       <select id="nfCliente"></select>
     </div>
+    <div class="aviso-no-vender" id="nfAvisoNoVender"></div>
     <div class="row-2">
       <div class="fg"><label>Fecha</label><input type="date" id="nfFecha"></div>
       <div class="fg"><label>Vence (según plazo)</label><input type="date" id="nfVence"></div>
@@ -645,20 +651,23 @@ var editingUsuarioId = null;
 function protegerBoton(btnId, accion){
   var btn = document.getElementById(btnId);
   if(!btn) return;
-  btn.addEventListener('click', async function(){
-    if(btn.disabled) return;
-    btn.disabled = true;
-    var textoOriginal = btn.textContent;
-    btn.style.opacity = '0.6';
-    btn.textContent = 'Guardando...';
-    try {
-      await accion();
-    } finally {
-      btn.disabled = false;
-      btn.style.opacity = '';
-      btn.textContent = textoOriginal;
-    }
-  });
+  btn.addEventListener('click', function(){ conCandado(btn, 'Guardando...', accion); });
+}
+// El candado en sí: deshabilita el botón mientras corre la acción y le devuelve su texto al terminar.
+// También sirve para botones que se dibujan después (Eliminar, Restaurar).
+async function conCandado(btn, textoOcupado, accion){
+  if(btn.disabled) return;
+  btn.disabled = true;
+  var textoOriginal = btn.textContent;
+  btn.style.opacity = '0.6';
+  btn.textContent = textoOcupado;
+  try {
+    await accion();
+  } finally {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.textContent = textoOriginal;
+  }
 }
 
 function toast(msg, tipo){
@@ -706,6 +715,7 @@ function entrarApp(){
   // La pestaña Usuarios solo para admin
   document.getElementById('navUsuarios').style.display = (CURRENT_USER.rol === 'admin') ? '' : 'none';
   document.getElementById('navPapelera').style.display = (CURRENT_USER.rol === 'admin') ? '' : 'none';
+  switchView('panel');
   cargarDatos();
 }
 
@@ -718,12 +728,12 @@ function logout(){
 }
 
 // ===== CARGA DE DATOS =====
-async function traerTodo(tabla, orderCol, asc, soloBorrados){
+async function traerTodo(tabla, orderCol, asc){
   var todos = [], desde = 0, tam = 1000;
   while(true){
     var q = sb.from(tabla).select('*');
-    if(soloBorrados) q = q.not('deleted_at', 'is', null);
     if(orderCol) q = q.order(orderCol, {ascending: !!asc});
+    q = q.order('id', {ascending: true}); // desempate fijo: sin él, con +1000 filas la paginación puede saltar o repetir filas
     var r = await q.range(desde, desde + tam - 1);
     if(r.error) throw r.error;
     var lote = r.data || [];
@@ -748,19 +758,27 @@ function mostrarErrorCarga(e){
   if(!CATALOGO.length) CATALOGO_ERROR = true; // el catálogo tampoco llegó: que el buscador no diga "no existe"
   console.error('cargarDatos', e);
 }
+function esVivo(x){ return !x.deleted_at; }
+// Lo borrado, lo más reciente primero (deleted_at viene con el mismo formato en todas las tablas)
+function soloBorrados(filas){
+  return filas.filter(function(x){ return !!x.deleted_at; })
+    .sort(function(a, b){ return a.deleted_at < b.deleted_at ? 1 : (a.deleted_at > b.deleted_at ? -1 : 0); });
+}
 // Trae todo y SOLO cuando todo llegó reemplaza los datos en memoria (antes, una falla a mitad mezclaba clientes nuevos con facturas viejas).
 async function cargarDatos(){
   mostrarCargando();
   try {
-    var cli = (await traerTodo('may_clientes', 'nombre', true)).filter(function(c){ return !c.deleted_at; });
-    var fac = (await traerTodo('may_facturas', 'fecha', false)).filter(function(f){ return !f.deleted_at; });
-    var abo = (await traerTodo('may_abonos', 'fecha', false)).filter(function(a){ return !a.deleted_at; });
-    var its = (await traerTodo('may_factura_items', null, false)).filter(function(it){ return !it.deleted_at; });
+    var cliT = await traerTodo('may_clientes', 'nombre', true);
+    var facT = await traerTodo('may_facturas', 'fecha', false);
+    var aboT = await traerTodo('may_abonos', 'fecha', false);
+    var its = (await traerTodo('may_factura_items', null, false)).filter(esVivo);
     var usu = USUARIOS;
     if(CURRENT_USER.rol === 'admin'){ usu = await traerTodo('may_usuarios', 'nombre', true); }
     var pre = PRECIOS_CLI;
     try { pre = await traerTodo('may_precios_cliente', null, false); } catch(e){ console.warn('precios pactados', e); }
-    CLIENTES = cli; FACTURAS = fac; ABONOS = abo; ITEMS = its; USUARIOS = usu; PRECIOS_CLI = pre;
+    CLIENTES = cliT.filter(esVivo); FACTURAS = facT.filter(esVivo); ABONOS = aboT.filter(esVivo);
+    ITEMS = its; USUARIOS = usu; PRECIOS_CLI = pre;
+    PAPELERA = { cli: soloBorrados(cliT), fac: soloBorrados(facT), abo: soloBorrados(aboT) };
     DATOS_CARGADOS = true;
     await cargarCatalogo();
     renderClientes();
@@ -768,6 +786,7 @@ async function cargarDatos(){
     renderPanel();
     renderFacturas();
     if(currentDetalleId && document.getElementById('view-detalle').style.display !== 'none') renderDetalle();
+    if(document.getElementById('view-papelera').style.display !== 'none') renderPapelera();
     return true;
   } catch(e){
     mostrarErrorCarga(e);
@@ -775,14 +794,19 @@ async function cargarDatos(){
   }
 }
 
-// Saldo de un cliente = suma facturas pendientes - suma abonos
-function saldoCliente(clienteId){
-  var totalFacturas = FACTURAS.filter(function(f){ return f.cliente_id === clienteId; })
-    .reduce(function(s,f){ return s + parseFloat(f.monto_total||0); }, 0);
-  var totalAbonos = ABONOS.filter(function(a){ return a.cliente_id === clienteId; })
-    .reduce(function(s,a){ return s + parseFloat(a.monto||0); }, 0);
-  return totalFacturas - totalAbonos;
+// Totales de la cuenta de un cliente con lo vivo en memoria: comprado = sus facturas, pagado = sus abonos,
+// debe = comprado − pagado (negativo = saldo a favor). Lo usan la lista, la ficha, el PDF y el WhatsApp.
+function saldoDe(facturas, abonos){
+  var comprado = facturas.reduce(function(s,f){ return s + parseFloat(f.monto_total||0); }, 0);
+  var pagado = abonos.reduce(function(s,a){ return s + parseFloat(a.monto||0); }, 0);
+  return { comprado: comprado, pagado: pagado, debe: comprado - pagado };
 }
+function totalesCliente(clienteId){
+  return saldoDe(FACTURAS.filter(function(f){ return f.cliente_id === clienteId; }),
+                 ABONOS.filter(function(a){ return a.cliente_id === clienteId; }));
+}
+function textoSaldo(debe){ return debe > 0.01 ? 'Debe ' + fmt(debe) : (debe < -0.01 ? 'Tiene ' + fmt(debe) + ' a favor' : 'No debe nada'); }
+function saldoCliente(clienteId){ return totalesCliente(clienteId).debe; }
 
 // ===== RENDER CLIENTES =====
 function renderClientes(){
@@ -807,7 +831,7 @@ function renderClientes(){
       '<div class="av">' + initials(c.nombre) + '</div>' +
       '<div class="info">' +
         '<h3>' + c.nombre + '</h3>' +
-        '<p><span class="tag ' + (c.tipo||'negocio') + '">' + (c.tipo==='particular'?'Particular':'Negocio') + '</span> · Plazo ' + (c.plazo_dias||30) + ' días' + (c.telefono?' · '+c.telefono:'') + '</p>' +
+        '<p><span class="tag ' + (c.tipo||'negocio') + '">' + (c.tipo==='particular'?'Particular':'Negocio') + '</span>' + tagNoVender(c) + ' · Plazo ' + (c.plazo_dias||30) + ' días' + (c.telefono?' · '+c.telefono:'') + '</p>' +
       '</div>' +
       '<div class="saldo"><div class="v"' + (aFavor?' style="color:var(--green-soft);"':'') + '>' + fmt(Math.abs(saldo)) + '</div><div class="l">' + (aFavor?'A favor':'Debe') + '</div></div>' +
     '</div>';
@@ -817,6 +841,8 @@ function renderClientes(){
   });
 }
 
+function tagNoVender(c){ return c && c.no_vender ? ' <span class="tag no-vender">No venderle</span>' : ''; }
+
 // ===== MODAL CLIENTE =====
 function abrirNuevoCliente(){
   editingClienteId = null;
@@ -824,6 +850,7 @@ function abrirNuevoCliente(){
   ['ncNombre','ncRif','ncTelefono','ncGrupo','ncDireccion','ncNotas'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('ncTipo').value = 'negocio';
   document.getElementById('ncPlazo').value = '30';
+  document.getElementById('ncNoVender').checked = false;
   document.getElementById('ncMsg').textContent = '';
   document.getElementById('modalCliente').classList.add('active');
 }
@@ -835,6 +862,7 @@ function abrirEditarCliente(id){
   document.getElementById('ncNombre').value = c.nombre || '';
   document.getElementById('ncTipo').value = c.tipo || 'negocio';
   document.getElementById('ncPlazo').value = c.plazo_dias || 30;
+  document.getElementById('ncNoVender').checked = !!c.no_vender;
   document.getElementById('ncRif').value = c.rif_cedula || '';
   document.getElementById('ncTelefono').value = c.telefono || '';
   document.getElementById('ncGrupo').value = c.whatsapp_grupo || '';
@@ -855,7 +883,8 @@ async function guardarCliente(){
     telefono: document.getElementById('ncTelefono').value.trim() || null,
     whatsapp_grupo: document.getElementById('ncGrupo').value.trim() || null,
     direccion: document.getElementById('ncDireccion').value.trim() || null,
-    notas: document.getElementById('ncNotas').value.trim() || null
+    notas: document.getElementById('ncNotas').value.trim() || null,
+    no_vender: document.getElementById('ncNoVender').checked
   };
   try {
     if(editingClienteId){
@@ -1097,6 +1126,15 @@ function actualizarVencimiento(){
     d.setDate(d.getDate() + (cli.plazo_dias||30));
     document.getElementById('nfVence').value = d.toISOString().substring(0,10);
   }
+  avisoNoVender(); // se llama cada vez que cambia el cliente de la factura
+}
+// Aviso rojo bajo el cliente si está marcado "No venderle" (solo en facturas nuevas)
+function avisoNoVender(){
+  var av = document.getElementById('nfAvisoNoVender');
+  var cli = CLIENTES.find(function(c){ return c.id === document.getElementById('nfCliente').value; });
+  var mostrar = !editingFacturaId && cli && cli.no_vender;
+  av.style.display = mostrar ? 'block' : 'none';
+  av.textContent = mostrar ? cli.nombre + ' está marcado como NO VENDERLE. Revisa antes de hacerle una factura nueva.' : '';
 }
 function abrirEditarFactura(facturaId){
   var f = FACTURAS.find(function(x){ return x.id === facturaId; });
@@ -1109,6 +1147,7 @@ function abrirEditarFactura(facturaId){
   document.getElementById('nfVence').value = f.fecha_vencimiento || '';
   document.getElementById('nfNotas').value = f.notas || '';
   document.getElementById('nfMsg').textContent = '';
+  avisoNoVender(); // al editar no se muestra
   // cargar los items existentes
   NF_ITEMS = itemsDeFactura(facturaId).map(function(it){
     return {producto_id: it.producto_id, descripcion: it.descripcion, cantidad: parseFloat(it.cantidad)||1, precio: parseFloat(it.precio_unitario)||0, costo_unitario: it.costo_unitario != null ? parseFloat(it.costo_unitario) : null};
@@ -1142,6 +1181,9 @@ async function guardarFactura(){
   var items = NF_ITEMS.filter(function(it){ return it.descripcion && it.precio > 0; });
   if(items.length === 0){ msg.className='modal-msg error'; msg.textContent='Agrega al menos un producto con precio.'; return; }
   var esEdicion = !!editingFacturaId;
+  var cliSel = CLIENTES.find(function(c){ return c.id === cliId; });
+  if(!esEdicion && cliSel && cliSel.no_vender &&
+     !confirm(cliSel.nombre + ' está marcado como NO VENDERLE.\n\n¿Hacerle esta factura igual?')) return;
   // La factura y sus renglones se guardan en UNA sola transacción en la base (may_guardar_factura):
   // o queda todo o no queda nada, y "Guardar" otra vez nunca duplica.
   var factura = {
@@ -1764,9 +1806,7 @@ function renderDetalle(){
   if(!c){ switchView('clientes'); return; }
   var facturas = facturasDeCliente(c.id);
   var abonos = abonosDeCliente(c.id);
-  var totalComprado = facturas.reduce(function(s,f){ return s + parseFloat(f.monto_total||0); }, 0);
-  var totalPagado = abonos.reduce(function(s,a){ return s + parseFloat(a.monto||0); }, 0);
-  var debe = totalComprado - totalPagado;
+  var tot = totalesCliente(c.id), totalComprado = tot.comprado, totalPagado = tot.pagado, debe = tot.debe;
   var hoy = new Date().toISOString().substring(0,10);
   var pendientes = facturas.filter(function(f){ return saldoFactura(f) > 0.01; });
   var pagadas = facturas.filter(function(f){ return saldoFactura(f) <= 0.01; });
@@ -1822,12 +1862,13 @@ function renderDetalle(){
         '<div class="av-big">' + initials(c.nombre) + '</div>' +
         '<div style="min-width:0;">' +
           '<h2>' + c.nombre + '</h2>' +
-          '<p><span class="tag ' + (c.tipo||'negocio') + '">' + (c.tipo==='particular'?'Particular':'Negocio') + '</span> · Plazo ' + (c.plazo_dias||30) + ' días' + (c.telefono?' · '+c.telefono:'') + (c.whatsapp_grupo?' · Grupo: '+prEsc(c.whatsapp_grupo):'') + (c.rif_cedula?' · '+c.rif_cedula:'') + '</p>' +
+          '<p><span class="tag ' + (c.tipo||'negocio') + '">' + (c.tipo==='particular'?'Particular':'Negocio') + '</span>' + tagNoVender(c) + ' · Plazo ' + (c.plazo_dias||30) + ' días' + (c.telefono?' · '+c.telefono:'') + (c.whatsapp_grupo?' · Grupo: '+prEsc(c.whatsapp_grupo):'') + (c.rif_cedula?' · '+c.rif_cedula:'') + '</p>' +
         '</div>' +
       '</div>' +
       '<div class="db-actions">' +
         '<button class="btn btn-primary" id="btnAbonarCli">+ Abono</button>' +
         '<button class="btn btn-ghost" id="btnEstadoCuentaCli" style="border-color:var(--purple); color:var(--purple);">Estado cuenta PDF</button>' +
+        '<button class="btn btn-ghost" id="btnEstadoWaCli" style="border-color:var(--green); color:var(--green-soft);">Estado por WhatsApp</button>' +
         '<button class="btn btn-ghost" id="btnRecordarCli" style="border-color:var(--green); color:var(--green-soft);">Recordatorio</button>' +
         (puedeEditar ? '<button class="btn btn-ghost" id="btnEditarCliDet">Editar</button>' : '') +
         (puedeEditar ? '<button class="btn btn-ghost" id="btnEliminarCliDet" style="border-color:var(--red); color:var(--red-soft);">Eliminar</button>' : '') +
@@ -1865,6 +1906,8 @@ function renderDetalle(){
   if(btnEl) btnEl.addEventListener('click', function(){ eliminarCliente(c.id, this); });
   var btnEc = document.getElementById('btnEstadoCuentaCli');
   if(btnEc) btnEc.addEventListener('click', function(){ generarEstadoCuentaCliente(c.id); });
+  var btnEw = document.getElementById('btnEstadoWaCli');
+  if(btnEw) btnEw.addEventListener('click', function(){ estadoCuentaWhatsApp(c.id); });
   var btnRe = document.getElementById('btnRecordarCli');
   if(btnRe) btnRe.addEventListener('click', function(){ recordatorioWhatsApp(c.id); });
   document.querySelectorAll('.fac-nota').forEach(function(el){
@@ -1989,129 +2032,118 @@ async function anularAbono(abonoId){
 
 // ===== ELIMINAR CLIENTE (va a la Papelera con sus facturas y abonos) =====
 async function eliminarCliente(clienteId, btn){
+  if(CURRENT_USER.rol !== 'admin' || btn.disabled) return;
   var c = CLIENTES.find(function(x){ return x.id === clienteId; });
-  if(!c || (btn && btn.disabled)) return;
+  if(!c) return;
   var nf = facturasDeCliente(clienteId).length, na = abonosDeCliente(clienteId).length;
   var saldo = saldoCliente(clienteId);
-  var msg;
-  if(!nf && !na){
-    msg = '¿Eliminar a ' + c.nombre + '?\n\nNo tiene facturas ni abonos. Queda en la Papelera, de donde se puede restaurar.';
-  } else {
-    msg = 'ATENCIÓN: ' + c.nombre + ' tiene historial.\n\n· ' + nf + ' factura(s)\n· ' + na + ' abono(s)\n· ' +
-      (saldo > 0.01 ? 'Debe ' + fmt(saldo) : (saldo < -0.01 ? 'Tiene ' + fmt(saldo) + ' a favor' : 'No debe nada')) +
+  var msg = (!nf && !na)
+    ? '¿Eliminar a ' + c.nombre + '?\n\nNo tiene facturas ni abonos. Queda en la Papelera, de donde se puede restaurar.'
+    : 'ATENCIÓN: ' + c.nombre + ' tiene historial.\n\n· ' + nf + ' factura(s)\n· ' + na + ' abono(s)\n· ' + textoSaldo(saldo) +
       '\n\nTodo se va a la Papelera junto con el cliente y deja de contar en los totales. Desde la Papelera se puede restaurar.\n\n¿Eliminar igual?';
-  }
   if(!confirm(msg)) return;
   if(saldo > 0.01 && !confirm('Última confirmación: ' + c.nombre + ' todavía debe ' + fmt(saldo) + '.\n\n¿Seguro que lo quieres eliminar?')) return;
-  if(btn){ btn.disabled = true; btn.textContent = 'Eliminando...'; }
-  try {
-    // Cliente, facturas y abonos con la misma marca, en una sola transacción
-    var r = await sb.rpc('may_eliminar_cliente', { p_cliente_id: clienteId });
-    if(r.error) throw r.error;
-    toast(c.nombre + ' quedó en la Papelera', 's');
-    currentDetalleId = null;
-    await cargarDatos();
-    switchView('clientes');
-  } catch(e){
-    toast('No se pudo eliminar: ' + e.message, 'e');
-    if(btn){ btn.disabled = false; btn.textContent = 'Eliminar'; }
-  }
+  await conCandado(btn, 'Eliminando...', async function(){
+    try {
+      // Cliente, facturas y abonos con la misma marca, en una sola transacción
+      var r = await sb.rpc('may_eliminar_cliente', { p_cliente_id: clienteId });
+      if(r.error) throw r.error;
+      toast(c.nombre + ' quedó en la Papelera', 's');
+      currentDetalleId = null;
+      await cargarDatos();
+      switchView('clientes');
+    } catch(e){ toast('No se pudo eliminar: ' + e.message, 'e'); }
+  });
 }
 
 // ===== PAPELERA =====
-// Lee de la base todo lo borrado. Lo que se fue junto con su cliente (misma marca de borrado) se muestra
-// dentro del cliente y vuelve con él; lo anulado por separado se restaura una por una.
-var PAP = null, PAP_LIM = { cli: 80, fac: 80, abo: 80 };
+// Lo borrado llega con cargarDatos. Lo que se fue junto con su cliente (misma marca de borrado) se muestra
+// dentro del cliente y vuelve con él; lo anulado por separado se restaura uno por uno.
+var PAPELERA = { cli: [], fac: [], abo: [] };
+var PAP_PASO = 80, PAP_LIM = { cli: PAP_PASO, fac: PAP_PASO, abo: PAP_PASO };
 function fmtFechaHora(ts){
-  if(!ts) return '—';
-  try { return new Date(ts).toLocaleString('es-VE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
-  catch(e){ return fmtDate(ts); }
+  var d = ts ? new Date(ts) : null;
+  if(!d || isNaN(d)) return '—';
+  return d.toLocaleString('es-VE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 }
-async function renderPapelera(){
+// Modelo de la papelera (sin pantalla): cada cliente con lo que se fue con él, y lo anulado suelto
+function armarPapelera(p){
+  var porId = {};
+  var clientes = p.cli.map(function(c){
+    var fac = p.fac.filter(function(f){ return f.cliente_id === c.id && f.deleted_at === c.deleted_at; });
+    var abo = p.abo.filter(function(a){ return a.cliente_id === c.id && a.deleted_at === c.deleted_at; });
+    return (porId[c.id] = { c: c, fac: fac, abo: abo, debia: saldoDe(fac, abo).debe });
+  });
+  function suelto(x){ var g = porId[x.cliente_id]; return !(g && g.c.deleted_at === x.deleted_at); }
+  return { clientes: clientes, porId: porId, facturas: p.fac.filter(suelto), abonos: p.abo.filter(suelto) };
+}
+function renderPapelera(){
   var cont = document.getElementById('papContent');
-  if(!PAP) cont.innerHTML = '<div class="empty-state"><h3>Cargando...</h3><p>Trayendo lo eliminado</p></div>';
-  try {
-    var cli = await traerTodo('may_clientes', 'deleted_at', false, true);
-    var fac = await traerTodo('may_facturas', 'deleted_at', false, true);
-    var abo = await traerTodo('may_abonos', 'deleted_at', false, true);
-    PAP = { cli: cli, fac: fac, abo: abo };
-  } catch(e){
-    cont.innerHTML = '<div class="empty-state"><h3>No se pudo abrir la papelera</h3><p>Revisa tu internet y vuelve a intentar.</p><button class="btn btn-primary" id="papReintentar" style="margin-top:14px;">Reintentar</button></div>';
-    document.getElementById('papReintentar').addEventListener('click', renderPapelera);
+  var m = armarPapelera(PAPELERA);
+  if(!m.clientes.length && !m.facturas.length && !m.abonos.length){
+    cont.innerHTML = '<div class="empty-state"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg><h3>La papelera está vacía</h3><p>Lo que elimines o anules aparecerá aquí.</p></div>';
     return;
   }
-  dibujarPapelera();
-}
-function dibujarPapelera(){
-  var cont = document.getElementById('papContent');
-  var borrados = {}; PAP.cli.forEach(function(c){ borrados[c.id] = c; });
-  function nombreCli(id){ var c = borrados[id] || CLIENTES.find(function(x){ return x.id === id; }); return c ? c.nombre : '—'; }
-  // lo que se fue con su cliente (misma marca) no se lista suelto
-  function fueConCliente(x){ var c = borrados[x.cliente_id]; return !!(c && c.deleted_at === x.deleted_at); }
-  var facSueltas = PAP.fac.filter(function(f){ return !fueConCliente(f); });
-  var aboSueltos = PAP.abo.filter(function(a){ return !fueConCliente(a); });
-  if(!PAP.cli.length && !facSueltas.length && !aboSueltos.length){
-    cont.innerHTML = '<div class="empty-state">' + '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>' + '<h3>La papelera está vacía</h3><p>Lo que elimines o anules aparecerá aquí.</p></div>';
-    return;
+  function nombreCli(id){ var g = m.porId[id]; var c = g ? g.c : CLIENTES.find(function(x){ return x.id === id; }); return c ? c.nombre : '—'; }
+  // nota en vez de botón cuando no se puede restaurar
+  function tarjeta(titulo, lineas, tipo, id, nota){
+    return '<div class="card pap-item"><div class="pap-info"><b>' + titulo + '</b>' +
+      lineas.map(function(l){ return '<span>' + l + '</span>'; }).join('') + '</div>' +
+      (nota ? '<span class="pap-nota">' + nota + '</span>'
+            : '<button class="btn btn-ghost pap-restaurar" data-tipo="' + tipo + '" data-id="' + id + '">Restaurar</button>') + '</div>';
   }
-  function boton(tipo, id, bloqueado){
-    return bloqueado
-      ? '<span class="pap-nota">Restaura primero al cliente</span>'
-      : '<button class="btn btn-ghost pap-restaurar" data-tipo="' + tipo + '" data-id="' + id + '">Restaurar</button>';
+  function seccion(clave, titulo, lista, vacio, dibujar){
+    return '<h3 class="pap-titulo">' + titulo + ' (' + lista.length + ')</h3>' +
+      (lista.length
+        ? lista.slice(0, PAP_LIM[clave]).map(dibujar).join('') +
+          (lista.length > PAP_LIM[clave] ? '<button class="btn btn-ghost btn-block pap-mas" data-k="' + clave + '">Mostrar más (' + (lista.length - PAP_LIM[clave]) + ')</button>' : '')
+        : '<div class="pap-vacio">' + vacio + '</div>');
   }
-  function masBoton(clave, total){
-    return total > PAP_LIM[clave] ? '<button class="btn btn-ghost btn-block pap-mas" data-k="' + clave + '">Mostrar más (' + (total - PAP_LIM[clave]) + ')</button>' : '';
-  }
-  var html = '';
-  html += '<h3 class="pap-titulo">Clientes eliminados (' + PAP.cli.length + ')</h3>';
-  html += PAP.cli.length ? PAP.cli.slice(0, PAP_LIM.cli).map(function(c){
-    var fs = PAP.fac.filter(function(f){ return f.cliente_id === c.id && f.deleted_at === c.deleted_at; });
-    var as = PAP.abo.filter(function(a){ return a.cliente_id === c.id && a.deleted_at === c.deleted_at; });
-    var debia = fs.reduce(function(s,f){ return s + parseFloat(f.monto_total||0); }, 0) - as.reduce(function(s,a){ return s + parseFloat(a.monto||0); }, 0);
-    var det = (fs.length || as.length)
-      ? fs.length + ' factura' + (fs.length===1?'':'s') + ' y ' + as.length + ' abono' + (as.length===1?'':'s') + ' se fueron con él' + (debia > 0.01 ? ' · debía ' + fmt(debia) : '')
-      : 'Sin facturas ni abonos';
-    return '<div class="card pap-item"><div class="pap-info"><b>' + prEsc(c.nombre) + '</b><span>Eliminado el ' + fmtFechaHora(c.deleted_at) + '</span><span>' + det + '</span></div>' + boton('cliente', c.id, false) + '</div>';
-  }).join('') + masBoton('cli', PAP.cli.length) : '<div class="pap-vacio">Ninguno.</div>';
-  html += '<h3 class="pap-titulo">Facturas anuladas (' + facSueltas.length + ')</h3>';
-  html += facSueltas.length ? facSueltas.slice(0, PAP_LIM.fac).map(function(f){
-    return '<div class="card pap-item"><div class="pap-info"><b>Factura #' + f.numero + ' · ' + prEsc(nombreCli(f.cliente_id)) + '</b><span>Del ' + fmtDate(f.fecha) + ' por ' + fmt(f.monto_total) + '</span><span>Anulada el ' + fmtFechaHora(f.deleted_at) + '</span></div>' + boton('factura', f.id, !!borrados[f.cliente_id]) + '</div>';
-  }).join('') + masBoton('fac', facSueltas.length) : '<div class="pap-vacio">Ninguna.</div>';
-  html += '<h3 class="pap-titulo">Abonos anulados (' + aboSueltos.length + ')</h3>';
-  html += aboSueltos.length ? aboSueltos.slice(0, PAP_LIM.abo).map(function(a){
-    return '<div class="card pap-item"><div class="pap-info"><b>' + fmt(a.monto) + ' · ' + prEsc(nombreCli(a.cliente_id)) + '</b><span>Del ' + fmtDate(a.fecha) + ' · ' + prEsc(a.metodo || '') + (a.notas ? ' · ' + prEsc(a.notas) : '') + '</span><span>Anulado el ' + fmtFechaHora(a.deleted_at) + '</span></div>' + boton('abono', a.id, !!borrados[a.cliente_id]) + '</div>';
-  }).join('') + masBoton('abo', aboSueltos.length) : '<div class="pap-vacio">Ninguno.</div>';
-  cont.innerHTML = html;
-  cont.querySelectorAll('.pap-mas').forEach(function(b){ b.addEventListener('click', function(){ PAP_LIM[this.dataset.k] += 80; dibujarPapelera(); }); });
+  function siClienteBorrado(clienteId){ return m.porId[clienteId] ? 'Restaura primero al cliente' : null; }
+  cont.innerHTML =
+    seccion('cli', 'Clientes eliminados', m.clientes, 'Ninguno.', function(g){
+      var lineas = ['Eliminado el ' + fmtFechaHora(g.c.deleted_at),
+        (g.fac.length || g.abo.length)
+          ? g.fac.length + ' factura' + (g.fac.length===1?'':'s') + ' y ' + g.abo.length + ' abono' + (g.abo.length===1?'':'s') + ' se fueron con él' + (g.debia > 0.01 ? ' · debía ' + fmt(g.debia) : '')
+          : 'Sin facturas ni abonos'];
+      if(g.c.bloqueo_restaurar) lineas.push('No se restaura: ' + prEsc(g.c.bloqueo_restaurar));
+      return tarjeta(prEsc(g.c.nombre), lineas, 'cliente', g.c.id, g.c.bloqueo_restaurar ? 'No se restaura' : null);
+    }) +
+    seccion('fac', 'Facturas anuladas', m.facturas, 'Ninguna.', function(f){
+      return tarjeta('Factura #' + f.numero + ' · ' + prEsc(nombreCli(f.cliente_id)),
+        ['Del ' + fmtDate(f.fecha) + ' por ' + fmt(f.monto_total), 'Anulada el ' + fmtFechaHora(f.deleted_at)],
+        'factura', f.id, siClienteBorrado(f.cliente_id));
+    }) +
+    seccion('abo', 'Abonos anulados', m.abonos, 'Ninguno.', function(a){
+      return tarjeta(fmt(a.monto) + ' · ' + prEsc(nombreCli(a.cliente_id)),
+        ['Del ' + fmtDate(a.fecha) + ' · ' + prEsc(a.metodo || '') + (a.notas ? ' · ' + prEsc(a.notas) : ''), 'Anulado el ' + fmtFechaHora(a.deleted_at)],
+        'abono', a.id, siClienteBorrado(a.cliente_id));
+    });
+  cont.querySelectorAll('.pap-mas').forEach(function(b){ b.addEventListener('click', function(){ PAP_LIM[this.dataset.k] += PAP_PASO; renderPapelera(); }); });
   cont.querySelectorAll('.pap-restaurar').forEach(function(b){ b.addEventListener('click', function(){ restaurarDePapelera(this.dataset.tipo, this.dataset.id, this); }); });
 }
 async function restaurarDePapelera(tipo, id, btn){
-  if(btn.disabled) return;
-  var txt;
+  if(CURRENT_USER.rol !== 'admin' || btn.disabled) return;
+  var m = armarPapelera(PAPELERA), txt;
   if(tipo === 'cliente'){
-    var c = PAP.cli.find(function(x){ return x.id === id; });
-    var nf = PAP.fac.filter(function(f){ return f.cliente_id === id && f.deleted_at === c.deleted_at; }).length;
-    var na = PAP.abo.filter(function(a){ return a.cliente_id === id && a.deleted_at === c.deleted_at; }).length;
-    txt = '¿Restaurar a ' + c.nombre + (nf || na ? ' con sus ' + nf + ' factura(s) y ' + na + ' abono(s)?' : '?') + '\n\nSus saldos se recalculan desde cero.';
+    var g = m.porId[id];
+    txt = '¿Restaurar a ' + g.c.nombre + ((g.fac.length || g.abo.length) ? ' con sus ' + g.fac.length + ' factura(s) y ' + g.abo.length + ' abono(s)?' : '?') + '\n\nSus saldos se recalculan desde cero.';
   } else if(tipo === 'factura'){
-    var f = PAP.fac.find(function(x){ return x.id === id; });
+    var f = m.facturas.find(function(x){ return x.id === id; });
     txt = '¿Restaurar la factura #' + f.numero + ' por ' + fmt(f.monto_total) + '?\n\nVuelve a contar en la deuda del cliente y sus abonos se reparten de nuevo.';
   } else {
-    var a = PAP.abo.find(function(x){ return x.id === id; });
+    var a = m.abonos.find(function(x){ return x.id === id; });
     txt = '¿Restaurar el abono de ' + fmt(a.monto) + ' del ' + fmtDate(a.fecha) + '?\n\nVuelve a descontarse de la deuda del cliente.';
   }
   if(!confirm(txt)) return;
-  btn.disabled = true; btn.textContent = 'Restaurando...';
-  try {
-    var r = await sb.rpc('may_restaurar', { p_tipo: tipo, p_id: id });
-    if(r.error) throw r.error;
-    toast('Restaurado', 's');
-    await cargarDatos();
-    await renderPapelera();
-  } catch(e){
-    toast('No se pudo restaurar: ' + e.message, 'e');
-    btn.disabled = false; btn.textContent = 'Restaurar';
-  }
+  await conCandado(btn, 'Restaurando...', async function(){
+    try {
+      var r = await sb.rpc('may_restaurar', { p_tipo: tipo, p_id: id });
+      if(r.error) throw r.error;
+      toast('Restaurado', 's');
+      await cargarDatos(); // vuelve a dibujar la papelera si está abierta
+    } catch(e){ toast('No se pudo restaurar: ' + e.message, 'e'); }
+  });
 }
 
 // Reparte los abonos de un cliente entre sus facturas (viejo->nuevo) desde cero, en la base y con datos frescos
@@ -2120,6 +2152,11 @@ async function recalcularFacturasCliente(clienteId){
   if(r.error) throw r.error;
   return r.data;
 }
+
+// Reglas comunes de impresión de los PDF: margen en TODAS las hojas, filas que no se cortan a la mitad,
+// encabezado de tabla repetido en cada hoja y títulos pegados a lo que sigue. Antes, una factura larga marcada
+// "no partir" que no cabía saltaba entera a la hoja siguiente y dejaba la primera casi en blanco (Tío Badia).
+var CSS_IMPRESION = 'tr { page-break-inside:avoid; break-inside:avoid; } thead { display:table-header-group; } h2 { page-break-after:avoid; break-after:avoid; }';
 
 // ===== NOTA DIGITAL EN PDF =====
 function generarNotaFactura(facturaId){
@@ -2130,11 +2167,11 @@ function generarNotaFactura(facturaId){
   var saldo = saldoFactura(f);
   var GOLD = '#9c7330', GOLD_SOFT = '#f5ead2';
   var itemsHtml = items.map(function(it){
-    return '<tr><td class="cant">' + it.cantidad + '</td><td>' + it.descripcion + '</td><td class="num precio">' + fmt(it.precio_unitario) + '</td><td class="num precio">' + fmt(it.subtotal) + '</td></tr>';
+    return '<tr><td class="cant">' + it.cantidad + '</td><td>' + prEsc(it.descripcion) + '</td><td class="num precio">' + fmt(it.precio_unitario) + '</td><td class="num precio">' + fmt(it.subtotal) + '</td></tr>';
   }).join('');
   var html =
     '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Nota de Entrega #' + f.numero + '</title>' +
-    '<style>@page { size:A4; margin:0; } * { box-sizing:border-box; margin:0; padding:0; font-family:Arial,sans-serif; }' +
+    '<style>@page { margin:12mm; } * { box-sizing:border-box; margin:0; padding:0; font-family:Arial,sans-serif; }' + CSS_IMPRESION +
     'body { background:#fff; color:#1a1a1a; padding:34px; font-size:13px; }' +
     '.top { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid ' + GOLD + '; padding-bottom:12px; margin-bottom:14px; }' +
     '.top .emp { font-size:22px; font-weight:900; color:' + GOLD + '; } .top .emp small { display:block; font-size:10px; font-weight:400; color:#777; letter-spacing:2px; margin-top:2px; }' +
@@ -2143,28 +2180,28 @@ function generarNotaFactura(facturaId){
     '.banda h1 { font-size:16px; } .banda .num { font-size:22px; font-weight:900; }' +
     '.cli { display:flex; justify-content:space-between; gap:12px; background:' + GOLD_SOFT + '; border-left:5px solid ' + GOLD + '; padding:10px 14px; margin-bottom:14px; border-radius:4px; flex-wrap:wrap; }' +
     '.cli b { font-size:15px; } .cli span { color:#666; font-size:12px; display:block; margin-top:2px; }' +
-    'table.items { width:100%; border-collapse:collapse; border:1px solid #ddd; border-radius:6px; overflow:hidden; margin-bottom:14px; }' +
+    'table.items { width:100%; border-collapse:collapse; border:1px solid #ddd; margin-bottom:14px; }' +
     'table.items th { text-align:left; font-size:10px; text-transform:uppercase; color:#fff; background:' + GOLD + '; padding:8px 14px; }' +
     'table.items td { padding:8px 14px; border-bottom:1px solid #f0ece1; font-size:12.5px; }' +
     'td.num, th.num { text-align:right; white-space:nowrap; }' +
     'td.cant, th.cant { text-align:center; width:52px; font-weight:700; }' +
     'td.precio { font-weight:800; font-size:13.5px; }' +
-    '.totales { margin-left:auto; width:270px; border:1px solid #ddd; border-radius:6px; overflow:hidden; }' +
+    '.totales { margin-left:auto; width:270px; border:1px solid #ddd; border-radius:6px; overflow:hidden; page-break-inside:avoid; break-inside:avoid; }' +
     '.totales .row { display:flex; justify-content:space-between; padding:8px 14px; font-size:13px; border-bottom:1px solid #f0ece1; }' +
     '.totales .row.grand { background:' + GOLD_SOFT + '; font-size:16px; font-weight:900; color:#b00020; border-bottom:none; }' +
     '.totales .row.grand.ok { color:#1a7a3c; }' +
     '.notas { margin-top:14px; padding:10px 14px; background:#fafafa; border:1px solid #eee; border-radius:6px; font-size:12.5px; }' +
-    '.firma { margin-top:46px; display:flex; justify-content:space-between; gap:40px; }' +
+    '.firma { margin-top:46px; display:flex; justify-content:space-between; gap:40px; page-break-inside:avoid; break-inside:avoid; }' +
     '.firma div { flex:1; border-top:1px solid #555; padding-top:6px; text-align:center; font-size:12px; color:#555; }' +
     '.pie { margin-top:20px; font-size:10px; color:#999; text-align:center; border-top:1px solid #eee; padding-top:10px; }' +
-    '@media print { body { padding:18px; } }</style></head><body>' +
+    '@media print { body { padding:0; } }</style></head><body>' +
     '<div class="top">' +
       '<div class="emp">MERCANTIL YUMANA<small>VENTAS AL MAYOR · SOCOPÓ, BARINAS</small></div>' +
       '<div class="doc">Nota de Entrega<b>' + fmtDate(f.fecha) + '</b></div>' +
     '</div>' +
     '<div class="banda"><h1>NOTA DE ENTREGA</h1><div class="num">#' + f.numero + '</div></div>' +
     '<div class="cli">' +
-      '<div><b>' + (cli?cli.nombre:'—') + '</b><span>' + ((cli&&cli.rif_cedula)||'') + ((cli&&cli.telefono)?' · '+cli.telefono:'') + '</span></div>' +
+      '<div><b>' + (cli?prEsc(cli.nombre):'—') + '</b><span>' + ((cli&&cli.rif_cedula)||'') + ((cli&&cli.telefono)?' · '+cli.telefono:'') + '</span></div>' +
       '<div style="text-align:right;"><b>Entrega: ' + fmtDate(f.fecha) + '</b>' + (f.fecha_vencimiento?'<span>Vence: ' + fmtDate(f.fecha_vencimiento) + '</span>':'') + '</div>' +
     '</div>' +
     '<table class="items"><thead><tr><th class="cant">Cant.</th><th>Producto</th><th class="num">Precio Unit.</th><th class="num">Subtotal</th></tr></thead><tbody>' + itemsHtml + '</tbody></table>' +
@@ -2173,7 +2210,7 @@ function generarNotaFactura(facturaId){
       '<div class="row"><span>Pagado</span><b style="color:#1a7a3c;">' + fmt(f.monto_pagado||0) + '</b></div>' +
       '<div class="row grand' + (saldo<=0.01?' ok':'') + '"><span>' + (saldo<=0.01?'PAGADA':'Pendiente') + '</span><span>' + (saldo<=0.01?'':fmt(saldo)) + '</span></div>' +
     '</div>' +
-    (f.notas ? '<div class="notas"><b>Notas:</b> ' + f.notas + '</div>' : '') +
+    (f.notas ? '<div class="notas"><b>Notas:</b> ' + prEsc(f.notas) + '</div>' : '') +
     '<div class="firma"><div>Firma del cliente</div><div>Firma Mercantil Yumana</div></div>' +
     '<div class="pie">Mercantil Yumana · Ventas al Mayor · Generado el ' + new Date().toLocaleDateString('es-VE') + '</div>' +
     '</body></html>';
@@ -2189,9 +2226,7 @@ function generarEstadoCuentaCliente(clienteId){
   if(!c) return;
   var facturas = facturasDeCliente(c.id);
   var abonos = abonosDeCliente(c.id);
-  var totalComprado = facturas.reduce(function(s,f){ return s + parseFloat(f.monto_total||0); }, 0);
-  var totalPagado = abonos.reduce(function(s,a){ return s + parseFloat(a.monto||0); }, 0);
-  var debe = totalComprado - totalPagado;
+  var tot = totalesCliente(c.id), totalComprado = tot.comprado, totalPagado = tot.pagado, debe = tot.debe;
   var hoy = new Date().toISOString().substring(0,10);
 
   // Cada factura como bloque: número destacado + productos desglosados línea por línea
@@ -2201,10 +2236,10 @@ function generarEstadoCuentaCliente(clienteId){
     var items = itemsDeFactura(f.id);
     var filasItems = items.length
       ? items.map(function(it){
-          return '<tr><td class="cant">' + it.cantidad + '</td><td>' + it.descripcion + '</td><td class="num precio">' + fmt(it.precio_unitario) + '</td><td class="num precio">' + fmt(it.subtotal) + '</td></tr>';
+          return '<tr><td class="cant">' + it.cantidad + '</td><td>' + prEsc(it.descripcion) + '</td><td class="num precio">' + fmt(it.precio_unitario) + '</td><td class="num precio">' + fmt(it.subtotal) + '</td></tr>';
         }).join('')
       : '<tr><td colspan="4" style="color:#999;">Sin detalle de productos</td></tr>';
-    return '<div class="fac">' +
+    return '<div class="fac' + (items.length <= 12 ? ' corta' : '') + '">' +
       '<div class="fac-head">' +
         '<span class="fac-num">FACTURA #' + f.numero + '</span>' +
         '<span>' + fmtDate(f.fecha) + (f.fecha_vencimiento ? ' · vence ' + fmtDate(f.fecha_vencimiento) : '') + '</span>' +
@@ -2218,13 +2253,13 @@ function generarEstadoCuentaCliente(clienteId){
 
   var htmlFacturas = facturas.length ? facturas.map(bloqueFactura).join('') : '<p style="color:#999;">Sin facturas registradas.</p>';
   var htmlAbonos = abonos.length ? abonos.map(function(a){
-    return '<tr><td>' + fmtDate(a.fecha) + '</td><td>' + a.metodo + '</td><td>' + (a.notas||'') + '</td><td class="num"><b>' + fmt(a.monto) + '</b></td></tr>';
+    return '<tr><td>' + fmtDate(a.fecha) + '</td><td>' + prEsc(a.metodo) + '</td><td>' + prEsc(a.notas||'') + '</td><td class="num"><b>' + fmt(a.monto) + '</b></td></tr>';
   }).join('') : '<tr><td colspan="4" style="color:#999;">Sin abonos.</td></tr>';
 
   var GOLD = '#9c7330', GOLD_SOFT = '#f5ead2', DARK = '#1a1206';
   var html =
     '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Estado de Cuenta - ' + c.nombre + '</title>' +
-    '<style>@page { size:A4; margin:0; } * { box-sizing:border-box; margin:0; padding:0; font-family:Arial,sans-serif; }' +
+    '<style>@page { margin:12mm; } * { box-sizing:border-box; margin:0; padding:0; font-family:Arial,sans-serif; }' + CSS_IMPRESION +
     'body { background:#fff; color:#1a1a1a; padding:34px; font-size:13px; }' +
     '.top { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid ' + GOLD + '; padding-bottom:12px; margin-bottom:14px; }' +
     '.top .emp { font-size:22px; font-weight:900; color:' + GOLD + '; } .top .emp small { display:block; font-size:10px; font-weight:400; color:#777; letter-spacing:2px; margin-top:2px; }' +
@@ -2236,8 +2271,8 @@ function generarEstadoCuentaCliente(clienteId){
     '.resumen div span { display:block; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:#888; margin-bottom:3px; }' +
     '.resumen div b { font-size:17px; }' +
     '.resumen .rcompra b { color:' + GOLD + '; } .resumen .rpago b { color:#1a7a3c; } .resumen .rdebe { background:#fdf1f0; } .resumen .rdebe b { color:#b00020; }' +
-    '.fac { border:1px solid #ddd; border-radius:6px; overflow:hidden; margin-bottom:14px; page-break-inside:avoid; }' +
-    '.fac-head { display:flex; justify-content:space-between; align-items:center; gap:10px; background:' + GOLD + '; color:#fff; padding:9px 14px; font-size:12px; flex-wrap:wrap; }' +
+    '.fac { border:1px solid #ddd; border-radius:6px; margin-bottom:14px; } .fac.corta { page-break-inside:avoid; break-inside:avoid; }' +
+    '.fac-head { display:flex; justify-content:space-between; align-items:center; gap:10px; background:' + GOLD + '; color:#fff; padding:9px 14px; font-size:12px; flex-wrap:wrap; border-radius:5px 5px 0 0; page-break-after:avoid; break-after:avoid; }' +
     '.fac-num { font-weight:900; font-size:14px; color:#fff; }' +
     '.fac-head .ok { background:#fff; color:#1a7a3c; font-weight:800; padding:3px 10px; border-radius:12px; } .fac-head .debe { background:#fff; color:#b00020; font-weight:800; padding:3px 10px; border-radius:12px; }' +
     'table.items { width:100%; border-collapse:collapse; }' +
@@ -2246,16 +2281,16 @@ function generarEstadoCuentaCliente(clienteId){
     'td.num, th.num { text-align:right; white-space:nowrap; }' +
     'td.cant, th.cant { text-align:center; width:52px; font-weight:700; }' +
     'td.precio { font-weight:800; font-size:13.5px; }' +
-    '.fac-tot { padding:9px 14px; font-size:12.5px; background:' + GOLD_SOFT + '; }' +
+    '.fac-tot { padding:9px 14px; font-size:12.5px; background:' + GOLD_SOFT + '; border-radius:0 0 5px 5px; page-break-before:avoid; break-before:avoid; }' +
     'h2 { font-size:14px; margin:20px 0 8px; color:' + GOLD + '; border-bottom:2px solid ' + GOLD + '; padding-bottom:4px; text-transform:uppercase; letter-spacing:0.5px; }' +
-    'table.abonos { width:100%; border-collapse:collapse; border:1px solid #ddd; border-radius:6px; overflow:hidden; } table.abonos th { text-align:left; font-size:10px; text-transform:uppercase; color:#fff; background:' + GOLD + '; padding:7px 10px; } table.abonos td { padding:7px 10px; border-bottom:1px solid #f0ece1; font-size:12.5px; }' +
+    'table.abonos { width:100%; border-collapse:collapse; border:1px solid #ddd; } table.abonos th { text-align:left; font-size:10px; text-transform:uppercase; color:#fff; background:' + GOLD + '; padding:7px 10px; } table.abonos td { padding:7px 10px; border-bottom:1px solid #f0ece1; font-size:12.5px; }' +
     '.pie { margin-top:20px; font-size:10px; color:#999; text-align:center; border-top:1px solid #eee; padding-top:10px; }' +
-    '@media print { body { padding:18px; } }</style></head><body>' +
+    '@media print { body { padding:0; } }</style></head><body>' +
     '<div class="top">' +
       '<div class="emp">MERCANTIL YUMANA<small>VENTAS AL MAYOR · SOCOPÓ, BARINAS</small></div>' +
       '<div class="doc">Estado de Cuenta<b>' + new Date().toLocaleDateString('es-VE') + '</b></div>' +
     '</div>' +
-    '<div class="cli"><div><b>' + c.nombre + '</b><br><span>' + (c.rif_cedula||'') + (c.telefono?' · '+c.telefono:'') + '</span></div></div>' +
+    '<div class="cli"><div><b>' + prEsc(c.nombre) + '</b><br><span>' + (c.rif_cedula||'') + (c.telefono?' · '+c.telefono:'') + '</span></div></div>' +
     '<div class="resumen">' +
       '<div class="rcompra"><span>Total comprado</span><b>' + fmt(totalComprado) + '</b></div>' +
       '<div class="rpago"><span>Total pagado</span><b>' + fmt(totalPagado) + '</b></div>' +
@@ -2271,6 +2306,38 @@ function generarEstadoCuentaCliente(clienteId){
   if(!win) return toast('Permite ventanas emergentes para el PDF', 'e');
   win.document.write(html); win.document.close();
   setTimeout(function(){ win.focus(); win.print(); }, 500);
+}
+
+// ===== ESTADO DE CUENTA POR WHATSAPP (mensaje de texto) =====
+// El mismo resumen del PDF como mensaje: facturas pendientes, últimos abonos y saldo. Sale por el modal de
+// envío (grupo del cliente, sus teléfonos o compartir), y se puede editar antes de mandarlo.
+function estadoCuentaWhatsApp(clienteId){
+  var c = CLIENTES.find(function(x){ return x.id === clienteId; });
+  if(!c) return;
+  var tot = totalesCliente(c.id);
+  var hoy = new Date().toISOString().substring(0,10);
+  var pendientes = facturasDeCliente(c.id).filter(function(f){ return saldoFactura(f) > 0.01; });
+  var abonos = abonosDeCliente(c.id); // más recientes primero
+  var msg = '*MERCANTIL YUMANA*\n*Estado de cuenta*\n' + c.nombre + '\nAl ' + fmtDate(hoy) + '\n';
+  if(pendientes.length){
+    msg += '\n*Facturas pendientes (' + pendientes.length + ')*\n';
+    pendientes.forEach(function(f){
+      var vencida = f.fecha_vencimiento && f.fecha_vencimiento < hoy;
+      msg += '• #' + f.numero + ' del ' + fmtDate(f.fecha) + ': debe ' + fmt(saldoFactura(f)) +
+        (parseFloat(f.monto_pagado||0) > 0.01 ? ' de ' + fmt(f.monto_total) : '') +
+        (f.fecha_vencimiento ? (vencida ? ' · VENCIDA el ' : ' · vence ') + fmtDate(f.fecha_vencimiento) : '') + '\n';
+    });
+  } else {
+    msg += '\nNo tiene facturas pendientes.\n';
+  }
+  if(abonos.length){
+    msg += '\n*Abonos recibidos*' + (abonos.length > 10 ? ' (últimos 10 de ' + abonos.length + ')' : '') + '\n';
+    abonos.slice(0, 10).forEach(function(a){ msg += '• ' + fmtDate(a.fecha) + ' · ' + a.metodo + ' · ' + fmt(a.monto) + '\n'; });
+  }
+  msg += '\nTotal comprado: ' + fmt(tot.comprado) + '\nTotal abonado: ' + fmt(tot.pagado) + '\n';
+  msg += tot.debe < -0.01 ? '*Saldo a favor: ' + fmt(tot.debe) + '*\n' : '*Saldo pendiente: ' + fmt(Math.max(tot.debe, 0)) + '*\n';
+  msg += '\nGracias por su confianza.';
+  abrirEnviar(msg, c.telefono || null, c.whatsapp_grupo || null);
 }
 
 // ===== RECORDATORIO DE PAGO POR WHATSAPP =====
@@ -2480,9 +2547,12 @@ function renderStats(){
 // Un cliente puede tener varios números en su ficha: "Fran 04127734302 / Daniel 04162684726".
 // Cada número sale como su propio botón ("Enviar a Fran", "Enviar a Daniel").
 function telefonosDe(texto){
-  return String(texto || '').split(/[\/,;]/).map(function(parte){
+  var tels = String(texto || '').split(/[\/,;]/).map(function(parte){
     return { num: parte.replace(/[^0-9]/g, ''), nombre: parte.replace(/[0-9+\-().]/g, '').replace(/\s+/g, ' ').trim() };
   }).filter(function(t){ return t.num.length >= 10; });
+  var todo = String(texto || '').replace(/[^0-9]/g, '');
+  if(!tels.length && todo.length >= 7) tels = [{ num: todo, nombre: '' }]; // p. ej. "0414/1234567"
+  return tels;
 }
 function abrirEnviar(texto, telefono, grupo){
   document.getElementById('envTexto').value = texto;

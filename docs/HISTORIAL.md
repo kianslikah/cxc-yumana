@@ -58,3 +58,39 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - `may_eliminar_cliente` usa `clock_timestamp()` para que la marca no choque con algo anulado antes en la misma transacción.
     - Las dos funciones son `SECURITY DEFINER` con `EXECUTE` para anon, igual que los demás `may_*`, mientras el mayorista siga con su login propio.
   - Se reemplazaron por íconos SVG la luna y el sol del tema y el aviso de facturas vencidas.
+- **Más clientes (2026-10-09):**
+  - **KEILA JAIME:** particular, tel. 04242288746, Socopó, plazo 30. Facturas del 29/09: #141, saldo anterior de $411, y #142, cocina SJ 4H inox de $160. Abono en efectivo de $200 el 07/10. Debe $371. Kinan la anotó con "(Yaquelin Conde)", pero es otra clienta.
+  - **YAQUELIN CONDE:** particular, V-16515542, tel. 04122377935, Socopó, plazo 30.
+    - #143 del 07/09: saldo anterior de $1.919.
+    - #144 del 01/10: nota Valery 0000030735, $610. La nota dice 6 ventiladores Omega a $70, pero ese renglón suma $350, así que se cargaron 5. El sello "PAGADO / CONTADO" es solo el justificante para el traslado.
+    - Abonos: $180 y $650 por Zelle el 30/09, y $50 en efectivo el 01/10.
+    - Debe $1.649.
+  - **FRANKLIN PERNIA:** particular, V-1654017, tel. 04122477023, Socopó, plazo 60. #145 del 30/05 por $2.780 y Zelle de $810 el 06/06. Debe $1.970. **No venderle más** cuando termine de pagar: tiene `no_vender = true`.
+  - **YONDER PERNIA:** particular, V-18989358, tel. 04125457658, Socopó, delante de la bomba Villarreal.
+    - Plazo normal 30; la factura #146 del 27/08 tiene 60 y vence el 26/10.
+    - Es el pedido de WhatsApp. Se entregaron 19 sillas playeras, no 20, así que el total es $2.931 y no $2.945.
+  - Regla para cargar notas de Valery: el sello "PAGADO" o "CONTADO" no significa que esté pagada. Es el justificante para el camino.
+  - Los números #137 a #140 se gastaron en pruebas de la papelera que se deshicieron. No falta ninguna factura.
+- **Mayorista, entrega del 2026-10-09 (`?v=20261009d`):** correcciones de la revisión `/thermos` (dos revisores) y lo que pidió Kinan.
+  - **Estado de cuenta PDF:** salía con la primera hoja casi en blanco (Tío Badia). La factura #124 estaba marcada para no partirse; como no cabía debajo del resumen, saltaba entera a la hoja 2.
+    - Ahora las facturas largas siguen en la hoja siguiente con el encabezado de la tabla repetido, y solo las de 12 renglones o menos no se parten.
+    - `@page` tiene margen de 12 mm en todas las hojas.
+    - Reglas comunes en `CSS_IMPRESION`: las filas no se cortan, el `thead` se repite y los títulos quedan pegados a lo que sigue.
+    - La nota de entrega lleva lo mismo, y los textos de los PDF van escapados.
+  - **Estado por WhatsApp:** botón nuevo en la ficha (`estadoCuentaWhatsApp`). Arma un mensaje con las facturas pendientes (marca las vencidas), los últimos 10 abonos, lo comprado, lo abonado y el saldo, y lo manda por el modal de envío.
+  - **No venderle:** columna `may_clientes.no_vender`.
+    - Se marca con una casilla en Editar cliente, y lleva una etiqueta roja en la lista y en la ficha.
+    - Al hacer una factura nueva aparece un aviso rojo bajo el cliente (`avisoNoVender`) y `guardarFactura` pide confirmación. Al editar una factura no se pide.
+  - **Papelera endurecida:**
+    - Columna `may_clientes.bloqueo_restaurar`, puesta en los 9 retirados del sistema viejo; se muestran con "No se restaura" y el motivo. Antes "ELECTROHOGAR CAPITANEJO" se podía restaurar junto al nuevo "ELECTROHOGAR — NESTOR ROSALES" y la deuda quedaba doble.
+    - `may_restaurar` detecta duplicados por nombre normalizado (`may_norm_texto`: sin acentos ni signos), cédula/RIF o teléfono. Devuelve los renglones borrados junto con la factura y bloquea la ficha del cliente.
+    - `may_recalcular_cliente` bloquea la ficha del cliente (`FOR UPDATE`), así que dos movimientos del mismo cliente se hacen en fila, y rechaza movimientos de un cliente que está en la papelera.
+  - **Papelera en la pantalla:**
+    - Lo borrado llega con `cargarDatos` (`PAPELERA`, `soloBorrados`) en vez de pedirse otra vez a la base.
+    - El modelo está en `armarPapelera` y el saldo en `saldoDe`/`totalesCliente`/`textoSaldo`, cada uno en un solo lugar.
+    - El candado anti doble clic va en `conCandado`, que también usa `protegerBoton`. Eliminar y Restaurar revisan que el usuario sea admin.
+    - Al entrar a la app se abre el Panel.
+  - **Otros:**
+    - `traerTodo` desempata siempre por `id`; sin eso, con más de 1000 filas la paginación podía saltar o repetir filas.
+    - `telefonosDe` usa el número completo si no reconoce ninguno (p. ej. "0414/1234567").
+    - `#appView` ya no fuerza `min-height:100vh`.
