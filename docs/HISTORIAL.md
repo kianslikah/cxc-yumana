@@ -35,7 +35,6 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - **#130** (13/09): $608.
   - **#131** (24/09): $359.
   - **9 abonos** del 09/09 al 04/10 que suman $6.351: Bs $80, Binance $50 y $33 (cargados como USDT), Zelle $100, $150, $138, $100 y $100, y efectivo $5.600. El saldo viejo queda en $1.323, igual que en el cuaderno.
-  - **#132** (04/10, cuaderno): $3.952, de modo que la deuda del cuaderno queda en $5.275.
+  - **#132** (04/10, cuaderno): $3.952, almohadas incluidas, de modo que la deuda del cuaderno queda en $5.275. Quien escribe ese cuaderno hace el 1 parecido al 7: el split Says es $215, no $275. Al principio lo leí como $275 y dejé fuera las almohadas; se corrigió el mismo día, con rastro en `historial_auditoria`, y el total no cambió.
   - **#133** (08/10): nota Valery 0000031053, $7.190. 12 renglones enlazados al catálogo; el aire Khaled 220v (AW12CM2FMC) y la nevera Hamilton Beach (HBR8TSV26D) no están en el catálogo y van como texto.
   - Deuda total: $12.465.
-  - **Pendiente:** en la página del 04/10 hay 2 almohadas a $30 ($60) que no entran en el total de $5.275 del cuaderno. No se cargaron; Kinan debe confirmar.
