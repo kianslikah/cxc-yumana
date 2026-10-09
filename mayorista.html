@@ -437,6 +437,10 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
       <input type="text" id="ncTelefono" placeholder="0412-1234567">
     </div>
     <div class="fg">
+      <label>Grupo de WhatsApp (opcional)</label>
+      <input type="text" id="ncGrupo" placeholder="Nombre del grupo donde se lleva su cuenta">
+    </div>
+    <div class="fg">
       <label>Dirección (opcional)</label>
       <input type="text" id="ncDireccion" placeholder="Dirección del negocio">
     </div>
@@ -546,7 +550,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
       </div>
     </div>
     <div class="fg"><label>Fecha</label><input type="date" id="abFecha"></div>
-    <div class="fg"><label>Notas (opcional)</label><textarea id="abNotas" rows="2" placeholder="Referencia, comentario..."></textarea></div>
+    <div class="fg"><label>Quién pagó / referencia (opcional)</label><textarea id="abNotas" rows="2" placeholder="Ej: Zelle de Gloria Molina"></textarea></div>
     <div style="font-size:12px; color:var(--muted); margin-bottom:6px;">El abono se aplicará automáticamente a las facturas más antiguas primero.</div>
     <div class="modal-msg" id="abMsg"></div>
     <div class="modal-actions">
@@ -560,13 +564,14 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
 <div class="modal-overlay" id="modalEnviar">
   <div class="modal">
     <h2>Enviar mensaje</h2>
+    <div id="envGrupoInfo" style="display:none; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14px;"></div>
     <div class="fg">
       <label>Mensaje (puedes editarlo antes de enviar)</label>
       <textarea id="envTexto" rows="8" style="font-size:14px; line-height:1.5;"></textarea>
     </div>
     <div style="display:flex; flex-direction:column; gap:8px;">
-      <button class="btn btn-green btn-block" id="envDirecto">Enviar al WhatsApp del cliente</button>
       <button class="btn btn-primary btn-block" id="envCompartir">Compartir (elegir chat o grupo)</button>
+      <button class="btn btn-green btn-block" id="envDirecto">Enviar al WhatsApp del cliente</button>
       <button class="btn btn-ghost btn-block" id="envCopiar">Copiar texto</button>
     </div>
     <div class="modal-actions" style="margin-top:12px;">
@@ -771,7 +776,7 @@ function renderClientes(){
 function abrirNuevoCliente(){
   editingClienteId = null;
   document.getElementById('modalClienteTitle').textContent = 'Nuevo cliente';
-  ['ncNombre','ncRif','ncTelefono','ncDireccion','ncNotas'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['ncNombre','ncRif','ncTelefono','ncGrupo','ncDireccion','ncNotas'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('ncTipo').value = 'negocio';
   document.getElementById('ncPlazo').value = '30';
   document.getElementById('ncMsg').textContent = '';
@@ -787,6 +792,7 @@ function abrirEditarCliente(id){
   document.getElementById('ncPlazo').value = c.plazo_dias || 30;
   document.getElementById('ncRif').value = c.rif_cedula || '';
   document.getElementById('ncTelefono').value = c.telefono || '';
+  document.getElementById('ncGrupo').value = c.whatsapp_grupo || '';
   document.getElementById('ncDireccion').value = c.direccion || '';
   document.getElementById('ncNotas').value = c.notas || '';
   document.getElementById('ncMsg').textContent = '';
@@ -802,6 +808,7 @@ async function guardarCliente(){
     plazo_dias: parseInt(document.getElementById('ncPlazo').value) || 30,
     rif_cedula: document.getElementById('ncRif').value.trim() || null,
     telefono: document.getElementById('ncTelefono').value.trim() || null,
+    whatsapp_grupo: document.getElementById('ncGrupo').value.trim() || null,
     direccion: document.getElementById('ncDireccion').value.trim() || null,
     notas: document.getElementById('ncNotas').value.trim() || null
   };
@@ -1119,7 +1126,7 @@ async function guardarFactura(){
   if(!esEdicion && ok){
     // Ofrecer mandar al grupo del cliente la factura con el saldo total de su cuenta
     var mEnv = mensajeFacturaConSaldo(facturaId);
-    if(mEnv) abrirEnviar(mEnv.texto, mEnv.telefono);
+    if(mEnv) abrirEnviar(mEnv.texto, mEnv.telefono, mEnv.grupo);
   }
 }
 
@@ -1746,7 +1753,7 @@ function renderDetalle(){
         '<div class="av-big">' + initials(c.nombre) + '</div>' +
         '<div style="min-width:0;">' +
           '<h2>' + c.nombre + '</h2>' +
-          '<p><span class="tag ' + (c.tipo||'negocio') + '">' + (c.tipo==='particular'?'Particular':'Negocio') + '</span> · Plazo ' + (c.plazo_dias||30) + ' días' + (c.telefono?' · '+c.telefono:'') + (c.rif_cedula?' · '+c.rif_cedula:'') + '</p>' +
+          '<p><span class="tag ' + (c.tipo||'negocio') + '">' + (c.tipo==='particular'?'Particular':'Negocio') + '</span> · Plazo ' + (c.plazo_dias||30) + ' días' + (c.telefono?' · '+c.telefono:'') + (c.whatsapp_grupo?' · Grupo: '+prEsc(c.whatsapp_grupo):'') + (c.rif_cedula?' · '+c.rif_cedula:'') + '</p>' +
         '</div>' +
       '</div>' +
       '<div class="db-actions">' +
@@ -1851,8 +1858,27 @@ async function guardarAbono(){
   document.getElementById('modalAbono').classList.remove('active');
   var aFavor = parseFloat(res.saldo_a_favor || 0);
   toast(aFavor > 0.01 ? 'Abono registrado. El cliente queda con ' + fmt(aFavor) + ' a favor' : 'Abono registrado', 's');
-  await cargarDatos();
+  var notasAb = document.getElementById('abNotas').value.trim();
+  var ok = await cargarDatos();
   renderDetalle();
+  // Ofrecer avisar al grupo del cliente: pago recibido + saldo que queda (solo si la recarga trajo el saldo nuevo)
+  if(ok){
+    var cAb = CLIENTES.find(function(x){ return x.id === abonoClienteId; });
+    if(cAb) abrirEnviar(mensajeAbono(cAb, monto, ABONO_METODO, fechaAb, notasAb, aFavor), cAb.telefono || null, cAb.whatsapp_grupo || null);
+  }
+}
+// Mensaje de confirmación de un abono para el grupo del cliente
+function mensajeAbono(c, monto, metodo, fecha, notas, aFavor){
+  var debe = facturasDeCliente(c.id).reduce(function(s, f){ return s + Math.max(0, saldoFactura(f)); }, 0);
+  var msg = '*MERCANTIL YUMANA*\n';
+  msg += 'Pago recibido · ' + fmtDate(fecha) + '\n';
+  msg += c.nombre + '\n\n';
+  msg += 'Monto: *' + fmt(monto) + '* (' + metodo + (notas ? ' · ' + notas : '') + ')\n';
+  if(aFavor > 0.01) msg += '\nTu cuenta está al día y quedas con *' + fmt(aFavor) + '* a favor.';
+  else if(debe > 0.01) msg += '\n*Saldo pendiente: ' + fmt(debe) + '*';
+  else msg += '\nTu cuenta está al día.';
+  msg += '\n\n¡Gracias!';
+  return msg;
 }
 
 // ===== ANULAR FACTURA (borrado suave) =====
@@ -2066,7 +2092,7 @@ function recordatorioWhatsApp(clienteId){
     vencidas.forEach(function(f){ msg += '• #' + f.numero + ' — ' + fmt(saldoFactura(f)) + ' (venció ' + fmtDate(f.fecha_vencimiento) + ')\n'; });
   }
   msg += '\nAgradecemos ponerte al día. Si ya pagaste, ignora este mensaje. ¡Gracias!';
-  abrirEnviar(msg, c.telefono || null);
+  abrirEnviar(msg, c.telefono || null, c.whatsapp_grupo || null);
 }
 
 // ===== PANEL DE CONTROL =====
@@ -2250,11 +2276,23 @@ function renderStats(){
 
 // ===== ENVÍO DE MENSAJES (directo, compartir a grupo, o copiar) =====
 var ENV_TELEFONO = null;
-function abrirEnviar(texto, telefono){
+// grupo = nombre del grupo de WhatsApp del cliente. WhatsApp no deja abrir un grupo por número:
+// "Compartir" abre WhatsApp con el mensaje ya escrito y ahí se elige el grupo por su nombre.
+function abrirEnviar(texto, telefono, grupo){
   ENV_TELEFONO = telefono || null;
   document.getElementById('envTexto').value = texto;
   // el botón directo solo si hay teléfono
   document.getElementById('envDirecto').style.display = telefono ? '' : 'none';
+  var info = document.getElementById('envGrupoInfo');
+  var btnC = document.getElementById('envCompartir');
+  if(grupo){
+    info.style.display = '';
+    info.innerHTML = 'Grupo de este cliente: <b style="color:var(--gold);">' + prEsc(grupo) + '</b><br><span style="color:var(--muted); font-size:13px;">Toca el botón, elige WhatsApp y busca ese grupo. El mensaje ya va escrito.</span>';
+    btnC.textContent = 'Enviar al grupo ' + grupo;
+  } else {
+    info.style.display = 'none';
+    btnC.textContent = 'Compartir (elegir chat o grupo)';
+  }
   document.getElementById('modalEnviar').classList.add('active');
 }
 function envAccionDirecto(){
@@ -2296,11 +2334,11 @@ function mensajeFactura(facturaId){
   msg += '\n*Total: ' + fmt(f.monto_total) + '*';
   if(saldo > 0.01 && (f.monto_pagado||0) > 0.01) msg += '\nPagado: ' + fmt(f.monto_pagado) + ' · Pendiente: ' + fmt(saldo);
   else if(saldo <= 0.01) msg += '\n(Pagada)';
-  return { texto: msg, telefono: (cli && cli.telefono) || null };
+  return { texto: msg, telefono: (cli && cli.telefono) || null, grupo: (cli && cli.whatsapp_grupo) || null };
 }
 function enviarFacturaWhatsApp(facturaId){
   var m = mensajeFactura(facturaId);
-  if(m) abrirEnviar(m.texto, m.telefono);
+  if(m) abrirEnviar(m.texto, m.telefono, m.grupo);
 }
 
 // ===== EXPORTAR FACTURAS A CSV (Excel) =====
