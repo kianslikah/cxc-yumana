@@ -165,3 +165,8 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - Kinan le cobró la #168 redondeada a $8.320. Se cargó un descuento de $3,97 el 03/09, con método 'Descuento/devolución' (no es dinero), y quedó rastro en `historial_auditoria`.
   - Debe $6.168 (8.581,97 − 2.410 cobrado − 3,97 de descuento), igual que la cuenta de Kinan. Por la regla de lo más viejo primero, en la app el abono del aire baja la #168 y la #169 sale completa.
   - Sin enlace al catálogo, porque no están en la foto de junio: TV 43" Universal Royal, aire AIWA 5mil manual, split HYUNDAI 12mil inverter, lavadora SAM 9kg y cocina MYSTIC 4H Agata Plus con tapa. Las camas CAMA1.40M y CAMA1.00M se enlazaron a CAMA1,40M y CAMA1,00M (en el catálogo están con coma).
+- **Cliente nuevo (2026-10-10): ELECTROCENTER — SAYEL AL BOUNNAY**, tienda ELECTROCENTER E.C C.A, Guasdualito, RIF J-50379027-0, tel. 04267769989 (de la nota), plazo 60. Tiene **No venderle**: Kinan espera que termine de pagar para sacarlo de los clientes.
+  - #170, del 13/02: nota Valery 0000019984, $24.172 (27 renglones, 26 enlazados; el TV 32' ROYAL, código RR-32, no está en el catálogo). Valery dice $24.172,03 por redondeo. Venció el 14/04.
+  - Devolución de 1 exhibidor heladero SAYS 233L ($360), que no entró en el camión. Va con método 'Descuento/devolución' el 13/02.
+  - Abonos: $2.000 por Zelle el 05/04, $1.664 por Zelle el 06/04, $10.000 en efectivo el 14/04, $2.000 por Zelle el 16/05, y $530 y $1.770 por Zelle el 19/05.
+  - Debe $5.848 (24.172 − 360 − 17.964). El sistema de cobros viejo tenía la factura en $23.812 (ya sin el exhibidor) y le faltaban los abonos de mayo. Su ficha retirada, SAYEL ALBOUNAY, sigue bloqueada para restaurar.
