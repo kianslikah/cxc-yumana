@@ -185,6 +185,8 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
 .det-plegable > summary::after{content:''; width:9px; height:9px; border-right:2px solid var(--gold); border-bottom:2px solid var(--gold); transform:rotate(45deg); margin-right:4px; transition:transform .2s ease;}
 .det-plegable[open] > summary::after{transform:rotate(-135deg);}
 .det-plegable[open]{padding-bottom:10px;}
+.zona-eliminar{margin-top:44px; padding:14px 16px; border:1px dashed rgba(232,93,76,0.35); border-radius:12px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+.zona-eliminar p{flex:1 1 240px; font-size:13px; color:var(--muted); line-height:1.4;}
 /* Productos dentro de la tarjeta de factura: Cantidad → Producto → Precio → Subtotal */
 .fp-plegable{margin:8px 0 2px;}
 .fp-plegable > summary{cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--text-2); padding:6px 0;}
@@ -1871,7 +1873,6 @@ function renderDetalle(){
         '<button class="btn btn-ghost" id="btnEstadoWaCli" style="border-color:var(--green); color:var(--green-soft);">Estado por WhatsApp</button>' +
         '<button class="btn btn-ghost" id="btnRecordarCli" style="border-color:var(--green); color:var(--green-soft);">Recordatorio</button>' +
         (puedeEditar ? '<button class="btn btn-ghost" id="btnEditarCliDet">Editar</button>' : '') +
-        (puedeEditar ? '<button class="btn btn-ghost" id="btnEliminarCliDet" style="border-color:var(--red); color:var(--red-soft);">Eliminar</button>' : '') +
       '</div>' +
     '</div>' +
     '<div class="kpi-row">' +
@@ -1896,7 +1897,10 @@ function renderDetalle(){
         (CURRENT_USER.rol === 'admin' ? '<button class="btn btn-ghost abono-anular" data-aid="' + a.id + '" style="padding:4px 8px; font-size:11px; border-color:var(--red); color:var(--red-soft);">Anular</button>' : '') + '</div>' +
       '</div>';
     }).join('') : '<div style="color:var(--muted); font-size:13px; padding:10px;">Sin abonos registrados.</div>') +
-    '</details>';
+    '</details>' +
+    // Eliminar va al final y aparte (antes estaba junto a Abono/Editar y se podía tocar sin querer)
+    (puedeEditar ? '<div class="zona-eliminar"><p>Eliminar este cliente lo manda a la Papelera junto con sus facturas y abonos. Se puede restaurar desde ahí.</p>' +
+      '<button class="btn btn-ghost" id="btnEliminarCliDet" style="border-color:var(--red); color:var(--red-soft);">Eliminar este cliente</button></div>' : '');
 
   document.getElementById('detalleContent').innerHTML = html;
   var btnAb = document.getElementById('btnAbonarCli');
