@@ -2463,32 +2463,26 @@ function generarEstadoCuentaCliente(clienteId, completo){
 }
 
 // ===== ESTADO DE CUENTA POR WHATSAPP (mensaje de texto) =====
-// Resumen como mensaje: facturas pendientes, los abonos que se aplicaron a ellas y el saldo. Sale por el modal de
-// envío (grupo del cliente, sus teléfonos o compartir), y se puede editar antes de mandarlo.
+// Corto, a pedido de Kinan (clientes con muchas facturas chicas): cada factura pendiente con su número, fecha
+// y lo que se debe, los últimos 10 abonos, y al final solo el total pendiente. Sin vencimientos ni totales históricos.
+// Sale por el modal de envío (grupo, teléfonos o compartir) y se puede editar antes de mandarlo.
 function estadoCuentaWhatsApp(clienteId){
   var c = CLIENTES.find(function(x){ return x.id === clienteId; });
   if(!c) return;
-  var m = modeloEstadoCuenta(c.id, 0); // solo pendientes y los abonos que se aplicaron a ellas
-  var hoy = new Date().toISOString().substring(0,10);
-  var pendientes = m.facturas;
-  var msg = '*MERCANTIL YUMANA*\n*Estado de cuenta*\n' + c.nombre + '\nAl ' + fmtDate(hoy) + '\n';
-  if(pendientes.length){
-    msg += '\n*Facturas pendientes (' + pendientes.length + ')*\n';
-    pendientes.forEach(function(f){
-      var vencida = f.fecha_vencimiento && f.fecha_vencimiento < hoy;
-      msg += '• #' + f.numero + ' del ' + fmtDate(f.fecha) + ': debe ' + fmt(saldoFactura(f)) +
-        (parseFloat(f.monto_pagado||0) > 0.01 ? ' de ' + fmt(f.monto_total) : '') +
-        (f.fecha_vencimiento ? (vencida ? ' · VENCIDA el ' : ' · vence ') + fmtDate(f.fecha_vencimiento) : '') + '\n';
-    });
+  var m = modeloEstadoCuenta(c.id, 0); // solo las pendientes, de la más vieja a la más nueva
+  var msg = '*MERCANTIL YUMANA*\n*Estado de cuenta*\n' + c.nombre + '\nAl ' + fmtDate(new Date().toISOString().substring(0,10)) + '\n';
+  if(m.facturas.length){
+    msg += '\n*Facturas pendientes (' + m.facturas.length + ')*\n';
+    m.facturas.forEach(function(f){ msg += '• #' + f.numero + ' · ' + fmtDate(f.fecha) + ' · ' + fmt(saldoFactura(f)) + '\n'; });
   } else {
     msg += '\nNo tiene facturas pendientes.\n';
   }
-  if(m.abonos.length){
-    msg += '\n*Abonos a estas facturas*' + (m.abonos.length > 10 ? ' (últimos 10 de ' + m.abonos.length + ')' : '') + '\n';
-    m.abonos.slice(0, 10).forEach(function(x){ msg += '• ' + fmtDate(x.abono.fecha) + ' · ' + x.abono.metodo + ' · ' + montoAbonoEC(x) + '\n'; });
+  var abonos = abonosDeCliente(c.id); // más recientes primero
+  if(abonos.length){
+    msg += '\n*Últimos abonos*' + (abonos.length > 10 ? ' (10 de ' + abonos.length + ')' : '') + '\n';
+    abonos.slice(0, 10).forEach(function(a){ msg += '• ' + fmtDate(a.fecha) + ' · ' + a.metodo + ' · ' + fmt(a.monto) + '\n'; });
   }
-  if(pendientes.length) msg += '\nTotal de estas facturas: ' + fmt(m.facturado) + '\nAbonado a ellas: ' + fmt(m.abonado) + '\n';
-  msg += m.debe < -0.01 ? '*Saldo a favor: ' + fmt(m.debe) + '*\n' : '*Saldo pendiente: ' + fmt(Math.max(m.debe, 0)) + '*\n';
+  msg += m.debe < -0.01 ? '\n*Saldo a favor: ' + fmt(m.debe) + '*\n' : '\n*Total pendiente: ' + fmt(Math.max(m.debe, 0)) + '*\n';
   msg += '\nGracias por su confianza.';
   abrirEnviar(msg, c.telefono || null, c.whatsapp_grupo || null);
 }
