@@ -113,6 +113,20 @@ El detalle completo de cada entrega (funciones, columnas, decisiones) está en *
 - **Inventario, Portal, Control:** errores de guardado visibles, paginación con orden fijo, estados de carga.
 - **Skills de revisión:** `.claude/skills/` (`/thermos`, `/anti-slop-audit`, `/anti-slop-fix`).
 
+## Cargar un cliente del mayor (cuando Kinan manda "Siguiente cliente...")
+
+Kinan manda nombre, zona, teléfono(s), cédula o RIF, plazo (30 o 60 días) y fotos o texto: notas de Valery, cuaderno, resumen de WhatsApp o pedido de Notas, con los abonos (monto, fecha y método).
+1. Antes de cargar, mostrarle la cuenta (facturas, abonos y lo que debe) y preguntar solo lo que falte. Sumar con cuidado: en el cuaderno, el 1 se parece al 7.
+2. Notas de Valery: usar el precio **P.U.$**; en la foto las filas salen corridas, así que tomar las columnas en orden. Enlazar productos por `inv_productos.codigo_valery` (exacto; si no, un prefijo único). El sello "PAGADO/CONTADO" no es un pago.
+3. Un bloque `DO` por cliente, en este orden. El conector puede llamar a las funciones `may_*`, porque la guardia lo deja pasar.
+   - INSERT en `may_clientes`.
+   - `may_guardar_factura(p_factura, p_items)` con `origen = 'carga_inicial'`, y `RAISE` si el total no coincide.
+   - `may_registrar_abono(...)` por cada abono.
+   - `may_recalcular_cliente`.
+   - Verificar facturado, abonado y lo que debe.
+4. Anotar el cliente en `docs/HISTORIAL.md` y hacer commit. Corregir montos de algo ya cargado deja rastro en `historial_auditoria`.
+5. Las pruebas dentro de transacciones que se deshacen igual gastan números de factura: después, `setval('may_facturas_numero_seq', max(numero))`.
+
 ## Pendientes conocidos
 
 1. ~~Verificador de cuadre~~ **HECHO el 2026-10-04.** Pendiente menor: crédito #62 PASCUAL RODRÍGUEZ tiene dos abonos de $20 el 2026-06-14 con 1 s de diferencia; Kinan debe confirmar con Fayssal si fue uno solo. Hay 1 interés huérfano en el crédito eliminado #309 (inofensivo).
@@ -129,3 +143,7 @@ El detalle completo de cada entrega (funciones, columnas, decisiones) está en *
 10. **Import de catálogo desde Valery (CSV/Excel)** con precio, **costo** y existencia: empareja por `codigo_valery`, agrega lo nuevo, actualiza, no borra. El catálogo actual es una foto del 2026-06-08 y **ningún producto tiene costo** → sin esto no hay ganancia. Kinan puede exportar de Valery.
 11. **Ciclo completo del producto con ganancia** (visión de Kinan, remodelación en 2-3 meses): estados en tienda → apartado → crédito → vendido sin salir → por entregar → en delivery → entregado y verificado, usando `inv_ventas`, `inv_venta_items.estado_item`, `inv_movimientos`, `inv_solicitudes_deposito`; panel de ganancia (venta − costo); login único con roles para delegar. Valery queda solo para la factura legal.
 9. Modo offline/PWA para los cortes de internet.
+15. **Sueltos de la sesión del 2026-10-09/10:**
+    - (a) Proveedores: 20 pagos de julio a octubre quedaron con fecha de un día después, porque se registraron después de las 8 pm. Corregirlos solo con el "dale" de Kinan.
+    - (b) Yessimar: falta el monto del descuento del Split 12mil BTU Mabe.
+    - (c) Reyen: la deuda vieja de $8.254 y sus 4 abonos tienen fechas aproximadas (01/09 y 30/09). Adriana: sus abonos están agrupados al 30/09. Si Kinan da las fechas reales, corregirlas.
