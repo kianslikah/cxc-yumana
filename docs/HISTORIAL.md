@@ -128,3 +128,9 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - **Cómo se sabe qué abono pagó qué factura:** la base no lo guarda. `repartoAbonos` reparte los abonos del más viejo al más nuevo entre las facturas de la más vieja a la más nueva, en centavos, y da exactamente el `monto_pagado` de cada factura (probado con 50 facturas y 132 abonos). Si un abono se repartió entre una factura que sale y una que no, se muestra la parte que fue a la que sale ("$400 de $1.000"). El modelo está en `modeloEstadoCuenta(cliente, pagadasRecientes)`.
   - En el cliente de prueba, el PDF pasó de 22 hojas a 4.
 - **Mayorista, 2026-10-10 (`?v=20261010e`):** el **Estado por WhatsApp** quedó corto, a pedido de Kinan. Trae cada factura pendiente como "#número · fecha · lo que se debe", los últimos 10 abonos (fecha · forma de pago · monto) y al final solo el total pendiente. Ya no lleva vencimientos ni los totales de compras y abonos de toda la historia.
+- **Cliente nuevo (2026-10-10): REYEN AL BOUNAY**, negocio, V-25437791, tel. 04141594611, Santa Bárbara de Barinas, plazo 30.
+  - #166, del 01/09: deuda anterior de $8.254. La fecha es aproximada porque el chat no la trae.
+  - Abonos a esa deuda: $1.000, $251, $45 y $100. Se cargaron como efectivo con fecha 30/09 porque el chat no trae ni la fecha ni la forma de pago.
+  - #167, del 07/10: pedido de Notas por $2.333 (14 renglones).
+  - Abono en efectivo de $1.400 el 07/10.
+  - Debe $7.791, igual que el chat (9.191 − 1.400).
