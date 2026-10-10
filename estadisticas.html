@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0f14">
+<title>Mercantil Yumana — Estadísticas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ===== Paleta del Portal (idéntica) ===== */
+:root{
+  --bg:#0d0f14; --bg-2:#141821;
+  --surface:#1a1f2b; --surface-2:#212838;
+  --border:#2a3344; --border-soft:#222a38;
+  --gold:#d4a24e; --gold-soft:#e8c583; --gold-deep:#9c7330;
+  --text:#eef2f8; --text-2:#9aa6b8; --muted:#5f6b80;
+  --green:#4ea876; --red:#e8755c; --blue:#5b9bd5; --violet:#9085e9;
+  --on-gold:#1a1206;
+  --glow:0 0 0 3px rgba(212,162,78,0.18);
+  --shadow:0 18px 50px rgba(0,0,0,0.45);
+  --shadow-sm:0 6px 18px rgba(0,0,0,0.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);color:var(--text);font-family:'Outfit',-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;font-size:15px;line-height:1.5;}
+body{background:
+  radial-gradient(1200px 600px at 80% -10%, rgba(212,162,78,0.07), transparent 60%),
+  radial-gradient(900px 500px at -10% 110%, rgba(91,155,213,0.05), transparent 55%),
+  var(--bg);}
+::selection{background:rgba(212,162,78,0.3);}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:0.2px;}
+em{font-style:italic;color:var(--gold-soft);}
+button{font-family:inherit;}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+[hidden]{display:none !important;}
+
+/* ===== Login y acceso restringido (como el Portal) ===== */
+.pantalla-centro{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px;}
+.login-card{width:100%;max-width:420px;background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--border);border-radius:24px;padding:44px 36px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.brand-mark{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+.brand-emblem{width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,var(--gold),var(--gold-deep));display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:26px;color:var(--on-gold);box-shadow:0 6px 16px rgba(212,162,78,0.35);flex-shrink:0;}
+.brand-name{font-family:'Fraunces',serif;font-size:23px;font-weight:600;letter-spacing:0.2px;line-height:1;}
+.brand-sub{font-size:12px;color:var(--gold-soft);letter-spacing:3px;text-transform:uppercase;margin-top:3px;font-weight:500;}
+.login-title{font-family:'Fraunces',serif;font-size:27px;font-weight:500;margin:34px 0 6px;}
+.login-desc{color:var(--text-2);font-size:14px;margin-bottom:28px;line-height:1.5;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12px;color:var(--text-2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600;}
+.field input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:13px;padding:15px 16px;color:var(--text);font-size:16px;font-family:inherit;outline:none;transition:border-color .2s ease, box-shadow .2s ease;}
+.field input:focus{border-color:var(--gold);box-shadow:var(--glow);}
+.field input::placeholder{color:var(--muted);}
+.btn-login{width:100%;margin-top:10px;background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:var(--on-gold);border:none;border-radius:13px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(212,162,78,0.28);letter-spacing:0.3px;transition:transform .2s ease, box-shadow .2s ease;}
+.btn-login:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(212,162,78,0.38);}
+.btn-login:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.login-msg{margin-top:16px;font-size:14px;text-align:center;min-height:20px;color:var(--red);}
+.login-link{display:block;text-align:center;margin-top:16px;font-size:13px;color:var(--text-2);text-decoration:none;}
+.login-link:hover{color:var(--gold-soft);}
+.candado{width:56px;height:56px;border-radius:16px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--gold-soft);margin:30px 0 4px;}
+.acciones-fila{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
+.acciones-fila > *{flex:1 1 140px;}
+
+/* ===== Botones ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 16px;border-radius:11px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;transition:border-color .15s ease, color .15s ease, background .15s ease;min-height:42px;}
+.btn:hover{border-color:var(--gold);}
+.btn-primary{background:var(--gold);color:var(--on-gold);border-color:var(--gold);}
+.btn-primary:hover{background:var(--gold-soft);}
+.btn-ghost{background:transparent;color:var(--text-2);}
+.btn-ghost:hover{color:var(--gold-soft);}
+.btn-sm{padding:7px 12px;font-size:13px;min-height:36px;border-radius:9px;}
+.btn svg{width:16px;height:16px;flex-shrink:0;}
+
+/* ===== Estructura con barra lateral (como mayorista.html) ===== */
+#appView{display:none;}
+.layout{display:flex;height:100vh;height:100dvh;width:100%;max-width:100vw;overflow:hidden;}
+.sidebar{width:248px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:22px 16px;display:flex;flex-direction:column;position:relative;height:100%;overflow-y:auto;z-index:30;}
+.layout-main{flex:1;min-width:0;height:100%;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+.side-brand{display:flex;align-items:center;gap:11px;padding:0 6px 20px;margin-bottom:6px;border-bottom:1px solid var(--border);}
+.side-emblem{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--gold),var(--gold-deep));display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;font-size:20px;color:var(--on-gold);flex-shrink:0;}
+.side-title{font-family:'Fraunces',serif;font-size:14px;font-weight:600;line-height:1.1;}
+.side-title small{display:block;font-family:'Outfit',sans-serif;font-size:9px;letter-spacing:2px;color:var(--gold-soft);text-transform:uppercase;margin-top:3px;font-weight:500;}
+.side-nav{flex:1;margin-top:14px;display:flex;flex-direction:column;gap:4px;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:11px;color:var(--text-2);font-size:14.5px;font-weight:500;cursor:pointer;transition:background .18s ease, color .18s ease;border:1px solid transparent;background:transparent;text-align:left;width:100%;}
+.nav-item svg{width:19px;height:19px;flex-shrink:0;}
+.nav-item:hover{background:var(--surface-2);color:var(--text);}
+.nav-item.active{background:var(--gold);color:var(--on-gold);border-color:var(--gold);}
+.nav-item .pronto{margin-left:auto;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.nav-item.active .pronto{color:rgba(26,18,6,0.65);}
+.side-foot{padding-top:14px;margin-top:8px;border-top:1px solid var(--border);flex-shrink:0;}
+.side-user{display:flex;align-items:center;gap:10px;padding:6px;}
+.side-avatar{width:34px;height:34px;border-radius:10px;background:var(--gold);color:var(--on-gold);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;flex-shrink:0;}
+.side-user .un{font-size:13px;font-weight:600;line-height:1.2;}
+.side-user .ur{font-size:10px;color:var(--gold-soft);text-transform:uppercase;letter-spacing:1px;}
+.side-links{display:flex;gap:8px;margin-top:10px;}
+.side-links a, .side-links button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:transparent;border:1px solid var(--border);color:var(--text-2);border-radius:9px;padding:9px;font-size:12.5px;cursor:pointer;text-decoration:none;transition:border-color .18s ease, color .18s ease;}
+.side-links a:hover{border-color:var(--gold);color:var(--gold-soft);}
+.side-links button:hover{border-color:var(--red);color:var(--red);}
+.side-links svg{width:14px;height:14px;}
+.mobile-top{display:none;}
+.scrim{display:none;}
+@media(max-width:800px){
+  html,body{overflow-x:hidden;}
+  .layout{height:auto;min-height:100vh;overflow:visible;}
+  .layout-main{height:auto;overflow:visible;max-width:100vw;}
+  .sidebar{position:fixed;left:0;top:0;z-index:80;transform:translateX(-100%);transition:transform .25s ease;box-shadow:var(--shadow);height:100vh;height:100dvh;}
+  .sidebar.open{transform:translateX(0);}
+  .mobile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(26,31,43,0.96);backdrop-filter:blur(10px);z-index:40;}
+  .mobile-top .mt-title{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--gold-soft);}
+  .burger{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;}
+  .burger svg{width:20px;height:20px;}
+  .scrim.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:70;}
+}
+
+/* ===== Contenido ===== */
+.container{max-width:1180px;margin:0 auto;padding:26px 28px 90px;}
+@media(max-width:800px){ .container{padding:18px 16px 80px;} }
+.screen-header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.screen-header h1{font-size:28px;font-weight:500;line-height:1.15;}
+.screen-header .sub{font-size:13.5px;color:var(--text-2);margin-top:4px;max-width:640px;}
+@media(max-width:560px){ .screen-header h1{font-size:24px;} }
+
+/* Filtro de período */
+.periodo{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:22px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{padding:8px 13px;border-radius:999px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-2);font-size:13.5px;font-weight:500;cursor:pointer;min-height:38px;transition:border-color .15s ease, color .15s ease, background .15s ease;}
+.chip:hover{border-color:var(--gold-deep);color:var(--text);}
+.chip.active{background:var(--gold);border-color:var(--gold);color:var(--on-gold);font-weight:600;}
+.rango-custom{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-top:12px;}
+.rango-custom label{display:block;font-size:11.5px;color:var(--text-2);text-transform:uppercase;letter-spacing:1px;font-weight:600;min-width:0;}
+.rango-custom input{display:block;margin-top:6px;background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:10px 12px;color:var(--text);font-size:16px;font-family:inherit;color-scheme:dark;}
+.rango-custom input:focus{outline:none;border-color:var(--gold);box-shadow:var(--glow);}
+/* Safari/iOS: los campos de fecha ignoran el ancho del contenedor; forzarlos */
+input[type="date"]{-webkit-appearance:none;appearance:none;width:100% !important;max-width:100% !important;min-width:0 !important;min-height:44px;text-align:left;}
+input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0;}
+@media(max-width:560px){ .rango-custom{grid-template-columns:1fr 1fr;} .rango-custom .btn{grid-column:1 / -1;} }
+.periodo-txt{font-size:12.5px;color:var(--text-2);margin-top:10px;padding:0 2px;}
+.periodo-txt b{color:var(--text);font-weight:600;}
+.rango-msg{font-size:13px;color:var(--red);margin-top:8px;min-height:0;}
+
+/* Bloques */
+.bloque{margin:30px 0 14px;}
+.bloque:first-child{margin-top:4px;}
+.bloque-eyebrow{display:flex;align-items:center;gap:12px;}
+.bloque-eyebrow .lbl{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;white-space:nowrap;}
+.bloque-eyebrow .line{height:1px;flex:1;background:var(--border-soft);}
+.bloque p{font-size:13px;color:var(--text-2);margin-top:6px;max-width:760px;}
+
+/* Indicadores */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px;margin-bottom:14px;}
+.kpi{background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--border-soft);border-radius:15px;padding:15px 16px;min-width:0;}
+.kpi-l{font-size:11.5px;color:var(--text-2);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px;}
+.kpi-v{font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2;overflow-wrap:anywhere;}
+.kpi.gold .kpi-v{color:var(--gold-soft);}
+.kpi.red .kpi-v{color:var(--red);}
+.kpi.green .kpi-v{color:var(--green);}
+.kpi-d{font-size:12.5px;margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;}
+.kpi-s{font-size:12.5px;color:var(--text-2);margin-top:5px;line-height:1.4;}
+.delta{font-weight:700;font-variant-numeric:tabular-nums;padding:2px 7px;border-radius:6px;font-size:12px;}
+.delta.bien{background:rgba(78,168,118,0.14);color:var(--green);}
+.delta.mal{background:rgba(232,117,92,0.14);color:var(--red);}
+.delta.neutro{background:rgba(154,166,184,0.12);color:var(--text-2);}
+.delta-ant{color:var(--muted);font-size:12px;}
+@media(max-width:420px){ .kpis{grid-template-columns:1fr 1fr;gap:10px;} .kpi{padding:13px 12px;} .kpi-v{font-size:19px;} }
+
+/* Tarjetas, gráficos y tablas */
+.card{background:var(--surface);border:1px solid var(--border-soft);border-radius:16px;padding:16px;margin-bottom:14px;min-width:0;}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.card-head h3{font-size:16px;font-weight:600;}
+.card-head .desc{font-size:12.5px;color:var(--text-2);margin-top:3px;max-width:640px;}
+.card-head > div{min-width:0;flex:1 1 220px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-2 > .card{margin-bottom:0;}
+.grid-2 + .grid-2, .grid-2 + .card, .card + .grid-2{margin-top:14px;}
+@media(max-width:900px){ .grid-2{grid-template-columns:1fr;} }
+.chart-box{position:relative;height:270px;}
+@media(max-width:560px){ .chart-box{height:240px;} }
+.chart-vacio{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--text-2);font-size:13px;padding:10px;border:1px dashed var(--border);border-radius:12px;}
+.tabla-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px;}
+table.t{width:100%;border-collapse:collapse;font-size:13.5px;}
+table.t th{font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text-2);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+table.t td{padding:9px 10px;border-bottom:1px solid var(--border-soft);vertical-align:top;color:var(--text);}
+table.t tr:last-child td{border-bottom:none;}
+table.t tbody tr:hover td{background:rgba(212,162,78,0.04);}
+table.t .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+table.t th.num{text-align:right;}
+table.t td.nombre{min-width:160px;}
+table.t td.largo{min-width:220px;}
+table.t td.nw{white-space:nowrap;}
+table.t td .suave{color:var(--text-2);font-size:12px;display:block;}
+table.t tfoot td{border-top:1px solid var(--border);font-weight:700;}
+.t-vacio{padding:22px 10px;text-align:center;color:var(--text-2);font-size:13px;}
+.t-mas{display:flex;justify-content:center;margin-top:12px;}
+.t-cuenta{font-size:12px;color:var(--muted);margin-top:8px;text-align:right;}
+.etq{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;letter-spacing:.3px;white-space:nowrap;}
+.etq.A{background:rgba(78,168,118,0.16);color:var(--green);}
+.etq.B{background:rgba(91,155,213,0.16);color:var(--blue);}
+.etq.C{background:rgba(212,162,78,0.16);color:var(--gold-soft);}
+.etq.D{background:rgba(232,117,92,0.16);color:var(--red);}
+.etq.Nuevo{background:rgba(154,166,184,0.12);color:var(--text-2);}
+.etq.rojo{background:rgba(232,117,92,0.16);color:var(--red);}
+.etq.gris{background:rgba(154,166,184,0.12);color:var(--text-2);}
+.rojo-txt{color:var(--red);}
+.verde-txt{color:var(--green);}
+.barrita{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;min-width:70px;margin-top:5px;}
+.barrita span{display:block;height:100%;background:var(--gold);border-radius:3px;}
+
+/* Notas y avisos */
+.nota{display:flex;gap:10px;align-items:flex-start;background:rgba(91,155,213,0.08);border:1px solid rgba(91,155,213,0.28);border-radius:13px;padding:12px 14px;font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:14px;}
+.nota svg{width:18px;height:18px;flex-shrink:0;color:var(--blue);margin-top:1px;}
+.nota b{color:var(--text);font-weight:600;}
+.nota.aviso{background:rgba(212,162,78,0.08);border-color:rgba(212,162,78,0.35);}
+.nota.aviso svg{color:var(--gold);}
+.formula{background:var(--bg-2);border:1px solid var(--border);border-radius:13px;padding:14px 16px;font-size:13px;color:var(--text-2);line-height:1.6;}
+.formula h4{font-family:'Fraunces',serif;font-size:15px;color:var(--text);margin-bottom:6px;font-weight:600;}
+.formula ul{margin:6px 0 0 18px;}
+.formula b{color:var(--text);}
+
+/* Estados */
+.estado{text-align:center;padding:60px 20px;color:var(--text-2);}
+.estado h3{font-size:18px;color:var(--text);margin:10px 0 6px;}
+.estado p{font-size:13.5px;max-width:420px;margin:0 auto;}
+.estado svg{width:40px;height:40px;color:var(--muted);}
+.estado.error svg{color:var(--red);}
+.estado .btn{margin-top:16px;}
+.spinner{width:30px;height:30px;border:3px solid var(--surface-2);border-top-color:var(--gold);border-radius:50%;animation:gira .8s linear infinite;margin:0 auto 14px;}
+@keyframes gira{to{transform:rotate(360deg);}}
+.preparada{background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--border);border-radius:18px;padding:22px;margin-bottom:16px;}
+.preparada h2{font-size:21px;font-weight:500;margin-bottom:6px;}
+.preparada p{font-size:14px;color:var(--text-2);max-width:760px;}
+.preparada ul{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:16px;}
+.preparada li{background:var(--surface-2);border:1px solid var(--border);border-radius:13px;padding:12px 14px;font-size:13px;color:var(--text-2);}
+.preparada li b{display:block;color:var(--text);font-size:14px;margin-bottom:2px;}
+
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:12px 18px;border-radius:12px;font-size:14px;box-shadow:var(--shadow);z-index:500;transition:transform .3s ease;max-width:90%;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.e{border-color:var(--red);}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginView" class="pantalla-centro">
+  <div class="login-card">
+    <div class="brand-mark">
+      <div class="brand-emblem">Y</div>
+      <div>
+        <div class="brand-name">Mercantil Yumana</div>
+        <div class="brand-sub">Socopó · Barinas</div>
+      </div>
+    </div>
+    <div class="login-title">Estadísticas</div>
+    <div class="login-desc">Entra con tu usuario del Portal. Si ya abriste el Portal en este aparato, entras directo.</div>
+    <div class="field">
+      <label for="loginEmail">Correo</label>
+      <input type="email" id="loginEmail" placeholder="tu@correo.com" autocomplete="username" autocapitalize="off">
+    </div>
+    <div class="field">
+      <label for="loginPass">Contraseña</label>
+      <input type="password" id="loginPass" placeholder="Tu contraseña" autocomplete="current-password">
+    </div>
+    <button class="btn-login" id="btnLogin">Entrar</button>
+    <div class="login-msg" id="loginMsg" role="alert"></div>
+    <a href="portal.html" class="login-link">Volver al Portal</a>
+  </div>
+</div>
+
+<!-- ================= ACCESO RESTRINGIDO ================= -->
+<div id="restringidoView" class="pantalla-centro" style="display:none;">
+  <div class="login-card">
+    <div class="brand-mark">
+      <div class="brand-emblem">Y</div>
+      <div>
+        <div class="brand-name">Mercantil Yumana</div>
+        <div class="brand-sub">Estadísticas</div>
+      </div>
+    </div>
+    <div class="candado"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+    <div class="login-title" style="margin-top:14px;">Acceso restringido</div>
+    <div class="login-desc" id="restringidoMsg">Las estadísticas solo las ve el administrador.</div>
+    <div class="acciones-fila">
+      <a href="portal.html" class="btn">Volver al Portal</a>
+      <button class="btn btn-ghost" id="btnSalirRestringido">Salir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appView">
+ <div class="scrim" id="scrim"></div>
+ <div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Secciones">
+    <div class="side-brand">
+      <div class="side-emblem">Y</div>
+      <div class="side-title">Mercantil Yumana<small>Estadísticas</small></div>
+    </div>
+    <nav class="side-nav">
+      <button class="nav-item active" data-vista="resumen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/></svg>
+        <span>Resumen</span>
+      </button>
+      <button class="nav-item" data-vista="detal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        <span>Créditos y apartados</span>
+      </button>
+      <button class="nav-item" data-vista="mayorista">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        <span>Mayorista</span>
+      </button>
+      <button class="nav-item" data-vista="proveedores">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg>
+        <span>Proveedores</span>
+      </button>
+      <button class="nav-item" data-vista="inventario">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>
+        <span>Inventario y ventas</span><span class="pronto">Pronto</span>
+      </button>
+    </nav>
+    <div class="side-foot">
+      <div class="side-user">
+        <div class="side-avatar" id="userAv">—</div>
+        <div><div class="un" id="userName">—</div><div class="ur" id="userRol">—</div></div>
+      </div>
+      <div class="side-links">
+        <a href="portal.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Portal</a>
+        <button id="btnLogout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Salir</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="layout-main" id="layoutMain">
+    <div class="mobile-top">
+      <button class="burger" id="burger" aria-label="Abrir menú"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+      <div class="mt-title" id="mtTitle">Resumen</div>
+      <div style="width:42px;"></div>
+    </div>
+
+    <section class="container vista" id="vista-resumen">
+      <div class="screen-header">
+        <div><h1>Resumen del <em>negocio</em></h1><div class="sub">Lo que te deben, lo que debes, lo que entra y lo que sale. Junta créditos y apartados, mayorista y proveedores.</div></div>
+        <button class="btn btn-sm btn-ghost" data-actualizar="resumen"></button>
+      </div>
+      <div data-periodo="resumen"></div>
+      <div id="cont-resumen"></div>
+    </section>
+
+    <section class="container vista" id="vista-detal" hidden>
+      <div class="screen-header">
+        <div><h1>Créditos y <em>apartados</em></h1><div class="sub">Ventas a crédito y apartados del detal: lo vendido, lo cobrado, la cartera, los clientes y los productos.</div></div>
+        <button class="btn btn-sm btn-ghost" data-actualizar="detal"></button>
+      </div>
+      <div data-periodo="detal"></div>
+      <div id="cont-detal"></div>
+    </section>
+
+    <section class="container vista" id="vista-mayorista" hidden>
+      <div class="screen-header">
+        <div><h1>Ventas al <em>mayor</em></h1><div class="sub">Lo facturado, lo cobrado, la deuda de cada cliente y los productos que más salen.</div></div>
+        <button class="btn btn-sm btn-ghost" data-actualizar="mayorista"></button>
+      </div>
+      <div data-periodo="mayorista"></div>
+      <div id="cont-mayorista"></div>
+    </section>
+
+    <section class="container vista" id="vista-proveedores" hidden>
+      <div class="screen-header">
+        <div><h1><em>Proveedores</em></h1><div class="sub">Lo comprado, lo pagado, lo que debes a cada proveedor y lo que ganas al cambiar dólares.</div></div>
+        <button class="btn btn-sm btn-ghost" data-actualizar="proveedores"></button>
+      </div>
+      <div data-periodo="proveedores"></div>
+      <div id="cont-proveedores"></div>
+    </section>
+
+    <section class="container vista" id="vista-inventario" hidden>
+      <div class="screen-header">
+        <div><h1>Inventario y <em>ventas</em></h1><div class="sub">Sección preparada para cuando el inventario del día a día y los costos estén cargados.</div></div>
+        <button class="btn btn-sm btn-ghost" data-actualizar="inventario"></button>
+      </div>
+      <div id="cont-inventario"></div>
+    </section>
+  </div>
+ </div>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+'use strict';
+const SUPABASE_URL = 'https://tkkiuxaamdyfbildcvtp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oOCXiFi1MaOChwvqiLNSdg_IVfega0X';
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+var USUARIO = null;          // {id, nombre, rol}
+var VISTA = 'resumen';
+var DATOS = {};              // último resultado por sección
+var PEDIDO = {};             // número de pedido por sección (ignora respuestas viejas)
+var PERIODO = {};            // período elegido por sección
+var TABLAS = {};             // tablas dibujadas (para "Mostrar más" y CSV)
+var GRAFICOS = {};           // gráficos dibujados (para destruirlos al redibujar)
+var GRAF_PENDIENTES = [];    // gráficos por crear después de pintar el HTML
+var FECHA_INICIO_DATOS = '2026-01-01';
+
+var SECCIONES = {
+  resumen:     { fn: 'est_resumen',     titulo: 'Resumen',              render: renderResumen },
+  detal:       { fn: 'est_detal',       titulo: 'Créditos y apartados', render: renderDetal },
+  mayorista:   { fn: 'est_mayorista',   titulo: 'Mayorista',            render: renderMayorista },
+  proveedores: { fn: 'est_proveedores', titulo: 'Proveedores',          render: renderProveedores },
+  inventario:  { fn: 'est_inventario',  titulo: 'Inventario y ventas',  render: renderInventario, sinPeriodo: true }
+};
+
+// ===== Íconos (SVG monocromáticos) =====
+var IC = {
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
+  alerta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
+  descargar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>',
+  actualizar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>',
+  vacio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14h2M12 10h2M17 6h2"/></svg>'
+};
+
+// ===== Utilidades =====
+function esc(s){ return (s == null ? '' : String(s)).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function num(v){ var n = Number(v); return isFinite(n) ? n : 0; }
+// Montos como en las otras apps del ecosistema: $1,234.56
+function fmt(n){ var v = num(n); return (v < 0 ? '-' : '') + '$' + Math.abs(v).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+function fmtN(n){ return Math.round(num(n)).toLocaleString('en-US'); }
+function fmtDec(n, d){ return num(n).toLocaleString('en-US', {minimumFractionDigits: d, maximumFractionDigits: d}); }
+function fmtPct(n){ return n == null ? '—' : fmtDec(n, 1) + '%'; }
+function fmtCorto(v){
+  var a = Math.abs(v);
+  if (a >= 1e6) return (v < 0 ? '-' : '') + '$' + (a / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, '') + ' M';
+  if (a >= 1e3) return (v < 0 ? '-' : '') + '$' + Math.round(a / 1e3) + ' mil';
+  return (v < 0 ? '-' : '') + '$' + Math.round(a);
+}
+function fmtFecha(d){ if (!d) return '—'; var p = String(d).substring(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+var MESES_CORTO = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+var MESES_LARGO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function mesCorto(m){ var p = String(m).split('-'); return MESES_CORTO[parseInt(p[1], 10) - 1] + ' ' + p[0].substring(2); }
+function mesLargo(m){ var p = String(m).split('-'); return MESES_LARGO[parseInt(p[1], 10) - 1] + ' ' + p[0]; }
+function iniciales(nombre){ if (!nombre) return '?'; var p = nombre.trim().split(/\s+/); return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase(); }
+function toast(msg, tipo){
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = tipo || ''; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('show'); }, 3200);
+}
+function guardarLocal(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function leerLocal(k){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+
+// ===== Fechas (hora de Venezuela: la del aparato, nunca toISOString) =====
+function hoyLocal(){
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function partes(s){ var p = s.split('-'); return { y: +p[0], m: +p[1], d: +p[2] }; }
+function armar(y, m, d){ return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0'); }
+function diasDelMes(y, m){ return new Date(y, m, 0).getDate(); }
+// Corre una fecha n meses (n negativo = atrás). Si cae en un día que no existe, usa el último del mes.
+// Si la fecha es el último día de su mes, el resultado también lo es (30/09 -> 31/08).
+function correrMeses(s, n){
+  var p = partes(s);
+  var ultimo = p.d === diasDelMes(p.y, p.m);
+  var total = p.y * 12 + (p.m - 1) + n;
+  var y = Math.floor(total / 12), m = total % 12 + 1;
+  var dm = diasDelMes(y, m);
+  return armar(y, m, ultimo ? dm : Math.min(p.d, dm));
+}
+// Período elegido -> fechas del período y del período anterior con el que se compara
+function calcularRango(sel){
+  var hoy = hoyLocal(), h = partes(hoy), r = { tipo: sel.tipo, comparar: true };
+  var inicioMes = armar(h.y, h.m, 1);
+  if (sel.tipo === 'mes') {
+    r.desde = inicioMes; r.hasta = hoy; r.meses = 1;
+  } else if (sel.tipo === 'mes_pasado') {
+    r.desde = correrMeses(inicioMes, -1);
+    var pm = partes(r.desde); r.hasta = armar(pm.y, pm.m, diasDelMes(pm.y, pm.m)); r.meses = 1;
+  } else if (sel.tipo === '3m') {
+    r.desde = correrMeses(inicioMes, -2); r.hasta = hoy; r.meses = 3;
+  } else if (sel.tipo === '6m') {
+    r.desde = correrMeses(inicioMes, -5); r.hasta = hoy; r.meses = 6;
+  } else if (sel.tipo === 'anio') {
+    r.desde = armar(h.y, 1, 1); r.hasta = hoy; r.meses = 12;
+  } else if (sel.tipo === 'custom' && sel.desde && sel.hasta) {
+    r.desde = sel.desde; r.hasta = sel.hasta; r.meses = 0;
+  } else { // todo
+    r.tipo = 'todo'; r.desde = FECHA_INICIO_DATOS; r.hasta = hoy; r.meses = 0; r.comparar = false;
+  }
+  if (r.meses) { r.ant_desde = correrMeses(r.desde, -r.meses); r.ant_hasta = correrMeses(r.hasta, -r.meses); }
+  else { r.ant_desde = null; r.ant_hasta = null; } // la base usa el mismo número de días justo antes
+  return r;
+}
+
+// ===== Login (el mismo usuario del Portal) =====
+function avisoLogin(texto){ document.getElementById('loginMsg').textContent = texto || ''; }
+function mostrarVista(id){
+  ['loginView', 'restringidoView'].forEach(function(v){ document.getElementById(v).style.display = (v === id) ? 'flex' : 'none'; });
+  document.getElementById('appView').style.display = (id === 'appView') ? 'block' : 'none';
+}
+function mostrarLogin(aviso){
+  USUARIO = null; DATOS = {};
+  mostrarVista('loginView');
+  document.getElementById('loginPass').value = '';
+  avisoLogin(aviso);
+}
+function mostrarRestringido(texto){
+  USUARIO = null; DATOS = {};
+  document.getElementById('restringidoMsg').textContent = texto || 'Las estadísticas solo las ve el administrador. Si necesitas verlas, pídele acceso a Kinan.';
+  mostrarVista('restringidoView');
+}
+async function intentarLogin(){
+  var email = document.getElementById('loginEmail').value.trim();
+  var clave = document.getElementById('loginPass').value;
+  var btn = document.getElementById('btnLogin');
+  avisoLogin('');
+  if (!email || !clave) { avisoLogin('Escribe tu correo y tu contraseña.'); return; }
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    var r = await sb.auth.signInWithPassword({ email: email, password: clave });
+    if (r.error) { avisoLogin(/invalid/i.test(r.error.message || '') ? 'Correo o contraseña incorrectos.' : 'No se pudo entrar. Revisa tu internet e intenta de nuevo.'); return; }
+    await cargarUsuario(r.data.user);
+  } catch (e) {
+    avisoLogin('No se pudo entrar. Revisa tu internet e intenta de nuevo.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Entrar';
+  }
+}
+// Debe estar activo en usuarios_app y pasar est_puede_ver() (la base decide quién ve las estadísticas)
+async function cargarUsuario(user){
+  var r = await sb.from('usuarios_app').select('id, nombre, rol, activo').eq('id', user.id).maybeSingle();
+  if (r.error) throw r.error;
+  if (!r.data || !r.data.activo) { mostrarRestringido('Tu cuenta no está activa todavía. Pídele al administrador que la active en Control.'); return; }
+  var p = await sb.rpc('est_puede_ver');
+  if (p.error) throw p.error;
+  if (p.data !== true) { mostrarRestringido('Las estadísticas solo las ve el administrador. Si necesitas verlas, pídele acceso a Kinan.'); return; }
+  USUARIO = { id: r.data.id, nombre: r.data.nombre || user.email, rol: r.data.rol };
+  entrarApp();
+}
+function entrarApp(){
+  avisoLogin('');
+  mostrarVista('appView');
+  document.getElementById('userName').textContent = USUARIO.nombre;
+  document.getElementById('userRol').textContent = USUARIO.rol;
+  document.getElementById('userAv').textContent = iniciales(USUARIO.nombre);
+  var guardada = leerLocal('est_vista');
+  irA(SECCIONES[guardada] ? guardada : 'resumen');
+}
+async function salir(){
+  mostrarLogin('');
+  try { await sb.auth.signOut(); } catch (e) {}
+}
+
+// ===== Navegación =====
+function irA(vista){
+  VISTA = vista;
+  guardarLocal('est_vista', vista);
+  document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.toggle('active', b.dataset.vista === vista); });
+  document.querySelectorAll('.vista').forEach(function(s){ s.hidden = (s.id !== 'vista-' + vista); });
+  document.getElementById('mtTitle').textContent = SECCIONES[vista].titulo;
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('scrim').classList.remove('show');
+  var lm = document.getElementById('layoutMain'); if (lm) lm.scrollTop = 0;
+  window.scrollTo(0, 0);
+  cargarSeccion(vista, false);
+}
+function abrirMenu(){
+  var s = document.getElementById('sidebar');
+  s.classList.toggle('open');
+  document.getElementById('scrim').classList.toggle('show', s.classList.contains('open'));
+}
+
+// ===== Filtro de período =====
+var CHIPS = [['mes', 'Este mes'], ['mes_pasado', 'Mes pasado'], ['3m', 'Últimos 3 meses'], ['6m', 'Últimos 6 meses'], ['anio', 'Este año'], ['todo', 'Todo'], ['custom', 'Elegir fechas']];
+function iniciarPeriodos(){
+  Object.keys(SECCIONES).forEach(function(sec){
+    if (SECCIONES[sec].sinPeriodo) return;
+    var g = leerLocal('est_periodo_' + sec);
+    PERIODO[sec] = (g && g.tipo) ? g : { tipo: 'mes' };
+    if (PERIODO[sec].tipo === 'custom' && !(PERIODO[sec].desde && PERIODO[sec].hasta)) PERIODO[sec] = { tipo: 'mes' };
+    pintarPeriodo(sec);
+  });
+  document.querySelectorAll('[data-actualizar]').forEach(function(b){ b.innerHTML = IC.actualizar + ' Actualizar'; });
+}
+function pintarPeriodo(sec){
+  var cont = document.querySelector('[data-periodo="' + sec + '"]');
+  var sel = PERIODO[sec];
+  var hoy = hoyLocal();
+  cont.innerHTML = '<div class="periodo">' +
+    '<div class="chips" role="group" aria-label="Período">' + CHIPS.map(function(c){
+      return '<button class="chip' + (sel.tipo === c[0] ? ' active' : '') + '" data-chip="' + c[0] + '" data-sec="' + sec + '" aria-pressed="' + (sel.tipo === c[0]) + '">' + c[1] + '</button>';
+    }).join('') + '</div>' +
+    '<div class="rango-custom"' + (sel.tipo === 'custom' ? '' : ' hidden') + ' id="rc-' + sec + '">' +
+      '<label>Desde<input type="date" id="rd-' + sec + '" value="' + esc(sel.desde || correrMeses(hoy, -1)) + '" max="' + hoy + '"></label>' +
+      '<label>Hasta<input type="date" id="rh-' + sec + '" value="' + esc(sel.hasta || hoy) + '" max="' + hoy + '"></label>' +
+      '<button class="btn btn-primary" data-aplicar="' + sec + '">Ver</button>' +
+    '</div>' +
+    '<div class="rango-msg" id="rm-' + sec + '" role="alert"></div>' +
+    '<div class="periodo-txt" id="pt-' + sec + '"></div>' +
+  '</div>';
+  textoPeriodo(sec, null);
+}
+function textoPeriodo(sec, p){
+  var el = document.getElementById('pt-' + sec); if (!el) return;
+  var r = calcularRango(PERIODO[sec]);
+  var ad = p ? p.ant_desde : r.ant_desde, ah = p ? p.ant_hasta : r.ant_hasta;
+  if (!r.comparar) { el.innerHTML = 'Todo lo registrado hasta el <b>' + fmtFecha(r.hasta) + '</b>. Sin comparación con otro período.'; return; }
+  el.innerHTML = 'Del <b>' + fmtFecha(r.desde) + '</b> al <b>' + fmtFecha(r.hasta) + '</b>' +
+    (ad ? ' · comparado con ' + fmtFecha(ad) + ' al ' + fmtFecha(ah) : ' · comparado con los mismos días justo antes');
+}
+function elegirChip(sec, tipo){
+  var rc = document.getElementById('rc-' + sec);
+  document.getElementById('rm-' + sec).textContent = '';
+  if (tipo === 'custom') {
+    rc.hidden = false;
+    document.querySelectorAll('[data-chip][data-sec="' + sec + '"]').forEach(function(b){ b.classList.toggle('active', b.dataset.chip === 'custom'); b.setAttribute('aria-pressed', b.dataset.chip === 'custom'); });
+    return; // espera a que elija las fechas y toque "Ver"
+  }
+  PERIODO[sec] = { tipo: tipo };
+  guardarLocal('est_periodo_' + sec, PERIODO[sec]);
+  pintarPeriodo(sec);
+  cargarSeccion(sec, false);
+}
+function aplicarRango(sec){
+  var d = document.getElementById('rd-' + sec).value, h = document.getElementById('rh-' + sec).value;
+  var msg = document.getElementById('rm-' + sec);
+  if (!d || !h) { msg.textContent = 'Elige las dos fechas.'; return; }
+  if (d > h) { msg.textContent = 'La fecha "Desde" no puede ser después de "Hasta".'; return; }
+  msg.textContent = '';
+  PERIODO[sec] = { tipo: 'custom', desde: d, hasta: h };
+  guardarLocal('est_periodo_' + sec, PERIODO[sec]);
+  pintarPeriodo(sec);
+  cargarSeccion(sec, false);
+}
+
+// ===== Carga de datos (todo se calcula en la base con las funciones est_*) =====
+function claveCache(sec){
+  if (SECCIONES[sec].sinPeriodo) return sec;
+  var r = calcularRango(PERIODO[sec]);
+  return sec + '|' + r.desde + '|' + r.hasta + '|' + (r.ant_desde || '') + '|' + (r.ant_hasta || '');
+}
+function pintarCargando(sec){
+  document.getElementById('cont-' + sec).innerHTML = '<div class="estado" aria-live="polite"><div class="spinner"></div><h3>Calculando estadísticas</h3><p>Se suman todos los registros en la base. Tarda unos segundos.</p></div>';
+}
+function pintarError(sec, e){
+  var red = /fetch|network|internet|Failed/i.test((e && e.message) || '');
+  document.getElementById('cont-' + sec).innerHTML = '<div class="estado error" role="alert">' + IC.alerta +
+    '<h3>No se pudieron cargar las estadísticas</h3><p>' + (red ? 'Revisa tu internet y vuelve a intentar.' : esc((e && e.message) || 'Error desconocido')) + '</p>' +
+    '<button class="btn btn-primary" data-reintentar="' + sec + '">Reintentar</button></div>';
+}
+async function cargarSeccion(sec, forzar){
+  var clave = claveCache(sec);
+  if (!forzar && DATOS[sec] && DATOS[sec].clave === clave) { dibujar(sec); return; }
+  var n = PEDIDO[sec] = (PEDIDO[sec] || 0) + 1;
+  pintarCargando(sec);
+  var params = {};
+  if (!SECCIONES[sec].sinPeriodo) {
+    var r = calcularRango(PERIODO[sec]);
+    params = { p_desde: r.desde, p_hasta: r.hasta, p_ant_desde: r.ant_desde, p_ant_hasta: r.ant_hasta };
+  }
+  try {
+    var res = await sb.rpc(SECCIONES[sec].fn, params);
+    if (n !== PEDIDO[sec]) return; // llegó tarde: el usuario ya pidió otro período
+    if (res.error) {
+      if (res.error.code === '42501') { mostrarRestringido('Tu usuario ya no tiene permiso para ver las estadísticas.'); return; }
+      throw res.error;
+    }
+    if (!res.data) throw new Error('La base no devolvió datos.');
+    DATOS[sec] = { clave: clave, d: res.data };
+    if (VISTA === sec) dibujar(sec);
+  } catch (e) {
+    if (n !== PEDIDO[sec]) return;
+    console.error('cargarSeccion', sec, e);
+    if (VISTA === sec) pintarError(sec, e);
+  }
+}
+function dibujar(sec){
+  // Limpia gráficos y tablas viejas de esta sección
+  Object.keys(GRAFICOS).forEach(function(id){ if (id.indexOf(sec + '-') === 0) { try { GRAFICOS[id].destroy(); } catch (e) {} delete GRAFICOS[id]; } });
+  Object.keys(TABLAS).forEach(function(id){ if (id.indexOf(sec + '-') === 0) delete TABLAS[id]; });
+  GRAF_PENDIENTES = [];
+  var d = DATOS[sec].d;
+  CTX.sec = sec;
+  CTX.comparar = SECCIONES[sec].sinPeriodo ? false : calcularRango(PERIODO[sec]).comparar;
+  CTX.p = d.periodo || null;
+  try {
+    document.getElementById('cont-' + sec).innerHTML = SECCIONES[sec].render(d);
+  } catch (e) {
+    console.error('dibujar', sec, e);
+    pintarError(sec, new Error('No se pudo dibujar la pantalla: ' + e.message));
+    return;
+  }
+  if (d.periodo) textoPeriodo(sec, d.periodo);
+  var pend = GRAF_PENDIENTES; GRAF_PENDIENTES = [];
+  pend.forEach(function(f){ try { f(); } catch (e) { console.error('grafico', e); } });
+}
+
+// ===== Piezas de la pantalla =====
+var CTX = { sec: null, comparar: true, p: null };
+function bloque(titulo, texto){
+  return '<div class="bloque"><div class="bloque-eyebrow"><span class="lbl">' + esc(titulo) + '</span><span class="line"></span></div>' + (texto ? '<p>' + texto + '</p>' : '') + '</div>';
+}
+function nota(html, aviso){ return '<div class="nota' + (aviso ? ' aviso' : '') + '">' + (aviso ? IC.alerta : IC.info) + '<div>' + html + '</div></div>'; }
+function formatear(v, f){
+  if (f === 'money') return fmt(v);
+  if (f === 'pct') return fmtPct(v);
+  if (f === 'dias') return v == null ? '—' : fmtDec(v, Number(v) % 1 ? 1 : 0) + ' días';
+  if (f === 'dec') return v == null ? '—' : fmtDec(v, 1);
+  return v == null ? '—' : fmtN(v);
+}
+// sentido: 'sube' (subir es bueno), 'baja' (bajar es bueno) o 'neutro'
+function delta(act, ant, sentido, f){
+  if (!CTX.comparar || ant === undefined) return '';
+  if (act == null || ant == null) return '<span class="delta neutro">sin dato antes</span>';
+  var a = num(act), b = num(ant);
+  var antTxt = '<span class="delta-ant">antes ' + formatear(b, f) + '</span>';
+  if (f === 'pct' || f === 'dias') {
+    var dif = a - b;
+    if (Math.abs(dif) < 0.05) return '<span class="delta neutro">igual</span> ' + antTxt;
+    var cl1 = sentido === 'neutro' ? 'neutro' : ((dif > 0) === (sentido === 'sube') ? 'bien' : 'mal');
+    return '<span class="delta ' + cl1 + '">' + (dif > 0 ? '↑ ' : '↓ ') + fmtDec(Math.abs(dif), 1) + (f === 'pct' ? ' pts' : ' días') + '</span> ' + antTxt;
+  }
+  if (a === 0 && b === 0) return '<span class="delta neutro">sin movimiento</span>';
+  if (b === 0) return '<span class="delta neutro">antes en cero</span>';
+  var pct = (a - b) / Math.abs(b) * 100;
+  if (Math.abs(pct) < 0.05) return '<span class="delta neutro">igual</span> ' + antTxt;
+  var cl = sentido === 'neutro' ? 'neutro' : ((pct > 0) === (sentido === 'sube') ? 'bien' : 'mal');
+  return '<span class="delta ' + cl + '">' + (pct > 0 ? '↑ ' : '↓ ') + fmtDec(Math.abs(pct), 1) + '%</span> ' + antTxt;
+}
+// o: {l, v, f, s, ant, sentido, tono}
+function kpi(o){
+  var d = (o.ant !== undefined) ? delta(o.v, o.ant, o.sentido || 'sube', o.f) : '';
+  return '<div class="kpi' + (o.tono ? ' ' + o.tono : '') + '"><div class="kpi-l">' + esc(o.l) + '</div>' +
+    '<div class="kpi-v">' + formatear(o.v, o.f) + '</div>' +
+    (d ? '<div class="kpi-d">' + d + '</div>' : '') +
+    (o.s ? '<div class="kpi-s">' + o.s + '</div>' : '') + '</div>';
+}
+function kpis(lista){ return '<div class="kpis">' + lista.join('') + '</div>'; }
+function card(titulo, desc, cuerpo, extra){
+  return '<div class="card"><div class="card-head"><div><h3>' + esc(titulo) + '</h3>' + (desc ? '<div class="desc">' + desc + '</div>' : '') + '</div>' + (extra || '') + '</div>' + cuerpo + '</div>';
+}
+function pct(a, b){ return num(b) ? num(a) / num(b) * 100 : null; }
+function etiquetaLetra(l){ return '<span class="etq ' + esc(l || 'Nuevo') + '">' + esc(l || 'Nuevo') + '</span>'; }
+
+// ----- Tablas: 80 filas + "Mostrar más", y "Descargar CSV" -----
+// cfg: {id, titulo, desc, cols:[{k, t, f, cls, html(v,row), csv(v,row)}], filas, vacio, limite, pie}
+function tabla(cfg){
+  var id = CTX.sec + '-' + cfg.id;
+  TABLAS[id] = { cfg: cfg, mostrar: cfg.limite || 80 };
+  var btn = (cfg.filas && cfg.filas.length) ? '<button class="btn btn-sm btn-ghost" data-csv="' + id + '">' + IC.descargar + ' Descargar CSV</button>' : '';
+  return '<div class="card"><div class="card-head"><div><h3>' + esc(cfg.titulo) + '</h3>' + (cfg.desc ? '<div class="desc">' + cfg.desc + '</div>' : '') + '</div>' + btn + '</div>' +
+    '<div id="tb-' + id + '">' + cuerpoTabla(id) + '</div></div>';
+}
+function celda(c, r){
+  var v = r[c.k];
+  if (c.html) return c.html(v, r);
+  if (c.f === 'money') return v == null ? '—' : fmt(v);
+  if (c.f === 'int') return v == null ? '—' : fmtN(v);
+  if (c.f === 'pct') return fmtPct(v);
+  if (c.f === 'dec') return v == null ? '—' : fmtDec(v, 1);
+  if (c.f === 'dias') return v == null ? '—' : fmtDec(v, Number(v) % 1 ? 1 : 0);
+  if (c.f === 'date') return fmtFecha(v);
+  if (c.f === 'mes') return esc(mesLargo(v));
+  return esc(v == null ? '—' : v);
+}
+function esNum(c){ return ['money', 'int', 'pct', 'dec', 'dias'].indexOf(c.f) >= 0 || c.num; }
+function cuerpoTabla(id){
+  var t = TABLAS[id], cfg = t.cfg, filas = cfg.filas || [];
+  if (!filas.length) return '<div class="t-vacio">' + esc(cfg.vacio || 'No hay datos en este período.') + '</div>';
+  var ver = filas.slice(0, t.mostrar);
+  var h = '<div class="tabla-wrap"><table class="t"><thead><tr>' + cfg.cols.map(function(c){
+    return '<th' + (esNum(c) ? ' class="num"' : '') + ' scope="col">' + esc(c.t) + '</th>';
+  }).join('') + '</tr></thead><tbody>' + ver.map(function(r){
+    return '<tr>' + cfg.cols.map(function(c){ return '<td class="' + (esNum(c) ? 'num ' : '') + (c.f === 'mes' || c.f === 'date' ? 'nw ' : '') + (c.cls || '') + '">' + celda(c, r) + '</td>'; }).join('') + '</tr>';
+  }).join('') + '</tbody>' + (cfg.pie ? '<tfoot><tr>' + cfg.cols.map(function(c, i){
+    var v = cfg.pie[c.k];
+    return '<td class="' + (esNum(c) ? 'num' : '') + '">' + (i === 0 && v == null ? 'Total' : (v == null ? '' : celda(c, cfg.pie))) + '</td>';
+  }).join('') + '</tr></tfoot>' : '') + '</table></div>';
+  if (filas.length > t.mostrar) {
+    h += '<div class="t-mas"><button class="btn btn-sm" data-mas="' + id + '">Mostrar más (' + fmtN(filas.length - t.mostrar) + ' restantes)</button></div>';
+  }
+  if (filas.length > 10) h += '<div class="t-cuenta">' + fmtN(Math.min(filas.length, t.mostrar)) + ' de ' + fmtN(filas.length) + ' filas</div>';
+  return h;
+}
+function valorCSV(c, r){
+  var v = r[c.k];
+  if (c.csv) return c.csv(v, r);
+  if (v == null) return '';
+  if (c.f === 'money') return num(v).toFixed(2);
+  if (c.f === 'date') return fmtFecha(v);
+  if (c.f === 'mes') return mesLargo(v);
+  if (typeof v === 'boolean') return v ? 'Sí' : 'No';
+  return v;
+}
+function descargarCSV(id){
+  var t = TABLAS[id]; if (!t) return;
+  var cfg = t.cfg;
+  var filas = [cfg.cols.map(function(c){ return c.t; })];
+  (cfg.filas || []).forEach(function(r){ filas.push(cfg.cols.map(function(c){ return valorCSV(c, r); })); });
+  var csv = '\ufeff' + filas.map(function(f){ return f.map(function(v){ return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(';'); }).join('\n');
+  var sec = id.split('-')[0];
+  var p = DATOS[sec] && DATOS[sec].d.periodo;
+  var sufijo = p ? '_' + p.desde + '_a_' + p.hasta : '_' + hoyLocal();
+  var nombre = 'estadisticas_' + id.replace(/[^a-z0-9_-]/gi, '_') + sufijo + '.csv';
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nombre;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+  toast('CSV descargado');
+}
+
+// ----- Gráficos (Chart.js) -----
+// Colores por entidad (siempre el mismo color para lo mismo). Orden fijo; lo que pase de 5 va a "Otros" en gris.
+var COL = { oro: '#d4a24e', azul: '#5b9bd5', verde: '#4ea876', violeta: '#9085e9', coral: '#e8755c', oroClaro: '#e8c583', gris: '#5f6b80', pizarra: '#8a96a8' };
+var SERIE = [COL.oro, COL.azul, COL.verde, COL.violeta, COL.oroClaro];
+var COLOR_METODO = { 'Efectivo USD': COL.oro, 'Zelle': COL.azul, 'USDT': COL.verde, 'Bolívares': COL.violeta, 'Pago Móvil': COL.oroClaro,
+  'Efectivo→USDT': COL.verde, 'Efectivo→Zelle': COL.azul, 'USDT→Bs': COL.violeta, 'Pago Bs': COL.oro, 'Descuento/devolución': COL.gris, 'Saldo a favor': COL.gris };
+function alfa(hex, a){ var n = parseInt(hex.slice(1), 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; }
+function mesEnPeriodo(m){
+  if (!CTX.p) return true;
+  var p = partes(m), fin = armar(p.y, p.m, diasDelMes(p.y, p.m));
+  return m <= CTX.p.hasta && fin >= CTX.p.desde;
+}
+function cajaGrafico(nombre, alto){ return '<div class="chart-box"' + (alto ? ' style="height:' + alto + 'px"' : '') + '><canvas id="g-' + CTX.sec + '-' + nombre + '" role="img" aria-label="Gráfico"></canvas></div>'; }
+function opcionesBase(apilado, horizontal){
+  var ejeValor = { stacked: apilado, beginAtZero: true, grid: { color: 'rgba(42,51,68,0.55)', drawTicks: false }, border: { display: false },
+    ticks: { color: '#9aa6b8', padding: 6, callback: function(v){ return fmtCorto(v); }, maxTicksLimit: 6 } };
+  var ejeCat = { stacked: apilado, grid: { display: false }, border: { color: '#2a3344' }, ticks: { color: '#9aa6b8', autoSkip: true, maxRotation: 0 } };
+  return {
+    responsive: true, maintainAspectRatio: false, animation: { duration: 350 },
+    indexAxis: horizontal ? 'y' : 'x',
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'top', align: 'start', labels: { color: '#9aa6b8', boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'rectRounded', padding: 14, font: { size: 12 },
+        generateLabels: function(chart){
+          var l = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+          l.forEach(function(x){ var ds = chart.data.datasets[x.datasetIndex]; if (ds && ds.colorBase) { x.fillStyle = ds.colorBase; x.strokeStyle = ds.colorBase; } });
+          return l;
+        } } },
+      tooltip: { backgroundColor: '#212838', borderColor: '#2a3344', borderWidth: 1, titleColor: '#eef2f8', bodyColor: '#eef2f8', padding: 10, boxPadding: 4,
+        callbacks: { label: function(c){ var v = horizontal ? c.parsed.x : c.parsed.y; return ' ' + c.dataset.label + ': ' + (c.dataset.formato === 'int' ? fmtN(v) : fmt(v)); } } }
+    },
+    scales: horizontal ? { x: ejeValor, y: ejeCat } : { x: ejeCat, y: ejeValor }
+  };
+}
+function crearGrafico(nombre, config){
+  var id = CTX.sec + '-' + nombre;
+  GRAF_PENDIENTES.push(function(){
+    var cv = document.getElementById('g-' + id); if (!cv) return;
+    if (typeof Chart === 'undefined') { cv.parentNode.innerHTML = '<div class="chart-vacio">No se pudo cargar la librería de gráficos. Revisa tu internet; las tablas de abajo tienen los mismos números.</div>'; return; }
+    Chart.defaults.font.family = "'Outfit', system-ui, sans-serif";
+    GRAFICOS[id] = new Chart(cv, config);
+  });
+}
+// Barras mes a mes. series: [{label, valores[], color, pila, formato}]. Los meses del período van en color pleno.
+function barrasMes(nombre, meses, series, opts){
+  opts = opts || {};
+  var hayDatos = series.some(function(s){ return s.valores.some(function(v){ return num(v) !== 0; }); });
+  if (!meses.length || !hayDatos) return '<div class="chart-box"><div class="chart-vacio">Todavía no hay movimientos para graficar.</div></div>';
+  var apilado = series.some(function(s){ return s.pila; });
+  var o = opcionesBase(apilado, false);
+  if (opts.formato === 'int') o.scales.y.ticks.callback = function(v){ return fmtN(v); };
+  if (series.length < 2) o.plugins.legend.display = false;
+  crearGrafico(nombre, {
+    type: 'bar',
+    data: { labels: meses.map(mesCorto), datasets: series.map(function(s){
+      return { label: s.label, data: s.valores.map(num), stack: s.pila || s.label, formato: opts.formato, colorBase: s.color,
+        backgroundColor: meses.map(function(m){ return mesEnPeriodo(m) ? s.color : alfa(s.color, 0.32); }),
+        borderColor: '#1a1f2b', borderWidth: apilado ? { top: 2 } : 0, borderRadius: 4, borderSkipped: 'start', maxBarThickness: 38 };
+    }) },
+    options: o
+  });
+  return cajaGrafico(nombre, opts.alto);
+}
+function lineasMes(nombre, meses, series, opts){
+  opts = opts || {};
+  var hayDatos = series.some(function(s){ return s.valores.some(function(v){ return v != null && num(v) !== 0; }); });
+  if (!meses.length || !hayDatos) return '<div class="chart-box"><div class="chart-vacio">Todavía no hay datos para graficar.</div></div>';
+  var o = opcionesBase(false, false);
+  if (series.length < 2) o.plugins.legend.display = false;
+  crearGrafico(nombre, {
+    type: 'line',
+    data: { labels: meses.map(mesCorto), datasets: series.map(function(s){
+      return { label: s.label, data: s.valores.map(function(v){ return v == null ? null : num(v); }), borderColor: s.color, backgroundColor: s.color,
+        borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBorderColor: '#1a1f2b', pointBorderWidth: 2, tension: 0.25, spanGaps: true };
+    }) },
+    options: o
+  });
+  return cajaGrafico(nombre, opts.alto);
+}
+// Barras horizontales por categoría. series: [{label, valores[], color, pila}]
+function barrasH(nombre, etiquetas, series, opts){
+  opts = opts || {};
+  if (!etiquetas.length) return '<div class="chart-box"><div class="chart-vacio">No hay datos en este período.</div></div>';
+  var apilado = series.some(function(s){ return s.pila; });
+  var o = opcionesBase(apilado, true);
+  o.scales.y.ticks.callback = function(v, i){ var t = etiquetas[i] || ''; return t.length > 26 ? t.slice(0, 25) + '…' : t; };
+  if (series.length < 2) o.plugins.legend.display = false;
+  if (opts.formato === 'int') o.scales.x.ticks.callback = function(v){ return fmtN(v); };
+  crearGrafico(nombre, {
+    type: 'bar',
+    data: { labels: etiquetas, datasets: series.map(function(s){
+      return { label: s.label, data: s.valores.map(num), stack: s.pila || s.label, formato: opts.formato, backgroundColor: s.colores || s.color,
+        borderColor: '#1a1f2b', borderWidth: apilado ? { right: 2 } : 0, borderRadius: 4, borderSkipped: 'start', maxBarThickness: 26 };
+    }) },
+    options: o
+  });
+  var alto = opts.alto || Math.max(200, etiquetas.length * 34 + 60);
+  return cajaGrafico(nombre, alto);
+}
+// Agrupa una lista {mes, metodo, monto} en series por método (los 5 más grandes + "Otros")
+function seriesPorMetodo(meses, filas, campo){
+  campo = campo || 'monto';
+  var totales = {};
+  filas.forEach(function(f){ totales[f.metodo] = (totales[f.metodo] || 0) + num(f[campo]); });
+  var orden = Object.keys(totales).sort(function(a, b){ return totales[b] - totales[a]; });
+  // Cada método conserva siempre su color; los que no tienen color propio (o pasan de 5) se juntan en "Otros"
+  var propios = orden.filter(function(m){ return COLOR_METODO[m] && COLOR_METODO[m] !== COL.gris; }).slice(0, 5);
+  var resto = orden.filter(function(m){ return propios.indexOf(m) < 0; });
+  var valor = function(mes, lista){ return filas.filter(function(x){ return x.mes === mes && lista.indexOf(x.metodo) >= 0; }).reduce(function(s, x){ return s + num(x[campo]); }, 0); };
+  var series = propios.map(function(m){ return { label: m, color: COLOR_METODO[m], pila: 'm', valores: meses.map(function(mes){ return valor(mes, [m]); }) }; });
+  if (resto.length) series.push({ label: 'Otros (' + resto.join(', ') + ')', color: COL.pizarra, pila: 'm', valores: meses.map(function(mes){ return valor(mes, resto); }) });
+  return series;
+}
+
+var RANGOS_DIAS = ['0 a 30 días', '31 a 60 días', '61 a 90 días', 'Más de 90 días'];
+var DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+var ORIGEN = { migracion_cxc: 'Sistema de cobros anterior', carga_inicial: 'Carga inicial', pedido_rapido: 'Pedido rápido', sin_origen: 'Sin origen' };
+var ESTADO_AP = { activo: 'Activos', vencido: 'Vencidos', completado: 'Completados', cancelado: 'Cancelados', retirado: 'Retirados', anulado: 'Anulados' };
+var SIN_COSTO = 'Ningún producto del catálogo tiene costo cargado todavía, así que la <b>ganancia por producto no se puede calcular</b>. Cuando se importen los costos desde Valery aparecerá aquí.';
+
+// =====================================================================
+// 1. RESUMEN DEL NEGOCIO
+// =====================================================================
+function renderResumen(d){
+  var s = d.saldos, k = d.kpis, M = d.meses || [];
+  var meses = M.map(function(x){ return x.mes; });
+  var deben = num(s.creditos.saldo) + num(s.apartados.saldo) + num(s.mayor.saldo);
+  var debes = num(s.proveedores.saldo);
+  var vencDeben = num(s.creditos.vencido) + num(s.apartados.vencido) + num(s.mayor.vencido);
+  var h = '';
+
+  h += bloque('Foto de hoy', 'Saldos al ' + fmtFecha(d.periodo.hoy) + '. No cambian con el período elegido.');
+  h += kpis([
+    kpi({ l: 'Te deben en créditos', v: s.creditos.saldo, f: 'money', s: fmtN(s.creditos.cuentas) + ' cuentas · vencido <span class="rojo-txt">' + fmt(s.creditos.vencido) + '</span>' }),
+    kpi({ l: 'Te deben en apartados', v: s.apartados.saldo, f: 'money', s: fmtN(s.apartados.cuentas) + ' cuentas · vencido <span class="rojo-txt">' + fmt(s.apartados.vencido) + '</span>' }),
+    kpi({ l: 'Te deben en el mayor', v: s.mayor.saldo, f: 'money', s: fmtN(s.mayor.cuentas) + ' facturas · vencido <span class="rojo-txt">' + fmt(s.mayor.vencido) + '</span>' }),
+    kpi({ l: 'Le debes a proveedores', v: debes, f: 'money', s: fmtN(s.proveedores.cuentas) + ' facturas · vencido <span class="rojo-txt">' + fmt(s.proveedores.vencido) + '</span>' }),
+    kpi({ l: 'Posición neta', v: deben - debes, f: 'money', tono: (deben - debes) >= 0 ? 'gold' : 'red', s: 'Te deben ' + fmt(deben) + ' menos lo que debes ' + fmt(debes) + '. No cuenta la mercancía en tienda ni el efectivo en caja.' }),
+    kpi({ l: 'Vencido que te deben', v: vencDeben, f: 'money', tono: 'red', s: fmtPct(pct(vencDeben, deben)) + ' de lo que te deben ya pasó su fecha' })
+  ]);
+  var filasSaldo = [
+    { c: 'Créditos del detal', saldo: s.creditos.saldo, vencido: s.creditos.vencido, cuentas: s.creditos.cuentas, cv: s.creditos.cuentas_vencidas, lado: 'Te deben' },
+    { c: 'Apartados del detal', saldo: s.apartados.saldo, vencido: s.apartados.vencido, cuentas: s.apartados.cuentas, cv: s.apartados.cuentas_vencidas, lado: 'Te deben' },
+    { c: 'Mayorista', saldo: s.mayor.saldo, vencido: s.mayor.vencido, cuentas: s.mayor.cuentas, cv: s.mayor.cuentas_vencidas, lado: 'Te deben' },
+    { c: 'Proveedores', saldo: s.proveedores.saldo, vencido: s.proveedores.vencido, cuentas: s.proveedores.cuentas, cv: s.proveedores.cuentas_vencidas, lado: 'Debes' }
+  ];
+  filasSaldo.forEach(function(f){ f.pv = pct(f.vencido, f.saldo); });
+  h += tabla({ id: 'saldos', titulo: 'Lo que te deben y lo que debes', desc: 'Vencido = cuentas con la fecha límite (o de vencimiento) ya pasada y saldo pendiente. Proveedores: saldo a favor ' + fmt(s.prov_saldo_favor) + ' · pagos en tránsito ' + fmt(s.prov_en_transito.monto) + ' (' + fmtN(s.prov_en_transito.n) + ').',
+    cols: [{ k: 'lado', t: '', cls: 'nw' }, { k: 'c', t: 'Concepto', cls: 'nw' }, { k: 'saldo', t: 'Saldo', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }, { k: 'pv', t: '% vencido', f: 'pct' }, { k: 'cuentas', t: 'Cuentas', f: 'int' }, { k: 'cv', t: 'Vencidas', f: 'int' }],
+    filas: filasSaldo });
+
+  h += bloque('Entradas y salidas del período', 'Entradas = lo cobrado en el detal más lo cobrado en el mayor (sin descuentos ni devoluciones). Salidas = lo pagado a proveedores (sin pagos en tránsito ni saldo a favor aplicado, que no es dinero que salió).');
+  h += nota('<b>Ojo con el neto:</b> las ventas de contado se cobran en Valery y no están en el sistema, y con ese dinero también se paga a proveedores. Por eso las salidas son mucho más grandes que las entradas registradas: el neto negativo no quiere decir que se esté perdiendo plata.', true);
+  var ent = num(k.cobrado_detal.act) + num(k.cobrado_mayor.act), entA = num(k.cobrado_detal.ant) + num(k.cobrado_mayor.ant);
+  var sal = num(k.pagado_prov.act), salA = num(k.pagado_prov.ant);
+  h += kpis([
+    kpi({ l: 'Entradas', v: ent, ant: entA, f: 'money', tono: 'gold', s: 'Detal ' + fmt(k.cobrado_detal.act) + ' · Mayor ' + fmt(k.cobrado_mayor.act) }),
+    kpi({ l: 'Cobrado en el detal', v: k.cobrado_detal.act, ant: k.cobrado_detal.ant, f: 'money' }),
+    kpi({ l: 'Cobrado en el mayor', v: k.cobrado_mayor.act, ant: k.cobrado_mayor.ant, f: 'money' }),
+    kpi({ l: 'Salidas a proveedores', v: sal, ant: salA, f: 'money', sentido: 'neutro' }),
+    kpi({ l: 'Neto (entradas − salidas)', v: ent - sal, ant: entA - salA, f: 'money', tono: (ent - sal) >= 0 ? 'green' : 'red' }),
+    kpi({ l: 'Ganancia por cambio de dólares', v: k.ganancia_cambio.act, ant: k.ganancia_cambio.ant, f: 'money', s: 'Lo que ganaste al pagar proveedores con cambios' })
+  ]);
+  h += card('Entradas contra salidas, mes a mes', 'Todo el histórico. En color pleno, los meses del período elegido.',
+    barrasMes('flujo', meses, [
+      { label: 'Cobrado detal', color: COL.oro, pila: 'e', valores: M.map(function(x){ return x.cobrado_detal; }) },
+      { label: 'Cobrado mayor', color: COL.oroClaro, pila: 'e', valores: M.map(function(x){ return x.cobrado_mayor; }) },
+      { label: 'Pagado a proveedores', color: COL.azul, pila: 's', valores: M.map(function(x){ return x.pagado_prov; }) }
+    ]));
+  h += tabla({ id: 'flujo', titulo: 'Entradas y salidas por mes', cols: [
+      { k: 'mes', t: 'Mes', f: 'mes' }, { k: 'cobrado_detal', t: 'Cobrado detal', f: 'money' }, { k: 'cobrado_mayor', t: 'Cobrado mayor', f: 'money' },
+      { k: 'entradas', t: 'Entradas', f: 'money' }, { k: 'pagado_prov', t: 'Pagado a proveedores', f: 'money' },
+      { k: 'neto', t: 'Neto', f: 'money', html: function(v){ return '<span class="' + (v < 0 ? 'rojo-txt' : 'verde-txt') + '">' + fmt(v) + '</span>'; } }],
+    filas: M.slice().reverse().map(function(x){ var e = num(x.cobrado_detal) + num(x.cobrado_mayor); return Object.assign({}, x, { entradas: e, neto: e - num(x.pagado_prov) }); }) });
+
+  h += bloque('Lo que te deben y lo que debes, a fin de cada mes', 'Reconstruido con los movimientos registrados: ventas, intereses y abonos del detal; facturas y abonos del mayor; facturas y pagos a proveedores. El mes en curso va hasta la fecha final del período.');
+  h += nota('No hay pagos a proveedores registrados en abril de 2026 y en mayo aparecen muchos (fue cuando se empezó a usar el sistema). Por eso la deuda con proveedores de marzo y abril puede verse más alta de lo que fue.', true);
+  h += card('Saldos a fin de mes', 'Te deben (detal = créditos + apartados), te deben en el mayor y le debes a proveedores.',
+    lineasMes('evolucion', meses, [
+      { label: 'Te deben (detal)', color: COL.oro, valores: M.map(function(x){ return num(x.deben_creditos) + num(x.deben_apartados); }) },
+      { label: 'Te deben (mayor)', color: COL.azul, valores: M.map(function(x){ return x.deben_mayor; }) },
+      { label: 'Le debes a proveedores', color: COL.violeta, valores: M.map(function(x){ return x.debes_prov; }) }
+    ]));
+  h += tabla({ id: 'evolucion', titulo: 'Saldos a fin de mes', cols: [
+      { k: 'mes', t: 'Mes', f: 'mes' }, { k: 'deben_creditos', t: 'Créditos', f: 'money' }, { k: 'deben_apartados', t: 'Apartados', f: 'money' },
+      { k: 'deben_mayor', t: 'Mayor', f: 'money' }, { k: 'te_deben', t: 'Te deben en total', f: 'money' }, { k: 'debes_prov', t: 'Debes a proveedores', f: 'money' },
+      { k: 'neta', t: 'Posición neta', f: 'money', html: function(v){ return '<span class="' + (v < 0 ? 'rojo-txt' : '') + '">' + fmt(v) + '</span>'; } }],
+    filas: M.slice().reverse().map(function(x){ var t = num(x.deben_creditos) + num(x.deben_apartados) + num(x.deben_mayor); return Object.assign({}, x, { te_deben: t, neta: t - num(x.debes_prov) }); }) });
+
+  h += bloque('Ventas registradas contra compras', 'Ventas a crédito, apartados y facturas al mayor, contra las facturas de proveedores.');
+  h += nota('<b>Las ventas de contado no están aquí:</b> se registran en Valery y no en el sistema. Las ventas reales de la tienda son mayores que estas.', true);
+  var venT = num(k.ventas_credito.act) + num(k.ventas_apartado.act) + num(k.ventas_mayor.act);
+  var venTA = num(k.ventas_credito.ant) + num(k.ventas_apartado.ant) + num(k.ventas_mayor.ant);
+  h += kpis([
+    kpi({ l: 'Ventas registradas', v: venT, ant: venTA, f: 'money', tono: 'gold' }),
+    kpi({ l: 'Vendido a crédito', v: k.ventas_credito.act, ant: k.ventas_credito.ant, f: 'money', s: 'Sin intereses' }),
+    kpi({ l: 'Apartados nuevos', v: k.ventas_apartado.act, ant: k.ventas_apartado.ant, f: 'money' }),
+    kpi({ l: 'Facturado al mayor', v: k.ventas_mayor.act, ant: k.ventas_mayor.ant, f: 'money' }),
+    kpi({ l: 'Compras a proveedores', v: k.compras_prov.act, ant: k.compras_prov.ant, f: 'money', sentido: 'neutro' })
+  ]);
+  h += card('Ventas registradas contra compras, mes a mes', 'Ventas apiladas (crédito, apartado, mayor) al lado de las compras.',
+    barrasMes('ventas', meses, [
+      { label: 'Crédito', color: COL.oro, pila: 'v', valores: M.map(function(x){ return x.ventas_credito; }) },
+      { label: 'Apartado', color: COL.oroClaro, pila: 'v', valores: M.map(function(x){ return x.ventas_apartado; }) },
+      { label: 'Mayor', color: COL.azul, pila: 'v', valores: M.map(function(x){ return x.ventas_mayor; }) },
+      { label: 'Compras a proveedores', color: COL.violeta, pila: 'c', valores: M.map(function(x){ return x.compras_prov; }) }
+    ]));
+  h += tabla({ id: 'ventas', titulo: 'Ventas registradas y compras por mes', cols: [
+      { k: 'mes', t: 'Mes', f: 'mes' }, { k: 'ventas_credito', t: 'Crédito', f: 'money' }, { k: 'ventas_apartado', t: 'Apartado', f: 'money' },
+      { k: 'ventas_mayor', t: 'Mayor', f: 'money' }, { k: 'ventas', t: 'Ventas registradas', f: 'money' }, { k: 'compras_prov', t: 'Compras', f: 'money' }],
+    filas: M.slice().reverse().map(function(x){ return Object.assign({}, x, { ventas: num(x.ventas_credito) + num(x.ventas_apartado) + num(x.ventas_mayor) }); }) });
+
+  h += bloque('Cómo te pagan', 'Cobros del período por método de pago y por día de la semana, juntando detal y mayor.');
+  var met = d.cobros_metodo || [];
+  var totMet = met.reduce(function(a, x){ return a + num(x.total); }, 0);
+  var dias = (d.cobros_dia_semana || []).map(function(x){ return Object.assign({}, x, { dia: DIAS_SEMANA[x.dow - 1], prom: x.dias ? num(x.total) / x.dias : null }); });
+  h += '<div class="grid-2">' + card('Cobros por método', 'Detal y mayor apilados.',
+      barrasH('metodos', met.map(function(x){ return x.metodo; }), [
+        { label: 'Detal', color: COL.oro, pila: 'm', valores: met.map(function(x){ return x.detal; }) },
+        { label: 'Mayor', color: COL.azul, pila: 'm', valores: met.map(function(x){ return x.mayor; }) }
+      ], { alto: 270 })) +
+    card('Cobros por día de la semana', 'Total cobrado en el período cada día de la semana.', barrasDias(dias)) + '</div>';
+  h += tabla({ id: 'metodos', titulo: 'Cobros por método', cols: [
+      { k: 'metodo', t: 'Método', cls: 'nw' }, { k: 'detal', t: 'Detal', f: 'money' }, { k: 'mayor', t: 'Mayor', f: 'money' }, { k: 'total', t: 'Total', f: 'money' },
+      { k: 'p', t: '% del total', f: 'pct' }, { k: 'n', t: 'Pagos', f: 'int' }],
+      filas: met.map(function(x){ return Object.assign({}, x, { p: pct(x.total, totMet) }); }),
+      pie: met.length ? { metodo: 'Total', detal: met.reduce(function(a, x){ return a + num(x.detal); }, 0), mayor: met.reduce(function(a, x){ return a + num(x.mayor); }, 0), total: totMet, p: 100, n: met.reduce(function(a, x){ return a + num(x.n); }, 0) } : null,
+      vacio: 'No hubo cobros en este período.' });
+  h += tabla({ id: 'dias', titulo: 'Cobros por día de la semana', desc: 'Promedio = total del día ÷ cuántas veces cayó ese día en el período.', cols: [
+      { k: 'dia', t: 'Día' }, { k: 'detal', t: 'Detal', f: 'money' }, { k: 'mayor', t: 'Mayor', f: 'money' }, { k: 'total', t: 'Total', f: 'money' },
+      { k: 'n', t: 'Pagos', f: 'int' }, { k: 'dias', t: 'Días', f: 'int' }, { k: 'prom', t: 'Promedio por día', f: 'money' }],
+      filas: dias });
+  return h;
+}
+function barrasDias(dias){
+  var hay = dias.some(function(x){ return num(x.total) > 0; });
+  if (!hay) return '<div class="chart-box"><div class="chart-vacio">No hubo cobros en este período.</div></div>';
+  var o = opcionesBase(true, false);
+  crearGrafico('dias', { type: 'bar', data: { labels: dias.map(function(x){ return x.dia.slice(0, 3); }), datasets: [
+    { label: 'Detal', data: dias.map(function(x){ return num(x.detal); }), stack: 'd', backgroundColor: COL.oro, borderColor: '#1a1f2b', borderWidth: { top: 2 }, borderRadius: 4, borderSkipped: 'start', maxBarThickness: 38 },
+    { label: 'Mayor', data: dias.map(function(x){ return num(x.mayor); }), stack: 'd', backgroundColor: COL.azul, borderColor: '#1a1f2b', borderWidth: { top: 2 }, borderRadius: 4, borderSkipped: 'start', maxBarThickness: 38 }
+  ] }, options: o });
+  return cajaGrafico('dias');
+}
+
+// =====================================================================
+// 2. CRÉDITOS Y APARTADOS (DETAL)
+// =====================================================================
+function renderDetal(d){
+  var A = d.kpis.act, B = d.kpis.ant, M = d.meses || [], C = d.cartera, CL = d.clientes;
+  var meses = M.map(function(x){ return x.mes; });
+  var h = '';
+
+  h += bloque('Ventas del período', 'Vendido = valor de lo vendido sin intereses (los intereses van aparte, más abajo). Cuenta créditos y apartados que no fueron anulados ni cancelados.');
+  h += kpis([
+    kpi({ l: 'Vendido (crédito + apartado)', v: A.vendido, ant: B.vendido, f: 'money', tono: 'gold', s: fmtN(num(A.cr_n) + num(A.ap_n)) + ' ventas' }),
+    kpi({ l: 'Créditos nuevos', v: A.cr_monto, ant: B.cr_monto, f: 'money', s: fmtN(A.cr_n) + ' créditos (antes ' + fmtN(B.cr_n) + ')' }),
+    kpi({ l: 'Apartados nuevos', v: A.ap_monto, ant: B.ap_monto, f: 'money', s: fmtN(A.ap_n) + ' apartados (antes ' + fmtN(B.ap_n) + ')' }),
+    kpi({ l: 'Venta promedio', v: A.promedio, ant: B.promedio, f: 'money', s: 'Mediana ' + fmt(A.mediana) + ' (la venta del medio)' }),
+    kpi({ l: 'Clientes que compraron', v: A.compradores, ant: B.compradores, f: 'int', s: fmtN(A.clientes_nuevos) + ' compraron por primera vez' }),
+    kpi({ l: 'Cobrado', v: A.cobrado, ant: B.cobrado, f: 'money', s: fmtN(A.pagos) + ' pagos · créditos ' + fmt(A.cobrado_cr) + ' · apartados ' + fmt(A.cobrado_ap) })
+  ]);
+  h += '<div class="grid-2">' + card('Vendido por mes', 'Créditos y apartados nuevos, sin intereses.',
+      barrasMes('vendido', meses, [
+        { label: 'Créditos', color: COL.oro, pila: 'v', valores: M.map(function(x){ return x.cr_monto; }) },
+        { label: 'Apartados', color: COL.azul, pila: 'v', valores: M.map(function(x){ return x.ap_monto; }) }
+      ])) +
+    card('Venta promedio y mediana por mes', 'Si el promedio está muy por encima de la mediana, unas pocas ventas grandes lo están subiendo.',
+      lineasMes('promedio', meses, [
+        { label: 'Promedio', color: COL.oro, valores: M.map(function(x){ return x.promedio; }) },
+        { label: 'Mediana', color: COL.azul, valores: M.map(function(x){ return x.mediana; }) }
+      ])) + '</div>';
+  h += tabla({ id: 'ventas_mes', titulo: 'Ventas por mes', cols: [
+      { k: 'mes', t: 'Mes', f: 'mes' }, { k: 'cr_n', t: 'Créditos', f: 'int' }, { k: 'cr_monto', t: 'Monto créditos', f: 'money' },
+      { k: 'ap_n', t: 'Apartados', f: 'int' }, { k: 'ap_monto', t: 'Monto apartados', f: 'money' }, { k: 'promedio', t: 'Promedio', f: 'money' },
+      { k: 'mediana', t: 'Mediana', f: 'money' }, { k: 'clientes_nuevos', t: 'Clientes nuevos', f: 'int' }],
+    filas: M.slice().reverse() });
+
+  h += bloque('Cobranza del período', 'Tasa de cobranza = lo cobrado en el período ÷ lo vendido en el período (incluye abonos de ventas viejas). "Ya cobrado de lo vendido" mira solo las ventas hechas en el período.');
+  h += kpis([
+    kpi({ l: 'Tasa de cobranza', v: pct(A.cobrado, A.vendido), ant: pct(B.cobrado, B.vendido), f: 'pct', s: 'Cobrado ' + fmt(A.cobrado) + ' de ' + fmt(A.vendido) + ' vendido' }),
+    kpi({ l: 'Ya cobrado de lo vendido', v: A.cobrado_de_lo_vendido_pct, ant: B.cobrado_de_lo_vendido_pct, f: 'pct', sentido: 'neutro', s: 'De las ventas de este período, cuánto ya pagaron. Las ventas más recientes siempre llevan menos pagado.' }),
+    kpi({ l: 'Intereses aplicados', v: A.intereses, ant: B.intereses, f: 'money', sentido: 'neutro', s: fmtN(A.intereses_n) + ' intereses · ' + fmtN(A.perdonados_n) + ' perdonados (valían ' + fmt(A.perdonado_monto) + ')' }),
+    kpi({ l: 'Créditos terminados', v: A.cr_terminados, ant: B.cr_terminados, f: 'int', s: 'Tardaron ' + formatear(A.cr_dias_terminar, 'dias') + ' en promedio · ' + fmtPct(A.cr_a_tiempo_pct) + ' a tiempo' }),
+    kpi({ l: 'Apartados completados', v: A.ap_completados, ant: B.ap_completados, f: 'int', s: 'Tardaron ' + formatear(A.ap_dias_completar, 'dias') + ' en promedio' }),
+    kpi({ l: 'Apartados del período ya completados', v: A.ap_completado_pct, ant: B.ap_completado_pct, f: 'pct', sentido: 'neutro', s: 'De los apartados que empezaron en el período (los recientes todavía están pagando)' })
+  ]);
+  var mm = d.meses_metodo || [];
+  h += card('Cobrado por mes, por método', 'Todos los abonos vivos del detal (créditos y apartados), como en la app.',
+    barrasMes('cobrado_metodo', meses, seriesPorMetodo(meses, mm)));
+  h += '<div class="grid-2">' + tabla({ id: 'cob_metodo', titulo: 'Cobrado por método', cols: [{ k: 'metodo', t: 'Método' }, { k: 'n', t: 'Abonos', f: 'int' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'p', t: '%', f: 'pct' }],
+      filas: (d.cobrado_metodo || []).map(function(x){ return Object.assign({}, x, { p: pct(x.monto, A.cobrado) }); }), vacio: 'No hubo cobros en este período.' }) +
+    tabla({ id: 'cob_usuario', titulo: 'Cobrado por quién lo registró', cols: [{ k: 'usuario', t: 'Usuario' }, { k: 'n', t: 'Abonos', f: 'int' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'p', t: '%', f: 'pct' }],
+      filas: (d.cobrado_usuario || []).map(function(x){ return Object.assign({}, x, { p: pct(x.monto, A.cobrado) }); }), vacio: 'No hubo cobros en este período.' }) + '</div>';
+  h += tabla({ id: 'cob_cuenta', titulo: 'Cobrado por cuenta destino', desc: 'La cuenta a la que llegó el Zelle o la transferencia, como la escribieron (sin acentos y en mayúsculas para agruparla). El efectivo no lleva cuenta.',
+    cols: [{ k: 'cuenta', t: 'Cuenta destino', cls: 'nombre' }, { k: 'n', t: 'Abonos', f: 'int' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'p', t: '%', f: 'pct' }],
+    filas: (d.cobrado_cuenta || []).map(function(x){ return Object.assign({}, x, { p: pct(x.monto, A.cobrado) }); }), vacio: 'No hubo cobros en este período.' });
+
+  h += bloque('Cartera viva (hoy)', 'Lo que te deben hoy en créditos y apartados activos o vencidos. No cambia con el período.');
+  h += kpis([
+    kpi({ l: 'Te deben en el detal', v: C.deuda, f: 'money', tono: 'gold', s: fmtN(C.clientes) + ' clientes · ' + fmtN(C.cuentas) + ' cuentas' }),
+    kpi({ l: 'En créditos', v: C.deuda_cr, f: 'money' }),
+    kpi({ l: 'En apartados', v: C.deuda_ap, f: 'money' }),
+    kpi({ l: 'Créditos vencidos', v: C.vencido_cr, f: 'money', tono: 'red', s: fmtN(C.vencido_cr_n) + ' créditos con la fecha límite pasada' }),
+    kpi({ l: 'Apartados vencidos', v: C.vencido_ap, f: 'money', tono: 'red', s: fmtN(C.vencido_ap_n) + ' apartados con la fecha límite pasada' }),
+    kpi({ l: 'Clientes que nunca han pagado', v: C.nunca_pagaron, f: 'int', s: 'Deben algo y no tienen ningún abono en sus cuentas vivas' })
+  ]);
+  var ant = (C.antiguedad || []).map(function(x){ return Object.assign({}, x, { rango_t: RANGOS_DIAS[x.rango], p: pct(x.deuda, C.deuda) }); });
+  var sp = (C.sin_pagar || []).map(function(x){ return Object.assign({}, x, { rango_t: RANGOS_DIAS[x.rango], p: pct(x.deuda, C.deuda) }); });
+  var colsCartera = [{ k: 'rango_t', t: 'Rango', cls: 'nw' }, { k: 'clientes', t: 'Clientes', f: 'int' }, { k: 'deuda', t: 'Deuda', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }, { k: 'p', t: '% de la deuda', f: 'pct' }];
+  h += '<div class="grid-2">' + tabla({ id: 'antiguedad', titulo: 'Por antigüedad', desc: 'Igual que en Cobranza: cada cliente cae en el rango de su cuenta viva más vieja (días desde que empezó).', cols: colsCartera, filas: ant }) +
+    tabla({ id: 'sin_pagar', titulo: 'Por días sin pagar', desc: 'Días desde el último abono de sus cuentas vivas; si nunca pagó, desde que empezó la cuenta más vieja. Igual que en Cobranza.', cols: colsCartera, filas: sp }) + '</div>';
+  h += card('Deuda por antigüedad y por días sin pagar', 'Cuánto de la deuda está en cada rango.',
+    barrasH('cartera', RANGOS_DIAS, [
+      { label: 'Por antigüedad', color: COL.oro, valores: ant.map(function(x){ return x.deuda; }) },
+      { label: 'Por días sin pagar', color: COL.azul, valores: sp.map(function(x){ return x.deuda; }) }
+    ], { alto: 260 }));
+
+  h += bloque('Créditos terminados y apartados completados', 'Cuántos terminaron de pagar cada mes y cuántos días tardaron desde que empezaron.');
+  h += card('Terminados por mes', 'Créditos pagados completos y apartados completados.',
+    barrasMes('terminados', meses, [
+      { label: 'Créditos terminados', color: COL.oro, valores: M.map(function(x){ return x.cr_terminados; }) },
+      { label: 'Apartados completados', color: COL.azul, valores: M.map(function(x){ return x.ap_completados; }) }
+    ], { formato: 'int' }));
+  h += tabla({ id: 'terminados', titulo: 'Terminados por mes', cols: [
+      { k: 'mes', t: 'Mes', f: 'mes' }, { k: 'cr_terminados', t: 'Créditos terminados', f: 'int' }, { k: 'a_tiempo', t: '% a tiempo', f: 'pct' },
+      { k: 'cr_dias_terminar', t: 'Días promedio', f: 'dias' }, { k: 'ap_completados', t: 'Apartados completados', f: 'int' }, { k: 'ap_dias_completar', t: 'Días promedio', f: 'dias' }],
+    filas: M.slice().reverse().map(function(x){ return Object.assign({}, x, { a_tiempo: pct(x.cr_terminados_a_tiempo, x.cr_terminados) }); }) });
+  var est = (d.apartados_estado || []).map(function(x){ return Object.assign({}, x, { estado_t: ESTADO_AP[x.estado] || x.estado }); });
+  var totApP = est.reduce(function(a, x){ return a + num(x.n); }, 0), totApT = est.reduce(function(a, x){ return a + num(x.n_total); }, 0);
+  est.forEach(function(x){ x.p = pct(x.n, totApP); x.pt = pct(x.n_total, totApT); });
+  h += tabla({ id: 'ap_estado', titulo: 'Apartados por estado', desc: 'Los que empezaron en el período y todos los que hay. Tasa de completado = completados ÷ todos los que empezaron.',
+    cols: [{ k: 'estado_t', t: 'Estado' }, { k: 'n', t: 'Del período', f: 'int' }, { k: 'monto', t: 'Monto del período', f: 'money' }, { k: 'p', t: '% del período', f: 'pct' },
+      { k: 'n_total', t: 'Todos', f: 'int' }, { k: 'monto_total', t: 'Monto de todos', f: 'money' }, { k: 'pt', t: '% de todos', f: 'pct' }],
+    filas: est });
+
+  h += bloque('Plazos', 'Plazo que se le dio a cada venta del período.');
+  var pr = (d.plazos_real || []), RANGO_PLAZO = ['Hasta 15 días', '16 a 30 días', '31 a 45 días', '46 a 60 días', '61 a 90 días', 'Más de 90 días'];
+  var filasPlazo = RANGO_PLAZO.map(function(t, i){
+    var c = pr.find(function(x){ return x.tipo === 'credito' && x.rango === i; }), a = pr.find(function(x){ return x.tipo === 'apartado' && x.rango === i; });
+    return { rango: t, cr: c ? c.n : 0, ap: a ? a.n : 0 };
+  }).filter(function(x){ return x.cr || x.ap; });
+  h += '<div class="grid-2">' + tabla({ id: 'plazo_dias', titulo: 'Plazo de los créditos (plazo_dias)', desc: 'El plazo que se eligió al crear el crédito.',
+      cols: [{ k: 'dias', t: 'Plazo', html: function(v){ return fmtN(v) + ' días'; }, csv: function(v){ return v; } }, { k: 'n', t: 'Créditos', f: 'int' }, { k: 'monto', t: 'Vendido', f: 'money' }],
+      filas: d.plazos_credito || [] }) +
+    tabla({ id: 'plazo_real', titulo: 'Plazo real hasta la fecha límite', desc: 'Días entre el inicio y la fecha límite de cada cuenta del período (puede haberse movido la fecha).',
+      cols: [{ k: 'rango', t: 'Plazo' }, { k: 'cr', t: 'Créditos', f: 'int' }, { k: 'ap', t: 'Apartados', f: 'int' }], filas: filasPlazo }) + '</div>';
+
+  h += bloque('Intereses', 'Interés del 10% mensual sobre el saldo. Los perdonados quedan en $0 con nota: se muestra lo que valían.');
+  h += card('Intereses aplicados por mes', '', barrasMes('intereses', meses, [{ label: 'Intereses aplicados', color: COL.oro, valores: M.map(function(x){ return x.intereses; }) }]));
+  h += tabla({ id: 'intereses', titulo: 'Intereses por mes', cols: [
+      { k: 'mes', t: 'Mes', f: 'mes' }, { k: 'intereses', t: 'Aplicado', f: 'money' }, { k: 'intereses_n', t: 'Cantidad', f: 'int' },
+      { k: 'perdonados_n', t: 'Perdonados', f: 'int' }, { k: 'perdonado_monto', t: 'Lo que valían', f: 'money' }],
+    filas: M.slice().reverse(),
+    pie: { mes: null, intereses: M.reduce(function(a, x){ return a + num(x.intereses); }, 0), intereses_n: M.reduce(function(a, x){ return a + num(x.intereses_n); }, 0),
+      perdonados_n: M.reduce(function(a, x){ return a + num(x.perdonados_n); }, 0), perdonado_monto: M.reduce(function(a, x){ return a + num(x.perdonado_monto); }, 0) } });
+
+  h += bloque('Clientes', 'Una compra = un día en que el cliente abrió al menos un crédito o apartado.');
+  h += kpis([
+    kpi({ l: 'Clientes con compras', v: CL.con_compras, f: 'int', s: fmtN(CL.registrados) + ' registrados en total' }),
+    kpi({ l: 'Clientes recurrentes', v: pct(CL.recurrentes, CL.con_compras), f: 'pct', s: fmtN(CL.recurrentes) + ' clientes han comprado más de una vez' }),
+    kpi({ l: 'Clientes nuevos', v: A.clientes_nuevos, ant: B.clientes_nuevos, f: 'int', s: 'Su primera compra fue en el período' }),
+    kpi({ l: 'Repitieron en el período', v: CL.repiten_periodo, f: 'int', s: 'Ya habían comprado antes y volvieron' })
+  ]);
+  h += card('Clientes nuevos por mes', 'Clientes cuya primera compra fue ese mes.',
+    barrasMes('nuevos', meses, [{ label: 'Clientes nuevos', color: COL.oro, valores: M.map(function(x){ return x.clientes_nuevos; }) }], { formato: 'int' }));
+
+  h += '<div class="formula"><h4>Puntaje real de pago</h4>El campo "score" de los clientes está en B para todos, así que aquí se calcula uno por lo que de verdad hace cada cliente:' +
+    '<ul><li><b>Puntualidad (70%)</b>: cada cuenta ya cerrada o ya vencida vale 100 si se pagó completa hasta 5 días después de su fecha límite, y pierde 2 puntos por cada día de atraso adicional (llega a 0 con 55 días de atraso). Las cuentas que siguen debiendo y ya vencieron cuentan los días de atraso hasta hoy. Se promedian todas sus cuentas.</li>' +
+    '<li><b>Ritmo actual (30%)</b>: 100 si no debe nada o pagó hace 30 días o menos; 50 si lleva 31 a 60 días sin pagar; 20 si lleva 61 a 90; 0 si lleva más de 90.</li></ul>' +
+    'Puntaje = 0,7 × puntualidad + 0,3 × ritmo. <b>A</b>: 85 o más · <b>B</b>: 70 a 84 · <b>C</b>: 50 a 69 · <b>D</b>: menos de 50 · <b>Nuevo</b>: todavía no tiene cuentas cerradas ni vencidas.</div><div style="height:14px"></div>';
+  var letras = (CL.letras || []).slice().sort(function(a, b){ return 'ABCDNuevo'.indexOf(a.letra) - 'ABCDNuevo'.indexOf(b.letra); });
+  var totLet = letras.reduce(function(a, x){ return a + num(x.n); }, 0);
+  h += tabla({ id: 'letras', titulo: 'Clientes por puntaje', cols: [{ k: 'letra', t: 'Puntaje', html: function(v){ return etiquetaLetra(v); }, csv: function(v){ return v; } },
+      { k: 'n', t: 'Clientes', f: 'int' }, { k: 'p', t: '% de clientes', f: 'pct' }, { k: 'deuda', t: 'Deuda hoy', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }],
+    filas: letras.map(function(x){ return Object.assign({}, x, { p: pct(x.n, totLet) }); }) });
+
+  var colLetra = { k: 'letra', t: 'Puntaje', html: function(v, r){ return etiquetaLetra(v) + (r.puntaje != null ? ' <span class="suave" style="display:inline">' + fmtN(r.puntaje) + '</span>' : ''); }, csv: function(v, r){ return v + (r.puntaje != null ? ' (' + r.puntaje + ')' : ''); } };
+  h += tabla({ id: 'top_deuda', titulo: 'Top 20 por deuda', cols: [
+      { k: 'nombre', t: 'Cliente', cls: 'nombre', html: function(v, r){ return esc(v) + '<span class="suave">' + esc(r.ciudad) + (r.telefono ? ' · ' + esc(r.telefono) : '') + '</span>'; } },
+      { k: 'deuda', t: 'Debe', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }, { k: 'dias_sin_pagar', t: 'Días sin pagar', f: 'int' }, colLetra],
+      filas: d.top_deuda || [], vacio: 'Nadie debe nada.' });
+  h += tabla({ id: 'top_compras', titulo: 'Top 20 por lo que compraron', desc: 'Compras del período (sin intereses).', cols: [
+      { k: 'nombre', t: 'Cliente', cls: 'nombre', html: function(v, r){ return esc(v) + '<span class="suave">' + esc(r.ciudad) + '</span>'; } },
+      { k: 'comprado_periodo', t: 'Compró', f: 'money' }, { k: 'cuentas_periodo', t: 'Cuentas', f: 'int' }, { k: 'comprado', t: 'Histórico', f: 'money' }, colLetra],
+      filas: d.top_compras || [], vacio: 'Nadie compró en este período.' });
+  h += tabla({ id: 'top_puntuales', titulo: 'Top 20 más puntuales', desc: 'Con al menos 2 cuentas cerradas o vencidas.', cols: [
+      { k: 'nombre', t: 'Cliente', cls: 'nombre', html: function(v, r){ return esc(v) + '<span class="suave">' + esc(r.ciudad) + '</span>'; } },
+      colLetra, { k: 'evaluadas', t: 'Cuentas', f: 'int' }, { k: 'a_tiempo', t: 'A tiempo', f: 'int' }, { k: 'atraso_prom', t: 'Atraso prom. (días)', f: 'dec' }, { k: 'comprado', t: 'Compró', f: 'money' }],
+      filas: d.top_puntuales || [] });
+  h += tabla({ id: 'top_atrasados', titulo: 'Top 20 más atrasados', cols: [
+      { k: 'nombre', t: 'Cliente', cls: 'nombre', html: function(v, r){ return esc(v) + '<span class="suave">' + esc(r.ciudad) + (r.telefono ? ' · ' + esc(r.telefono) : '') + '</span>'; } },
+      colLetra, { k: 'atraso_prom', t: 'Atraso prom. (días)', f: 'dec' }, { k: 'dias_sin_pagar', t: 'Días sin pagar', f: 'int' }, { k: 'deuda', t: 'Debe', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }],
+      filas: d.top_atrasados || [] });
+  h += tabla({ id: 'puntajes', titulo: 'Todos los clientes con su puntaje', desc: 'Ordenados del mejor al peor puntaje. Descárgalo en CSV para guardarlo.', cols: [
+      { k: 'nombre', t: 'Cliente', cls: 'nombre' }, { k: 'ciudad', t: 'Ciudad', cls: 'nw' }, colLetra, { k: 'puntualidad', t: 'Puntualidad', f: 'dec' }, { k: 'ritmo', t: 'Ritmo', f: 'int' },
+      { k: 'compras', t: 'Compras', f: 'int' }, { k: 'comprado', t: 'Compró', f: 'money' }, { k: 'evaluadas', t: 'Cuentas evaluadas', f: 'int' }, { k: 'a_tiempo', t: 'A tiempo', f: 'int' },
+      { k: 'atraso_prom', t: 'Atraso prom. (días)', f: 'dec' }, { k: 'deuda', t: 'Debe', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' },
+      { k: 'dias_sin_pagar', t: 'Días sin pagar', f: 'int' }, { k: 'ultima', t: 'Última compra', f: 'date' }, { k: 'telefono', t: 'Teléfono' }],
+    filas: d.puntajes || [] });
+
+  h += bloque('Por ciudad', 'Ciudad escrita en la ficha del cliente (Socopó junta "SOCOPO", "Socopó", "SOCOPI"...). La mayoría de las fichas no tiene ciudad.');
+  h += tabla({ id: 'ciudades', titulo: 'Ventas y deuda por ciudad', cols: [
+      { k: 'ciudad', t: 'Ciudad' }, { k: 'clientes', t: 'Clientes', f: 'int' }, { k: 'compradores', t: 'Compraron en el período', f: 'int' },
+      { k: 'vendido', t: 'Vendido en el período', f: 'money' }, { k: 'deuda', t: 'Deuda hoy', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }],
+    filas: d.ciudades || [] });
+
+  h += bloque('Por vendedor', 'Solo créditos: los apartados no guardan quién vendió. "Atrasado" = lo que todavía deben de los créditos que vendió en el período y que ya pasaron su fecha límite.');
+  h += tabla({ id: 'vendedores', titulo: 'Créditos por vendedor', cols: [
+      { k: 'vendedor', t: 'Vendedor' }, { k: 'n', t: 'Créditos', f: 'int' }, { k: 'vendido', t: 'Vendido', f: 'money' }, { k: 'promedio', t: 'Promedio', f: 'money' },
+      { k: 'pendiente', t: 'Pendiente hoy', f: 'money' }, { k: 'atrasado', t: 'Atrasado', f: 'money' }, { k: 'atrasados_n', t: 'Créditos atrasados', f: 'int' },
+      { k: 'p', t: '% atrasado', f: 'pct' }],
+    filas: (d.vendedores || []).map(function(x){ return Object.assign({}, x, { p: pct(x.atrasado, x.vendido) }); }), vacio: 'No hubo créditos en este período.' });
+
+  h += bloque('Productos', 'Lo vendido en créditos y apartados del período, por producto y por categoría del catálogo.');
+  var en = d.enlace || {};
+  h += nota('De ' + fmtN(en.lineas) + ' renglones vendidos, <b>' + fmtN(en.por_id) + '</b> están enlazados al catálogo, <b>' + fmtN(en.por_descripcion) + '</b> se enlazaron porque su descripción es idéntica a la del catálogo y <b>' + fmtN(en.sin_enlace) + '</b> no están enlazados (' + fmt(en.monto_sin_enlace) + ' de ' + fmt(en.monto) + '): esos se agrupan por su descripción y van en la categoría "Sin enlazar". Los créditos guardan los productos como texto, por eso muchos no se pueden enlazar.') + nota(SIN_COSTO, true);
+  var prods = d.productos || [], cats = d.categorias || [];
+  h += tabla({ id: 'productos', titulo: 'Productos más vendidos por monto', cols: colsProductos(true), filas: prods, vacio: 'No hubo ventas en este período.' });
+  h += tabla({ id: 'productos_cant', titulo: 'Top 20 productos por cantidad', cols: colsProductos(true),
+    filas: prods.slice().sort(function(a, b){ return num(b.cantidad) - num(a.cantidad) || num(b.monto) - num(a.monto); }).slice(0, 20), vacio: 'No hubo ventas en este período.' });
+  h += graficoCategorias(cats, 'categorias');
+  h += tabla({ id: 'categorias', titulo: 'Ventas por categoría', cols: colsCategorias(), filas: cats.map(function(x){ return Object.assign({}, x, { p: pct(x.monto, en.monto) }); }), vacio: 'No hubo ventas en este período.' });
+  return h;
+}
+function colsProductos(detal){
+  var c = [{ k: 'producto', t: 'Producto', cls: 'largo', html: function(v, r){ return esc(v) + (r.codigo ? '<span class="suave">Código ' + esc(r.codigo) + '</span>' : (r.enlazado ? '' : '<span class="suave">Sin enlazar al catálogo</span>')); } },
+    { k: 'categoria', t: 'Categoría' }, { k: 'cantidad', t: 'Cantidad', f: 'int' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'precio_prom', t: 'Precio promedio', f: 'money' }];
+  if (detal) { c.push({ k: 'en_creditos', t: 'En créditos', f: 'int' }); c.push({ k: 'en_apartados', t: 'En apartados', f: 'int' }); }
+  else c.push({ k: 'clientes', t: 'Clientes', f: 'int' });
+  return c;
+}
+function colsCategorias(){
+  return [{ k: 'categoria', t: 'Categoría' }, { k: 'productos', t: 'Productos distintos', f: 'int' }, { k: 'cantidad', t: 'Cantidad', f: 'int' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'p', t: '% del monto', f: 'pct' }];
+}
+function graficoCategorias(cats, nombre){
+  var top = cats.filter(function(x){ return x.categoria !== 'Sin enlazar'; }).slice(0, 10);
+  return card('Las 10 categorías que más venden', 'Solo productos enlazados al catálogo (lo "Sin enlazar" no tiene categoría).',
+    barrasH(nombre, top.map(function(x){ return x.categoria; }), [{ label: 'Monto', color: COL.oro, valores: top.map(function(x){ return x.monto; }) }]));
+}
+
+// =====================================================================
+// 3. MAYORISTA
+// =====================================================================
+function renderMayorista(d){
+  var A = d.kpis.act, B = d.kpis.ant, M = d.meses || [], D = d.deuda;
+  var meses = M.map(function(x){ return x.mes; });
+  var h = '';
+  h += bloque('Ventas y cobros del período', 'Cobrado = abonos de los clientes. Los descuentos y devoluciones bajan la deuda pero no son dinero cobrado: van aparte.');
+  h += kpis([
+    kpi({ l: 'Facturado', v: A.facturado, ant: B.facturado, f: 'money', tono: 'gold', s: fmtN(A.facturas) + ' facturas (antes ' + fmtN(B.facturas) + ')' }),
+    kpi({ l: 'Cobrado', v: A.cobrado, ant: B.cobrado, f: 'money', s: fmtN(A.abonos) + ' abonos' }),
+    kpi({ l: 'Descuentos y devoluciones', v: A.descuentos, ant: B.descuentos, f: 'money', sentido: 'baja', s: 'No es dinero cobrado' }),
+    kpi({ l: 'Venta promedio por factura', v: A.promedio, ant: B.promedio, f: 'money' }),
+    kpi({ l: 'Clientes que compraron', v: A.clientes_compraron, ant: B.clientes_compraron, f: 'int' }),
+    kpi({ l: 'Unidades vendidas', v: A.unidades, ant: B.unidades, f: 'int' })
+  ]);
+  h += nota('El <b>origen</b> solo dice cómo entró la factura al sistema: <b>Sistema de cobros anterior</b> (traídas del sistema viejo), <b>Carga inicial</b> (cargadas a mano desde notas de Valery o el cuaderno) y <b>Pedido rápido</b> (hechas en la app). Las tres son ventas reales con su fecha real.');
+  h += card('Facturado por mes, por origen', 'Todo el histórico. En color pleno, los meses del período elegido.',
+    barrasMes('facturado', meses, [
+      { label: ORIGEN.migracion_cxc, color: COL.oro, pila: 'f', valores: M.map(function(x){ return x.fact_migracion; }) },
+      { label: ORIGEN.carga_inicial, color: COL.azul, pila: 'f', valores: M.map(function(x){ return x.fact_carga; }) },
+      { label: ORIGEN.pedido_rapido, color: COL.verde, pila: 'f', valores: M.map(function(x){ return x.fact_pedido; }) },
+      { label: 'Otro', color: COL.gris, pila: 'f', valores: M.map(function(x){ return x.fact_otro; }) }
+    ].filter(function(s){ return s.valores.some(function(v){ return num(v); }); })));
+  var mm = (d.meses_metodo || []).filter(function(x){ return x.metodo !== 'Descuento/devolución'; });
+  var series = seriesPorMetodo(meses, mm);
+  var desc = M.map(function(x){ return x.descuentos; });
+  if (desc.some(function(v){ return num(v); })) series.push({ label: 'Descuento/devolución (no es cobro)', color: COL.gris, pila: 'd', valores: desc });
+  h += card('Cobrado por mes, por método', 'Los descuentos y devoluciones van en una barra aparte.', barrasMes('cobrado', meses, series));
+  h += tabla({ id: 'meses', titulo: 'Facturado y cobrado por mes', cols: [
+      { k: 'mes', t: 'Mes', f: 'mes' }, { k: 'facturas', t: 'Facturas', f: 'int' }, { k: 'facturado', t: 'Facturado', f: 'money' }, { k: 'clientes', t: 'Clientes', f: 'int' },
+      { k: 'fact_migracion', t: 'Cobros anterior', f: 'money' }, { k: 'fact_carga', t: 'Carga inicial', f: 'money' }, { k: 'fact_pedido', t: 'Pedido rápido', f: 'money' },
+      { k: 'cobrado', t: 'Cobrado', f: 'money' }, { k: 'descuentos', t: 'Descuentos', f: 'money' }],
+    filas: M.slice().reverse() });
+  h += tabla({ id: 'origen', titulo: 'Facturas por origen', cols: [
+      { k: 'origen', t: 'Origen', cls: 'nombre', html: function(v){ return esc(ORIGEN[v] || v); }, csv: function(v){ return ORIGEN[v] || v; } },
+      { k: 'n', t: 'Del período', f: 'int' }, { k: 'monto', t: 'Monto del período', f: 'money' }, { k: 'n_total', t: 'Todas', f: 'int' }, { k: 'monto_total', t: 'Monto de todas', f: 'money' }, { k: 'saldo', t: 'Deben hoy', f: 'money' }],
+      filas: d.origen || [] });
+  h += tabla({ id: 'metodos', titulo: 'Cobrado por método', cols: [
+      { k: 'metodo', t: 'Método', html: function(v, r){ return esc(v) + (r.es_descuento ? ' <span class="etq gris">no es cobro</span>' : ''); }, csv: function(v){ return v; } },
+      { k: 'n', t: 'Abonos', f: 'int' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'p', t: '% de lo cobrado', f: 'pct' }],
+      filas: (d.cobrado_metodo || []).map(function(x){ return Object.assign({}, x, { p: x.es_descuento ? null : pct(x.monto, A.cobrado) }); }), vacio: 'No hubo abonos en este período.' });
+
+  h += bloque('Deuda de los clientes (hoy)', 'Vencida = facturas con la fecha de vencimiento pasada y saldo pendiente. No cambia con el período.');
+  h += kpis([
+    kpi({ l: 'Te deben en el mayor', v: D.total, f: 'money', tono: 'gold', s: fmtN(D.clientes) + ' clientes · ' + fmtN(D.facturas) + ' facturas' }),
+    kpi({ l: 'Vencido', v: D.vencido, f: 'money', tono: 'red', s: fmtN(D.vencido_facturas) + ' facturas · ' + fmtPct(pct(D.vencido, D.total)) + ' de la deuda' }),
+    kpi({ l: 'Vence en 7 días', v: D.vence_7, f: 'money', s: fmtN(D.vence_7_n) + ' facturas' }),
+    kpi({ l: 'Vence en 15 días', v: D.vence_15, f: 'money', s: fmtN(D.vence_15_n) + ' facturas' }),
+    kpi({ l: 'Vence en 30 días', v: D.vence_30, f: 'money', s: fmtN(D.vence_30_n) + ' facturas' }),
+    kpi({ l: 'Días promedio en pagar', v: D.dias_pago_prom, f: 'dias', s: 'Pesado por monto: ' + formatear(D.dias_pago_ponderado, 'dias') + '. Abonos aplicados a lo más viejo primero.' })
+  ]);
+  var nombres = (D.top3_nombres || []);
+  h += nota('<b>Concentración:</b> el cliente que más debe (' + esc(nombres[0] || '—') + ') tiene el <b>' + fmtPct(D.top1_pct) + '</b> de la deuda; los 3 que más deben (' + nombres.map(esc).join(', ') + ') tienen el <b>' + fmtPct(D.top3_pct) + '</b>.', num(D.top3_pct) >= 60);
+  var antM = (D.antiguedad || []).map(function(x){ return Object.assign({}, x, { rango_t: RANGOS_DIAS[x.rango], p: pct(x.saldo, D.total) }); });
+  var VENC = ['Al día (todavía no vence)', 'Vencida 1 a 30 días', 'Vencida 31 a 60 días', 'Vencida 61 a 90 días', 'Vencida más de 90 días'];
+  var venM = (D.vencimiento || []).map(function(x){ return Object.assign({}, x, { rango_t: VENC[x.rango], p: pct(x.saldo, D.total) }); });
+  var colsR = [{ k: 'rango_t', t: 'Rango' }, { k: 'facturas', t: 'Facturas', f: 'int' }, { k: 'saldo', t: 'Saldo', f: 'money' }, { k: 'p', t: '% de la deuda', f: 'pct' }];
+  h += '<div class="grid-2">' + tabla({ id: 'antiguedad', titulo: 'Por antigüedad', desc: 'Días desde la fecha de la factura.', cols: colsR, filas: antM }) +
+    tabla({ id: 'vencimiento', titulo: 'Por vencimiento', desc: 'Días desde que venció cada factura.', cols: colsR, filas: venM }) + '</div>';
+  var clientes = d.clientes || [];
+  var conDeuda = clientes.filter(function(x){ return num(x.deuda) > 0.01; });
+  h += card('Deuda por cliente', 'Vencido en coral, por vencer en dorado.',
+    barrasH('deuda_cli', conDeuda.map(function(x){ return x.nombre; }), [
+      { label: 'Vencido', color: COL.coral, pila: 'd', valores: conDeuda.map(function(x){ return x.vencido; }) },
+      { label: 'Por vencer', color: COL.oro, pila: 'd', valores: conDeuda.map(function(x){ return num(x.deuda) - num(x.vencido); }) }
+    ]));
+
+  h += bloque('Clientes', 'Compras de todo el histórico. Frecuencia = cada cuántos días compra en promedio (entre su primera y su última compra). Días en pagar: los abonos se aplican a las facturas más viejas primero, como en la app.');
+  h += tabla({ id: 'clientes', titulo: 'Clientes del mayor', cols: [
+      { k: 'nombre', t: 'Cliente', cls: 'nombre', html: function(v, r){ return esc(v) + (r.no_vender ? ' <span class="etq rojo">No venderle</span>' : '') + '<span class="suave">Plazo ' + fmtN(r.plazo_dias) + ' días</span>'; }, csv: function(v){ return v; } },
+      { k: 'deuda', t: 'Debe', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }, { k: 'comprado', t: 'Compró (todo)', f: 'money' }, { k: 'facturas', t: 'Facturas', f: 'int' },
+      { k: 'venta_prom', t: 'Venta promedio', f: 'money' }, { k: 'cada_dias', t: 'Compra cada (días)', f: 'dias' }, { k: 'comprado_periodo', t: 'Compró en el período', f: 'money' },
+      { k: 'cobrado_periodo', t: 'Abonó en el período', f: 'money' }, { k: 'ultima_compra', t: 'Última compra', f: 'date' }, { k: 'ultimo_abono', t: 'Último abono', f: 'date' },
+      { k: 'dias_sin_abonar', t: 'Días sin abonar', f: 'int', html: function(v){ return v == null ? '—' : '<span class="' + (v > 30 ? 'rojo-txt' : '') + '">' + fmtN(v) + '</span>'; } },
+      { k: 'dias_pago', t: 'Días prom. en pagar', f: 'dias' }, { k: 'pagadas', t: 'Facturas pagadas', f: 'int' }, { k: 'plazo_dias', t: 'Plazo', f: 'int' }],
+    filas: clientes });
+  h += tabla({ id: 'vencidas', titulo: 'Facturas vencidas', cols: [
+      { k: 'numero', t: 'N.º', f: 'int' }, { k: 'nombre', t: 'Cliente', cls: 'nombre' }, { k: 'saldo', t: 'Debe', f: 'money' }, { k: 'total', t: 'Total factura', f: 'money' }, { k: 'fecha', t: 'Fecha', f: 'date' }, { k: 'fecha_vencimiento', t: 'Venció', f: 'date' }, { k: 'dias', t: 'Días vencida', f: 'int' }],
+      filas: d.vencidas || [], vacio: 'No hay facturas vencidas.' });
+  h += tabla({ id: 'por_vencer', titulo: 'Facturas que vencen en los próximos 30 días', cols: [
+      { k: 'numero', t: 'N.º', f: 'int' }, { k: 'nombre', t: 'Cliente', cls: 'nombre' }, { k: 'saldo', t: 'Debe', f: 'money' }, { k: 'total', t: 'Total factura', f: 'money' }, { k: 'fecha', t: 'Fecha', f: 'date' }, { k: 'fecha_vencimiento', t: 'Vence', f: 'date' }, { k: 'dias', t: 'Faltan (días)', f: 'int' }],
+      filas: d.por_vencer || [], vacio: 'Nada vence en los próximos 30 días.' });
+
+  h += bloque('Productos', 'Lo facturado al mayor en el período, por producto y por categoría del catálogo.');
+  var en = d.enlace || {};
+  h += nota('De ' + fmtN(en.lineas) + ' renglones facturados, <b>' + fmtN(en.por_id) + '</b> están enlazados al catálogo, <b>' + fmtN(en.por_descripcion) + '</b> se enlazaron por descripción idéntica y <b>' + fmtN(en.sin_enlace) + '</b> no están enlazados (' + fmt(en.monto_sin_enlace) + ' de ' + fmt(en.monto) + '): la mayoría vienen del sistema de cobros anterior, que guardaba el producto como texto.') + nota(SIN_COSTO, true);
+  var prods = d.productos || [], cats = d.categorias || [];
+  h += tabla({ id: 'productos', titulo: 'Productos más vendidos por monto', cols: colsProductos(false), filas: prods, vacio: 'No hubo ventas en este período.' });
+  h += tabla({ id: 'productos_cant', titulo: 'Top 20 productos por cantidad', cols: colsProductos(false),
+    filas: prods.slice().sort(function(a, b){ return num(b.cantidad) - num(a.cantidad) || num(b.monto) - num(a.monto); }).slice(0, 20), vacio: 'No hubo ventas en este período.' });
+  h += graficoCategorias(cats, 'categorias');
+  h += tabla({ id: 'categorias', titulo: 'Ventas por categoría', cols: colsCategorias(), filas: cats.map(function(x){ return Object.assign({}, x, { p: pct(x.monto, en.monto) }); }), vacio: 'No hubo ventas en este período.' });
+  return h;
+}
+
+// =====================================================================
+// 4. PROVEEDORES
+// =====================================================================
+function renderProveedores(d){
+  var A = d.kpis.act, B = d.kpis.ant, M = d.meses || [], D = d.deuda, CO = d.concentracion || {};
+  var meses = M.map(function(x){ return x.mes; });
+  var h = '';
+  h += bloque('Compras y pagos del período', 'Pagado = dinero que salió de verdad: no cuenta los pagos en tránsito ni el saldo a favor aplicado. La ganancia es lo que ganas al cambiar dólares (Efectivo→USDT, Efectivo→Zelle, Pago Bs, USDT→Bs).');
+  h += kpis([
+    kpi({ l: 'Comprado', v: A.comprado, ant: B.comprado, f: 'money', tono: 'gold', sentido: 'neutro', s: fmtN(A.facturas) + ' facturas de ' + fmtN(A.proveedores) + ' proveedores' }),
+    kpi({ l: 'Pagado', v: A.pagado, ant: B.pagado, f: 'money', sentido: 'neutro', s: fmtN(A.pagos) + ' pagos' }),
+    kpi({ l: 'Saldo a favor aplicado', v: A.saldo_favor, ant: B.saldo_favor, f: 'money', sentido: 'neutro', s: 'Bajó deuda sin sacar dinero' }),
+    kpi({ l: 'Ganancia por cambio', v: A.ganancia, ant: B.ganancia, f: 'money', tono: 'green', s: 'Sobre ' + fmt(A.volumen_cambio) + ' cambiados (' + fmtPct(pct(A.ganancia, A.volumen_cambio)) + ')' }),
+    kpi({ l: 'Factura promedio', v: A.promedio, ant: B.promedio, f: 'money', sentido: 'neutro' }),
+    kpi({ l: 'Pagado sobre comprado', v: pct(A.pagado, A.comprado), ant: pct(B.pagado, B.comprado), f: 'pct', s: 'Más de 100% = bajaste la deuda en el período' })
+  ]);
+  h += '<div class="grid-2">' + card('Comprado contra pagado, mes a mes', 'Todo el histórico. En color pleno, los meses del período.',
+      barrasMes('compras', meses, [
+        { label: 'Comprado', color: COL.violeta, valores: M.map(function(x){ return x.comprado; }) },
+        { label: 'Pagado', color: COL.azul, valores: M.map(function(x){ return x.pagado; }) }
+      ])) +
+    card('Ganancia por cambio, mes a mes', 'Por método de cambio.', barrasMes('ganancia', meses, seriesPorMetodo(meses, d.meses_ganancia || [], 'ganancia'))) + '</div>';
+  h += nota('No hay pagos a proveedores registrados en abril de 2026 y en mayo aparecen 432: los pagos de antes se cargaron con fecha de mayo cuando se empezó a usar el sistema.', true);
+  h += tabla({ id: 'meses', titulo: 'Compras y pagos por mes', cols: [
+      { k: 'mes', t: 'Mes', f: 'mes' }, { k: 'facturas', t: 'Facturas', f: 'int' }, { k: 'comprado', t: 'Comprado', f: 'money' }, { k: 'pagos', t: 'Pagos', f: 'int' },
+      { k: 'pagado', t: 'Pagado', f: 'money' }, { k: 'saldo_favor', t: 'Saldo a favor aplicado', f: 'money' }, { k: 'ganancia', t: 'Ganancia por cambio', f: 'money' }],
+    filas: M.slice().reverse() });
+
+  h += bloque('Deuda con proveedores (hoy)', 'Vencida = facturas con la fecha de vencimiento pasada y saldo pendiente. No cambia con el período.');
+  h += kpis([
+    kpi({ l: 'Le debes a proveedores', v: D.total, f: 'money', tono: 'gold', s: fmtN(D.proveedores) + ' proveedores · ' + fmtN(D.facturas) + ' facturas' }),
+    kpi({ l: 'Vencido', v: D.vencido, f: 'money', tono: 'red', s: fmtN(D.vencido_facturas) + ' facturas' }),
+    kpi({ l: 'Vence en 7 días', v: D.vence_7, f: 'money', s: fmtN(D.vence_7_n) + ' facturas' }),
+    kpi({ l: 'Vence en 15 días', v: D.vence_15, f: 'money', s: fmtN(D.vence_15_n) + ' facturas' }),
+    kpi({ l: 'Vence en 30 días', v: D.vence_30, f: 'money', s: fmtN(D.vence_30_n) + ' facturas' }),
+    kpi({ l: 'Días promedio de pago', v: D.dias_pago_prom, f: 'dias', s: 'Desde que llega la factura hasta el último pago. Pesado por monto: ' + formatear(D.dias_pago_ponderado, 'dias') }),
+    kpi({ l: 'Pagos en tránsito', v: D.en_transito, f: 'money', s: fmtN(D.en_transito_n) + ' pagos sin confirmar' }),
+    kpi({ l: 'Saldo a favor', v: D.saldo_favor, f: 'money', s: 'Lo que los proveedores te deben a ti' })
+  ]);
+  var antP = (D.antiguedad || []).map(function(x){ return Object.assign({}, x, { rango_t: RANGOS_DIAS[x.rango], p: pct(x.saldo, D.total) }); });
+  h += tabla({ id: 'antiguedad', titulo: 'Deuda por antigüedad', desc: 'Días desde que llegó la factura.',
+      cols: [{ k: 'rango_t', t: 'Rango' }, { k: 'facturas', t: 'Facturas', f: 'int' }, { k: 'saldo', t: 'Saldo', f: 'money' }, { k: 'p', t: '% de la deuda', f: 'pct' }], filas: antP });
+  h += tabla({ id: 'vencidas', titulo: 'Facturas vencidas', cols: [
+      { k: 'proveedor', t: 'Proveedor' }, { k: 'num', t: 'Factura' }, { k: 'saldo', t: 'Debes', f: 'money' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'llegada', t: 'Llegó', f: 'date' }, { k: 'vence', t: 'Venció', f: 'date' }, { k: 'dias', t: 'Días vencida', f: 'int' }],
+      filas: d.vencidas || [], vacio: 'No hay facturas vencidas.' });
+  h += tabla({ id: 'por_vencer', titulo: 'Facturas que vencen en los próximos 30 días', cols: [
+      { k: 'proveedor', t: 'Proveedor' }, { k: 'num', t: 'Factura' }, { k: 'llegada', t: 'Llegó', f: 'date' }, { k: 'vence', t: 'Vence', f: 'date' },
+      { k: 'dias', t: 'Faltan (días)', f: 'int' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'saldo', t: 'Debes', f: 'money' }],
+    filas: d.por_vencer || [], vacio: 'Nada vence en los próximos 30 días.' });
+
+  h += bloque('Proveedores', 'Compras y pagos del período; deuda, vencido y saldo a favor de hoy. Días de pago = promedio, en las facturas ya pagadas, desde que llegó la factura hasta su último pago.');
+  var provs = d.proveedores || [];
+  var totComp = provs.reduce(function(a, x){ return a + num(x.comprado); }, 0);
+  h += nota('<b>Concentración de las compras del período:</b> el proveedor más grande es el <b>' + fmtPct(CO.top1_pct) + '</b> de lo comprado, los 3 más grandes el <b>' + fmtPct(CO.top3_pct) + '</b> y los 5 más grandes el <b>' + fmtPct(CO.top5_pct) + '</b> (compraste a ' + fmtN(CO.proveedores) + ' proveedores).');
+  var top10 = provs.filter(function(x){ return num(x.comprado) > 0; }).slice(0, 10);
+  h += card('Los 10 proveedores a los que más compraste', 'En el período.',
+    barrasH('top_prov', top10.map(function(x){ return x.proveedor; }), [{ label: 'Comprado', color: COL.violeta, valores: top10.map(function(x){ return x.comprado; }) }]));
+  h += tabla({ id: 'proveedores', titulo: 'Ranking de proveedores', desc: 'Los que tuvieron compras o pagos en el período, o tienen deuda, saldo a favor o pagos en tránsito hoy.', cols: [
+      { k: 'proveedor', t: 'Proveedor', cls: 'nombre' }, { k: 'comprado', t: 'Comprado', f: 'money' }, { k: 'p', t: '% compras', f: 'pct' }, { k: 'facturas', t: 'Facturas', f: 'int' },
+      { k: 'pagado', t: 'Pagado', f: 'money' }, { k: 'ganancia', t: 'Ganancia cambio', f: 'money' }, { k: 'deuda', t: 'Debes hoy', f: 'money' },
+      { k: 'vencido', t: 'Vencido', f: 'money', html: function(v){ return num(v) > 0 ? '<span class="rojo-txt">' + fmt(v) + '</span>' : fmt(v); } },
+      { k: 'vence_30', t: 'Vence en 30 días', f: 'money' }, { k: 'proximo_vence', t: 'Próximo vencimiento', f: 'date' }, { k: 'dias_pago', t: 'Días de pago', f: 'dias' },
+      { k: 'saldo_favor', t: 'Saldo a favor', f: 'money' }, { k: 'en_transito', t: 'En tránsito', f: 'money' }, { k: 'comprado_total', t: 'Comprado (todo)', f: 'money' },
+      { k: 'ultima_compra', t: 'Última compra', f: 'date' }, { k: 'ultimo_pago', t: 'Último pago', f: 'date' }],
+    filas: provs.filter(function(x){ return num(x.comprado) > 0 || num(x.pagado) > 0 || num(x.deuda) > 0.01 || num(x.saldo_favor) > 0 || num(x.en_transito) > 0; })
+      .map(function(x){ return Object.assign({}, x, { p: pct(x.comprado, totComp) }); }),
+    vacio: 'Ningún proveedor tuvo compras, pagos ni saldo en este período.' });
+
+  h += bloque('Cómo pagas', 'Pagos del período por método. "Saldo a favor" no es dinero que salió.');
+  var pm = d.pagos_metodo || [];
+  h += tabla({ id: 'pagos_metodo', titulo: 'Pagos por método', cols: [
+      { k: 'metodo', t: 'Método', html: function(v, r){ return esc(v) + (r.es_saldo_favor ? ' <span class="etq gris">no salió dinero</span>' : ''); }, csv: function(v){ return v; } },
+      { k: 'n', t: 'Pagos', f: 'int' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'p', t: '% de lo pagado', f: 'pct' }, { k: 'ganancia', t: 'Ganancia', f: 'money' }],
+      filas: pm.map(function(x){ return Object.assign({}, x, { p: x.es_saldo_favor ? null : pct(x.monto, A.pagado) }); }), vacio: 'No hubo pagos en este período.' });
+  h += tabla({ id: 'ganancia_metodo', titulo: 'Ganancia por cambio, por método', desc: 'Volumen = lo pagado con ese cambio. % = ganancia ÷ volumen.', cols: [
+      { k: 'metodo', t: 'Método' }, { k: 'operaciones', t: 'Operaciones', f: 'int' }, { k: 'volumen', t: 'Volumen', f: 'money' }, { k: 'ganancia', t: 'Ganancia', f: 'money' }, { k: 'pct', t: '%', f: 'pct' }],
+      filas: d.ganancia_metodo || [], vacio: 'No hubo cambios con ganancia en este período.' });
+
+  h += bloque('Pendientes con proveedores', 'Facturas en disputa, facturas esperando documento, pagos en tránsito y devoluciones.');
+  h += tabla({ id: 'disputa', titulo: 'Facturas en disputa', cols: [
+      { k: 'proveedor', t: 'Proveedor' }, { k: 'num', t: 'Factura' }, { k: 'llegada', t: 'Llegó', f: 'date' }, { k: 'saldo', t: 'Saldo', f: 'money' }, { k: 'motivo_disputa', t: 'Motivo', cls: 'largo' }],
+      filas: d.disputa || [], vacio: 'No hay facturas en disputa.' });
+  h += tabla({ id: 'esperando_doc', titulo: 'Facturas esperando documento', cols: [
+      { k: 'proveedor', t: 'Proveedor' }, { k: 'num', t: 'Factura' }, { k: 'llegada', t: 'Llegó', f: 'date' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'saldo', t: 'Saldo', f: 'money' }],
+      filas: d.esperando_doc || [], vacio: 'Ninguna factura espera documento.' });
+  h += tabla({ id: 'transito', titulo: 'Pagos en tránsito', cols: [
+      { k: 'proveedor', t: 'Proveedor' }, { k: 'num', t: 'Factura' }, { k: 'fecha', t: 'Fecha', f: 'date' }, { k: 'metodo', t: 'Método' }, { k: 'monto', t: 'Monto', f: 'money' }],
+      filas: d.transito || [], vacio: 'No hay pagos en tránsito.' });
+  h += tabla({ id: 'devoluciones', titulo: 'Devoluciones a proveedores', cols: [
+      { k: 'proveedor', t: 'Proveedor' }, { k: 'fecha', t: 'Fecha', f: 'date' }, { k: 'descripcion', t: 'Qué se devolvió', cls: 'largo' }, { k: 'estado', t: 'Estado' }, { k: 'monto', t: 'Monto', f: 'money' }],
+      filas: d.devoluciones || [], vacio: 'No hay devoluciones registradas.' });
+  return h;
+}
+
+// =====================================================================
+// 5. INVENTARIO Y VENTAS (preparada)
+// =====================================================================
+function renderInventario(d){
+  var h = '';
+  h += '<div class="preparada"><h2>Lo que va a mostrar esta sección</h2>' +
+    '<p>Hoy el sistema solo tiene el catálogo de productos (una foto de Valery) y las ventas a crédito, apartado y al mayor. Cuando se carguen los <b>costos</b> desde Valery y las ventas del día a día se registren en el sistema, aquí verás:</p><ul>' +
+    '<li><b>Ganancia real</b>Venta menos costo, por producto, por categoría, por vendedor y por mes.</li>' +
+    '<li><b>Rotación</b>Cuántas veces se vende el inventario de cada producto y cuántos días dura en la tienda.</li>' +
+    '<li><b>Productos que no se mueven</b>Los que tienen existencia y llevan semanas o meses sin venderse.</li>' +
+    '<li><b>Valor del inventario</b>A costo y a precio de venta, por categoría y por depósito.</li>' +
+    '<li><b>Margen por categoría</b>Qué líneas dejan más plata y cuáles solo mueven volumen.</li>' +
+    '<li><b>Ventas de contado</b>Las que hoy solo están en Valery, junto a las de crédito y apartado.</li>' +
+    '</ul></div>';
+  h += nota('<b>Para activarla hace falta:</b> 1) importar el catálogo de Valery con precio, <b>costo</b> y existencia (está en pendientes); 2) registrar las ventas de contado en el sistema (Venta y Zona, que todavía no se usan). Hoy hay ' + fmtN(d.ventas_sistema) + ' ventas de prueba y ' + fmtN(d.movimientos) + ' movimientos de inventario.', true);
+  h += bloque('Lo que ya se sabe del catálogo', 'Existencia según la última carga de Valery.');
+  h += kpis([
+    kpi({ l: 'Productos activos', v: d.activos, f: 'int', s: fmtN(d.productos) + ' en total (activos e inactivos)' }),
+    kpi({ l: 'Con costo cargado', v: d.con_costo, f: 'int', tono: num(d.con_costo) ? '' : 'red', s: fmtPct(pct(d.con_costo, d.activos)) + ' de los activos. Sin costo no hay ganancia.' }),
+    kpi({ l: 'Con código de Valery', v: d.con_codigo, f: 'int', s: fmtPct(pct(d.con_codigo, d.activos)) + ' de los activos' }),
+    kpi({ l: 'Con existencia', v: d.con_existencia, f: 'int', s: fmtN(d.unidades) + ' unidades en total' }),
+    kpi({ l: 'Valor a precio de venta', v: d.valor_precio, f: 'money', tono: 'gold', s: 'Existencia × precio. A costo, todavía no se puede.' }),
+    kpi({ l: 'Con existencia negativa', v: d.existencia_negativa, f: 'int', s: 'Productos (casi todos inactivos) con existencia menor que cero en Valery' })
+  ]);
+  var cats = d.categorias || [];
+  var top = cats.slice().sort(function(a, b){ return num(b.valor_precio) - num(a.valor_precio); }).slice(0, 10);
+  h += card('Valor del inventario a precio de venta, por categoría', 'Las 10 categorías con más valor.',
+    barrasH('valor', top.map(function(x){ return x.categoria; }), [{ label: 'Valor a precio de venta', color: COL.oro, valores: top.map(function(x){ return x.valor_precio; }) }]));
+  h += tabla({ id: 'categorias', titulo: 'Productos activos por categoría', cols: [
+      { k: 'categoria', t: 'Categoría' }, { k: 'activos', t: 'Productos activos', f: 'int' }, { k: 'con_costo', t: 'Con costo', f: 'int' },
+      { k: 'con_existencia', t: 'Con existencia', f: 'int' }, { k: 'unidades', t: 'Unidades', f: 'int' }, { k: 'valor_precio', t: 'Valor a precio', f: 'money' },
+      { k: 'precio_prom', t: 'Precio promedio', f: 'money' }],
+    filas: cats });
+  return h;
+}
+
+// ===== Eventos =====
+document.addEventListener('click', function(e){
+  var b = e.target.closest('button, a'); if (!b) return;
+  if (b.dataset.vista) { irA(b.dataset.vista); return; }
+  if (b.dataset.chip) { elegirChip(b.dataset.sec, b.dataset.chip); return; }
+  if (b.dataset.aplicar) { aplicarRango(b.dataset.aplicar); return; }
+  if (b.dataset.actualizar) { cargarSeccion(b.dataset.actualizar, true); return; }
+  if (b.dataset.reintentar) { cargarSeccion(b.dataset.reintentar, true); return; }
+  if (b.dataset.csv) { descargarCSV(b.dataset.csv); return; }
+  if (b.dataset.mas) {
+    var t = TABLAS[b.dataset.mas]; if (!t) return;
+    t.mostrar += 80;
+    document.getElementById('tb-' + b.dataset.mas).innerHTML = cuerpoTabla(b.dataset.mas);
+  }
+});
+document.getElementById('btnLogin').addEventListener('click', intentarLogin);
+document.getElementById('loginPass').addEventListener('keydown', function(e){ if (e.key === 'Enter') intentarLogin(); });
+document.getElementById('loginEmail').addEventListener('keydown', function(e){ if (e.key === 'Enter') document.getElementById('loginPass').focus(); });
+document.getElementById('btnLogout').addEventListener('click', salir);
+document.getElementById('btnSalirRestringido').addEventListener('click', salir);
+document.getElementById('burger').addEventListener('click', abrirMenu);
+document.getElementById('scrim').addEventListener('click', abrirMenu);
+
+iniciarPeriodos();
+// Si la sesión se cierra en otra pestaña (o vence), volver al login
+sb.auth.onAuthStateChange(function(evento){
+  if (evento === 'SIGNED_OUT' && USUARIO) mostrarLogin('Tu sesión se cerró. Vuelve a entrar.');
+});
+// Entrada directa si ya hay sesión del Portal en este aparato
+(async function(){
+  try {
+    var s = await sb.auth.getSession();
+    if (s.data.session && s.data.session.user) await cargarUsuario(s.data.session.user);
+  } catch (e) {
+    console.error('sesion', e);
+    avisoLogin('No se pudo verificar tu sesión. Revisa el internet e intenta entrar.');
+  }
+})();
+</script>
+</body>
+</html>
