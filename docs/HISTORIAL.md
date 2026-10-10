@@ -161,6 +161,6 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
 - **Cliente nuevo (2026-10-10): ZIGAM LIBERTAD**, negocio, Libertad de Barinas, tel. 04165708020, plazo 60. Se factura a nombre de NEDAM ABOU ALJOUD ALHENNAWI, RIF E-83114251-3.
   - #168, del 03/09: nota Valery 0000029419, $8.323,97 (33 renglones, 28 enlazados). Valery dice $8.323,98 por redondeo. Vence el 02/11.
   - #169, del 10/09: nota Valery 0000029788, $258 (aire NEWKOOL $90 y 12 ventiladores $168). Vence el 09/11.
-  - Abonos: $320 por Zelle el 04/09; $90 el 10/09, que es el pago del aire hecho el mismo día y que se cargó como efectivo porque no se indicó la forma; $500 por Zelle el 21/09 y $1.000 por Zelle el 07/10.
-  - Debe $6.671,97 (8.581,97 − 1.910). Por la regla de lo más viejo primero, en la app el abono del aire baja la #168 y la #169 sale completa.
+  - Abonos: $320 por Zelle el 04/09; $90 el 10/09, que es el pago del aire hecho el mismo día y que se cargó como efectivo porque no se indicó la forma; $500 por Zelle el 21/09 y $1.500 por Zelle el 07/10. Ese último se cargó primero por $1.000 y Kinan lo corrigió; el rastro quedó en `historial_auditoria`.
+  - Debe $6.171,97 (8.581,97 − 2.410). Kinan calculaba $6.168 redondeando la nota a $8.320. Por la regla de lo más viejo primero, en la app el abono del aire baja la #168 y la #169 sale completa.
   - Sin enlace al catálogo, porque no están en la foto de junio: TV 43" Universal Royal, aire AIWA 5mil manual, split HYUNDAI 12mil inverter, lavadora SAM 9kg y cocina MYSTIC 4H Agata Plus con tapa. Las camas CAMA1.40M y CAMA1.00M se enlazaron a CAMA1,40M y CAMA1,00M (en el catálogo están con coma).
