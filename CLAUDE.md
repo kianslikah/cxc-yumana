@@ -55,6 +55,7 @@ El diseño del Portal es el estándar de TODO el ecosistema. Kinan exige **idén
 | `mayorista.html` | Ventas al mayor (~1.900 líneas). Completo | Supabase Auth (el usuario del Portal; el rol necesita `mayoristas` = completo en `portal_permisos`) |
 | `Inventario_Yumana_App.html` | Catálogo de productos | **Login propio viejo (pendiente migrar)** |
 | `Venta_prueba.html`, `zona_prueba.html` | Ventas/caja y zona de entrega | Supabase Auth |
+| `estadisticas.html` | Estadísticas del negocio: resumen, créditos y apartados, mayorista, proveedores e inventario (preparado). **Solo la ve Kinan:** además de ser admin, tiene que estar en la tabla `est_acceso` (`est_puede_ver()`). Los cálculos viven en las funciones `est_*` de la base; la copia de referencia está en `docs/sql/estadisticas.sql` | Supabase Auth + `est_acceso` |
 | `mapa_yumana.html` | Mapa 3D de operaciones, análisis y protocolos. **Va cifrado:** se edita con `herramientas/mapa/` (ver su `LEEME.md`); nunca subir las piezas sin cifrar | Clave propia (candado) + tarjeta solo admin |
 
 **JABELLA Store (negocio aparte, solo alojado aquí):** la carpeta `jabella/` es el sistema de la tienda de ropa de Albany (app.mercantilyumana.com/jabella/). Usa este mismo Supabase pero **aislado con prefijo `jab_`** (tablas, funciones, bucket `jab-fotos`, Edge Function `jab-usuarios`) y sus propios usuarios. No es parte de Yumana: no mezclar datos, no tocar objetos `jab_` desde las apps de Yumana ni objetos de Yumana desde Jabella. Su contexto está en `jabella/CLAUDE.md`. Plan futuro: mudarlo a su propio proyecto.
@@ -111,6 +112,7 @@ El detalle completo de cada entrega (funciones, columnas, decisiones) está en *
 - **Mayorista:** completo + pedido rápido desde Notas. Abono/factura/anular por RPC atómicos (`may_registrar_abono`, `may_guardar_factura`, `may_anular_*`, `may_recalcular_cliente`). Eliminar cliente y **Papelera** con restaurar (`may_eliminar_cliente`, `may_restaurar`; `bloqueo_restaurar` en los 9 retirados). Estado de cuenta por WhatsApp, marca **No venderle** (`no_vender`). Al cargar notas de Valery: el sello "PAGADO/CONTADO" es solo justificante para el traslado, no significa pagada.
 - **Proveedores:** `prov_registrar_abono` y `prov_aplicar_saldo_favor` (RPC), devoluciones como abono, rastro en `prov_auditoria`.
 - **Inventario, Portal, Control:** errores de guardado visibles, paginación con orden fijo, estados de carga.
+- **Estadísticas (2026-10-10):** app `estadisticas.html`. Todo se calcula en la base con las funciones `est_*`, guardadas con `est_exigir_acceso()`. Cada regla de dinero vive en una sola función de origen (`est_cuentas_detal`, `est_may_facturas`, `est_may_abonos`, `est_prov_abonos`…), así que el resumen cuadra con las secciones. Los descuentos del mayor, el saldo a favor y las devoluciones a proveedores no cuentan como dinero. El puntaje real de pago está en `est_puntaje_clientes()`, con las reglas en `est_reglas_puntaje()`. Detalle en `docs/HISTORIAL.md`.
 - **Skills de revisión:** `.claude/skills/` (`/thermos`, `/anti-slop-audit`, `/anti-slop-fix`).
 
 ## Cargar un cliente del mayor (cuando Kinan manda "Siguiente cliente...")
@@ -143,6 +145,11 @@ Kinan manda nombre, zona, teléfono(s), cédula o RIF, plazo (30 o 60 días) y f
 10. **Import de catálogo desde Valery (CSV/Excel)** con precio, **costo** y existencia: empareja por `codigo_valery`, agrega lo nuevo, actualiza, no borra. El catálogo actual es una foto del 2026-06-08 y **ningún producto tiene costo** → sin esto no hay ganancia. Kinan puede exportar de Valery.
 11. **Ciclo completo del producto con ganancia** (visión de Kinan, remodelación en 2-3 meses): estados en tienda → apartado → crédito → vendido sin salir → por entregar → en delivery → entregado y verificado, usando `inv_ventas`, `inv_venta_items.estado_item`, `inv_movimientos`, `inv_solicitudes_deposito`; panel de ganancia (venta − costo); login único con roles para delegar. Valery queda solo para la factura legal.
 9. Modo offline/PWA para los cortes de internet.
+16. **Estadísticas, lo que sigue:**
+    - (a) Créditos y Proveedores tienen sus propias pestañas de estadísticas viejas: algunos números salen en dos lugares y pueden no coincidir exacto. Kinan decide si se retiran cuando use la app nueva.
+    - (b) Ofrecido a Kinan: mostrar el puntaje real (`est_puntaje_clientes`) en la ficha de Créditos en vez de la "B" fija, y usarlo para el tope de crédito (pendiente 2).
+    - (c) La sección Inventario y ventas se activa cuando el inventario del día a día y los costos estén cargados (pendientes 10 y 11).
+    - (d) Para darle acceso a alguien: agregar su fila en `est_acceso` (tabla cerrada a la API; se hace desde el conector).
 15. **Sueltos de la sesión del 2026-10-09/10:**
     - ~~(a) Proveedores: 20 pagos con fecha de un día después~~ **HECHO el 2026-10-10** (ver `docs/HISTORIAL.md`).
     - (b) Yessimar: falta el monto del descuento del Split 12mil BTU Mabe.

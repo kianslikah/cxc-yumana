@@ -170,3 +170,36 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - Devolución de 1 exhibidor heladero SAYS 233L ($360), que no entró en el camión. Va con método 'Descuento/devolución' el 13/02.
   - Abonos: $2.000 por Zelle el 05/04, $1.664 por Zelle el 06/04, $10.000 en efectivo el 14/04, $2.000 por Zelle el 16/05, y $530 y $1.770 por Zelle el 19/05.
   - Debe $5.848 (24.172 − 360 − 17.964). El sistema de cobros viejo tenía la factura en $23.812 (ya sin el exhibidor) y le faltaban los abonos de mayo. Su ficha retirada, SAYEL ALBOUNAY, sigue bloqueada para restaurar.
+- **Estadísticas (2026-10-10, `estadisticas.html?v=1`):** app nueva, solo para Kinan, que la pidió "con muchísimas estadísticas y muy específicas".
+  - **Secciones:** Resumen (lo que te deben y lo que debes, entradas contra deuda pagada, saldos a fin de cada mes, cobros por método y por día), Créditos y apartados (ventas, cobranza, cartera por antigüedad, terminados, plazos, intereses, clientes, vendedores, productos y puntaje real de pago), Mayorista, Proveedores e Inventario (preparado).
+  - **En pantalla:** filtro de período comparado con el período anterior, índice "Ir a" y botón "Arriba" para el iPhone, tablas de 20 filas con "Mostrar más" y CSV de todo. La sección queda en la dirección (`#mayorista`).
+  - **Base:**
+    - Funciones públicas `est_resumen`, `est_detal`, `est_detal_puntajes` (se carga solo al tocar "Ver todos"), `est_mayorista`, `est_proveedores` y `est_inventario`. Todas llaman a `est_exigir_acceso()` (código 42501; deja pasar al conector).
+    - Las auxiliares no se pueden ejecutar desde la app.
+    - Migraciones: `est_auxiliares_y_permiso`, `est_resumen`, `est_detal`, `est_mayorista`, `est_proveedores`, `est_inventario`, `est_detal_puntaje`, `est_acceso_solo_kinan` y `est_v2_*` (base, resumen, detal, mayorista, proveedores_inventario).
+    - Copia de referencia: `docs/sql/estadisticas.sql`.
+  - **Acceso:** tabla `est_acceso` (RLS sin políticas, cerrada a la API), con solo Kinan. `est_puede_ver()` = `es_admin()` y estar en `est_acceso`. El Portal oculta la tarjeta a quien no pase `est_puede_ver()`.
+    - Probado: Kinan entra; Fayssal (admin), la cajera y anon quedan fuera.
+  - **Decisiones:**
+    - Vendido = sin intereses.
+    - Saldos = `monto_total − pagado`.
+    - Vencido = saldo con la fecha límite pasada.
+    - Días sin pagar y tramos como en Cobranza (`est_tramo_dias`, cruzado con `cobRangoDeDias`).
+    - "Descuento/devolución" del mayor, "Saldo a favor" y "Devolución" de proveedores no son dinero.
+    - A proveedores se muestra la deuda pagada, no el efectivo: `efectivo_salido` no cuadra con `monto` en los métodos de conversión.
+    - Se quitó la ciudad, porque Kinan dijo que no le sirve.
+    - Puntaje = 0,7 × puntualidad + 0,3 × ritmo:
+      - Puntualidad: 5 días de gracia, después −2 puntos por día.
+      - Ritmo por días sin pagar: hasta 30 vale 100, 31–60 vale 50, 61–90 vale 20 y más de 90 vale 0.
+      - Letras: A ≥ 85, B ≥ 70, C ≥ 50, D menos.
+  - **Revisiones antes de publicar:**
+    - Thermos (bugs y dinero): sin fallas de seguridad. Se corrigieron las devoluciones a proveedores contadas como pago, los métodos comparados sin normalizar, el monto perdonado mal leído desde $1.000 y las fórmulas en el CSV.
+    - Thermos (calidad): cada regla en una sola función de origen y una sola guardia.
+    - Anti-slop: índice, columna fija, títulos, errores en español, toques, colores desde las variables.
+    - Cuadre de antes y después idéntico en septiembre y agosto. El único cambio es 1 centavo por 6 abonos a proveedores guardados con más de 2 decimales.
+  - **Tiempos con el límite real de 8 s**, todo el histórico: entre 37 y 512 ms.
+  - **Datos que vio Kinan:**
+    - Las 630 sillas Manaplas son reales.
+    - Los créditos son de 30 días y la fecha límite se extiende cuando se negocia.
+    - El "score" de la ficha nunca se calculó (todos tienen B).
+  - **Para deshacer:** quitar la fila `estadisticas` de `portal_apps` y `portal_permisos` y revertir este commit. Las funciones `est_*` y `est_acceso` no afectan a ninguna otra app.
