@@ -115,3 +115,9 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - `#appView` ya no fuerza `min-height:100vh`.
 - **Mayorista, entrega del 2026-10-10 (`?v=20261010a`):** al registrar un abono ya no se abre sola la ventana de enviar mensaje (pedido de Kinan). Para mandar el recibo de un abono, cada abono del historial tiene un botón **WhatsApp** (`enviarAbonoWhatsApp`), que manda el monto, el método y el saldo de la cuenta del día. El resumen completo sigue en "Estado por WhatsApp". Al crear una factura nueva todavía se ofrece mandarla al grupo.
 - **Mayorista, 2026-10-10 (`?v=20261010b`):** el botón para eliminar un cliente salió del encabezado de la ficha, donde estaba junto a Abono y Editar y se podía tocar sin querer. Ahora es "Eliminar este cliente" y está al final de la ficha, debajo del historial de abonos, en un recuadro aparte (`.zona-eliminar`) con la explicación. Las confirmaciones no cambian.
+- **Mayorista, 2026-10-10 (`?v=20261010c`):**
+  - **Elegir el cliente de una factura:** ya no es una lista desplegable que quedaba en el primer cliente (Adriana). Ahora es un botón "Toca para buscar el cliente" que abre un buscador a pantalla completa (`#buscadorCliente`, `bcRender`), como el de productos.
+    - Busca por nombre, zona, teléfono, RIF o grupo, y todas las palabras deben coincidir.
+    - Muestra lo que debe cada cliente y la etiqueta de No venderle.
+    - El `select#nfCliente` queda escondido con una primera opción vacía (`opcionesClientes`), así que sin elegir cliente la factura no se guarda.
+  - **"+ Factura"** en la ficha del cliente: abre la factura nueva con ese cliente ya elegido (`abrirNuevaFactura(clienteId)`).
