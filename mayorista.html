@@ -1890,8 +1890,9 @@ function renderDetalle(){
     '<details class="det-plegable"><summary>Historial de abonos (' + abonos.length + ' · ' + fmt(totalPagado) + ')</summary>' +
     (abonos.length ? abonos.map(function(a){
       return '<div class="card" style="padding:12px 14px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">' +
-        '<div><div style="font-weight:600;">' + fmtDate(a.fecha) + '</div><div style="font-size:12px; color:var(--muted);">' + a.metodo + (a.notas?' · '+a.notas:'') + '</div></div>' +
+        '<div><div style="font-weight:600;">' + fmtDate(a.fecha) + '</div><div style="font-size:12px; color:var(--muted);">' + prEsc(a.metodo) + (a.notas?' · '+prEsc(a.notas):'') + '</div></div>' +
         '<div style="display:flex; align-items:center; gap:10px;"><div style="font-size:16px; font-weight:800; color:var(--green-soft);">' + fmt(a.monto) + '</div>' +
+        '<button class="btn btn-ghost abono-wa" data-aid="' + a.id + '" style="padding:4px 8px; font-size:11px; border-color:var(--green); color:var(--green-soft);">WhatsApp</button>' +
         (CURRENT_USER.rol === 'admin' ? '<button class="btn btn-ghost abono-anular" data-aid="' + a.id + '" style="padding:4px 8px; font-size:11px; border-color:var(--red); color:var(--red-soft);">Anular</button>' : '') + '</div>' +
       '</div>';
     }).join('') : '<div style="color:var(--muted); font-size:13px; padding:10px;">Sin abonos registrados.</div>') +
@@ -1924,6 +1925,9 @@ function renderDetalle(){
   });
   document.querySelectorAll('.abono-anular').forEach(function(el){
     el.addEventListener('click', function(e){ e.stopPropagation(); anularAbono(this.dataset.aid); });
+  });
+  document.querySelectorAll('.abono-wa').forEach(function(el){
+    el.addEventListener('click', function(e){ e.stopPropagation(); enviarAbonoWhatsApp(this.dataset.aid); });
   });
 }
 
@@ -1973,14 +1977,18 @@ async function guardarAbono(){
   document.getElementById('modalAbono').classList.remove('active');
   var aFavor = parseFloat(res.saldo_a_favor || 0);
   toast(aFavor > 0.01 ? 'Abono registrado. El cliente queda con ' + fmt(aFavor) + ' a favor' : 'Abono registrado', 's');
-  var notasAb = document.getElementById('abNotas').value.trim();
-  var ok = await cargarDatos();
+  await cargarDatos();
   renderDetalle();
-  // Ofrecer avisar al grupo del cliente: pago recibido + saldo que queda (solo si la recarga trajo el saldo nuevo)
-  if(ok){
-    var cAb = CLIENTES.find(function(x){ return x.id === abonoClienteId; });
-    if(cAb) abrirEnviar(mensajeAbono(cAb, monto, ABONO_METODO, fechaAb, notasAb, aFavor), cAb.telefono || null, cAb.whatsapp_grupo || null);
-  }
+  // Ya no se abre la ventana de envío después de cada abono (pedido de Kinan): el recibo se manda, si se quiere,
+  // con el botón WhatsApp de ese abono en el historial, y el resumen con "Estado por WhatsApp".
+}
+// Recibo de un abono por WhatsApp (botón del historial), con el saldo de la cuenta de hoy
+function enviarAbonoWhatsApp(abonoId){
+  var a = ABONOS.find(function(x){ return x.id === abonoId; });
+  var c = a && CLIENTES.find(function(x){ return x.id === a.cliente_id; });
+  if(!c) return;
+  var debe = totalesCliente(c.id).debe;
+  abrirEnviar(mensajeAbono(c, a.monto, a.metodo, a.fecha, a.notas, debe < -0.01 ? -debe : 0), c.telefono || null, c.whatsapp_grupo || null);
 }
 // Mensaje de confirmación de un abono para el grupo del cliente
 function mensajeAbono(c, monto, metodo, fecha, notas, aFavor){

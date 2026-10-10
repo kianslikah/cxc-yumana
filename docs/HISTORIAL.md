@@ -87,6 +87,7 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - **Abonos:** 2 totales del resumen con fecha 30/09: efectivo $12.477 y Zelle $14.596, sin contar los Zelle repetidos ni los que no cayeron.
     - Debe $42.953.
     - **Pendiente** (anotado en la ficha): descontar 1 TV 32" Royal y 1 Split 12mil BTU Mabe, falta el monto; entregarles 1 TV 32" TCL y 1 TV 32" Salcar arreglados.
+  - **Yessimar (2026-10-09):** se registró el descuento del TV 32" Royal ($100) como abono "Descuento/devolución" con fecha 09/10, y la deuda queda en $42.853. El Split 12mil BTU Mabe sigue pendiente porque Kinan no recuerda el monto.
   - Regla para cargar notas de Valery: el sello "PAGADO" o "CONTADO" no significa que esté pagada. Es el justificante para el camino.
   - Los números #137 a #140 se gastaron en pruebas de la papelera que se deshicieron. No falta ninguna factura.
 - **Mayorista, entrega del 2026-10-09 (`?v=20261009d`):** correcciones de la revisión `/thermos` (dos revisores) y lo que pidió Kinan.
@@ -112,3 +113,4 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - `traerTodo` desempata siempre por `id`; sin eso, con más de 1000 filas la paginación podía saltar o repetir filas.
     - `telefonosDe` usa el número completo si no reconoce ninguno (p. ej. "0414/1234567").
     - `#appView` ya no fuerza `min-height:100vh`.
+- **Mayorista, entrega del 2026-10-10 (`?v=20261010a`):** al registrar un abono ya no se abre sola la ventana de enviar mensaje (pedido de Kinan). Para mandar el recibo de un abono, cada abono del historial tiene un botón **WhatsApp** (`enviarAbonoWhatsApp`), que manda el monto, el método y el saldo de la cuenta del día. El resumen completo sigue en "Estado por WhatsApp". Al crear una factura nueva todavía se ofrece mandarla al grupo.
