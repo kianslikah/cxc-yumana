@@ -139,3 +139,15 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - **Pendiente de Kinan:** en Proveedores hay 20 pagos, de julio a octubre, que se registraron después de las 8 pm y quedaron con fecha de un día después. No se tocaron.
   - Créditos e Inventario no tenían este error.
 - **Respaldo `respaldo_20261010`:** 60 tablas de `public` (~13.600 filas), con los conteos verificados uno por uno y sin acceso para anon ni authenticated.
+- **Mayorista con el usuario del Portal y base cerrada (2026-10-10, `?v=20261010g`):**
+  - Ya no hay usuario y clave aparte (`may_usuarios`): el mayorista entra con el correo y la contraseña del Portal (Supabase Auth). Si el Portal ya está abierto en el aparato, entra directo.
+  - Para entrar hay que estar activo en `usuarios_app` y que el rol tenga `mayoristas` con nivel `completo` en `portal_permisos` (hoy solo admin). `CURRENT_USER` = id de Auth, nombre y rol de `usuarios_app`. Lo de admin (papelera, editar, anular, eliminar) sigue con `rol === 'admin'`.
+  - Salir cierra la sesión en todo el ecosistema, como en las otras apps. Si la sesión se cierra en otra pestaña, vuelve al login (`onAuthStateChange`).
+  - Se quitaron la vista Usuarios y su modal: los usuarios se manejan en Control. Las facturas y abonos nuevos guardan en `creado_por` y `registrado_por` el id de Auth (antes el de `may_usuarios`; no hay llave foránea).
+  - Base (migración `seguridad_20261010_mayorista_solo_personal`, solo agrega):
+    - Política restrictiva `solo_personal_activo` (`es_staff()`) en `may_clientes`, `may_facturas`, `may_factura_items`, `may_abonos` y `may_precios_cliente`. Las viejas `acceso_total_*` quedan, pero ya no abren nada.
+    - `may_usuarios` queda guardada y cerrada (`ya_no_se_usa`, nadie la lee por la API).
+    - Las 8 operaciones `may_*` llaman a `may_exigir_personal()` al inicio (resto del cuerpo idéntico, comprobado contra la copia) y ya no se ejecutan sin sesión. Esa guardia deja pasar al conector de Supabase, que entra directo a la base sin token, para seguir cargando clientes desde Claude Code.
+    - `may_facturas_numero_seq` sin acceso anónimo. `inv_productos`: sin sesión ya no se agregan productos (`anon_no_agrega`, el hueco era para el pedido rápido del mayorista); se sigue leyendo.
+  - Probado simulando cada rol dentro de transacciones que se deshacen: anónimo ve 0 y no puede ejecutar; un extraño con cuenta y una cuenta inactiva ven 0 y la guardia los frena; admin y cajera activa ven todo; el conector sigue operando.
+  - **Para deshacer:** borrar las políticas `solo_personal_activo` de las `may_*`, `ya_no_se_usa` y `anon_no_agrega`, y restaurar las funciones desde `respaldo_20261010.funciones_antes_login_mayorista`.

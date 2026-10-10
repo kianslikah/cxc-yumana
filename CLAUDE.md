@@ -52,7 +52,7 @@ El diseño del Portal es el estándar de TODO el ecosistema. Kinan exige **idén
 | `control.html` | Panel del dueño (solo admin): resumen, permisos, usuarios | Supabase Auth |
 | `Apartados_Yumana_App.html` | **Créditos y apartados del detal. La app más grande (~9.800 líneas) y la más crítica.** | Supabase Auth |
 | `Proveedores_yumana.html` | Facturas y pagos a proveedores. Trigger `trg_recalc_abonado` recalcula saldos | Supabase Auth |
-| `mayorista.html` | Ventas al mayor (~1.900 líneas). Completo | Login propio, tabla `may_usuarios` |
+| `mayorista.html` | Ventas al mayor (~1.900 líneas). Completo | Supabase Auth (el usuario del Portal; el rol necesita `mayoristas` = completo en `portal_permisos`) |
 | `Inventario_Yumana_App.html` | Catálogo de productos | **Login propio viejo (pendiente migrar)** |
 | `Venta_prueba.html`, `zona_prueba.html` | Ventas/caja y zona de entrega | Supabase Auth |
 | `mapa_yumana.html` | Mapa 3D de operaciones, análisis y protocolos. **Va cifrado:** se edita con `herramientas/mapa/` (ver su `LEEME.md`); nunca subir las piezas sin cifrar | Clave propia (candado) + tarjeta solo admin |
@@ -75,13 +75,13 @@ Si una tarea menciona "créditos" o "proveedores" sin dar el nombre de archivo, 
 
 - **Créditos/Apartados:** `creditos`, `apartados`, `clientes`, `abonos`, `intereses_aplicados`, `productos_apartado`, `usuarios_app`, `historial_auditoria`, `portal_apps`, `portal_permisos`
 - **Catálogo compartido:** `inv_productos` — **su `id` es `bigint`, NO uuid**
-- **Mayorista:** `may_clientes`, `may_facturas`, `may_factura_items` (`producto_id` bigint), `may_abonos`, `may_usuarios`, `may_precios_cliente` (UNIQUE cliente_id+producto_id)
+- **Mayorista:** `may_clientes`, `may_facturas`, `may_factura_items` (`producto_id` bigint), `may_abonos`, `may_precios_cliente`; `may_usuarios` ya no se usa (cerrada desde el 2026-10-10) (UNIQUE cliente_id+producto_id)
 - Borrado suave en casi todo: `deleted_at IS NULL` = activo.
 - Roles del portal: `admin`, `cajera`, `lectura`, `logistica`.
 
 ## REGLAS CRÍTICAS (aprendidas a los golpes — romper una cuesta plata)
 
-1. **RLS de Supabase:** toda tabla nueva nace bloqueada. Si una app no lee datos o falla el login en tablas nuevas, es esto. Siempre incluir: `ALTER TABLE x ENABLE ROW LEVEL SECURITY;` + `CREATE POLICY "solo_personal_activo" ON x FOR ALL TO authenticated USING (public.es_staff()) WITH CHECK (public.es_staff());`. **Nunca `USING (true)`**: deja la tabla abierta a cualquiera con la key pública (que está en el HTML de un repo público). Única excepción hoy: las tablas `may_*` mientras mayorista siga con login propio.
+1. **RLS de Supabase:** toda tabla nueva nace bloqueada. Si una app no lee datos o falla el login en tablas nuevas, es esto. Siempre incluir: `ALTER TABLE x ENABLE ROW LEVEL SECURITY;` + `CREATE POLICY "solo_personal_activo" ON x FOR ALL TO authenticated USING (public.es_staff()) WITH CHECK (public.es_staff());`. **Nunca `USING (true)`**: deja la tabla abierta a cualquiera con la key pública (que está en el HTML de un repo público). Las tablas `may_*` también quedaron cerradas el 2026-10-10. Las funciones `SECURITY DEFINER` se saltan el RLS: llevan su propia guardia (`es_staff()` o `may_exigir_personal()`) y sin ejecución para `anon`.
 2. **Límite de 1000 filas:** Supabase corta las consultas en 1000 registros EN SILENCIO. Siempre paginar con `.range()` en bucle (helper `traerTodo()`). Ya causó "pérdida" visual de abonos.
 3. **`monto_total` YA incluye el interés** en créditos/apartados. Saldo = `monto_total − pagado`. Nunca sumar el interés aparte.
 4. **Interés:** columna `monto_interes` en `intereses_aplicados`. 10% compuesto sobre el saldo. Fecha = fecha del crédito + N meses (N = intereses previos + 1).
@@ -100,7 +100,7 @@ Si una tarea menciona "créditos" o "proveedores" sin dar el nombre de archivo, 
     - **Correcciones de dinero con rastro:** toda corrección de montos deja el valor de antes y el de después en `historial_auditoria`.
     - Usar `apply_migration` para cambios de estructura, para que queden registrados.
     - **El conector se cuelga con `DELETE`** (se queda esperando una confirmación que nunca llega y la transacción se deshace sola). Para quitar algo: borrado suave (`deleted_at`) o dejar la fila en $0 con nota explicativa (ej. intereses perdonados). Nunca `DELETE` desde el conector. Un `UPDATE` suelto también se puede colgar (2026-10-09): envolverlo en un bloque `DO $$ BEGIN ... END $$;` funciona.
-    - Respaldos hechos: `respaldo_20261004`, `respaldo_20261004b`, `respaldo_20261004c`, `respaldo_20261004d`, `respaldo_20261004e`, `respaldo_20261006`, `respaldo_20261007`, `respaldo_20261008` (trae además `funciones_antes_seguridad`, `vistas_antes_seguridad` y `politicas_antes_seguridad`), `respaldo_20261008b` (antes de crear lo de JABELLA), `respaldo_20261008c` (antes de las entregas 2 y 3 de JABELLA), `respaldo_20261009` (antes de traer el resto del sistema de cobros al mayorista), `respaldo_20261010` (60 tablas, después de cargar los clientes del mayorista).
+    - Respaldos hechos: `respaldo_20261004`, `respaldo_20261004b`, `respaldo_20261004c`, `respaldo_20261004d`, `respaldo_20261004e`, `respaldo_20261006`, `respaldo_20261007`, `respaldo_20261008` (trae además `funciones_antes_seguridad`, `vistas_antes_seguridad` y `politicas_antes_seguridad`), `respaldo_20261008b` (antes de crear lo de JABELLA), `respaldo_20261008c` (antes de las entregas 2 y 3 de JABELLA), `respaldo_20261009` (antes de traer el resto del sistema de cobros al mayorista), `respaldo_20261010` (60 tablas, después de cargar los clientes del mayorista; trae además `funciones_antes_login_mayorista` y `politicas_antes_login_mayorista`).
     - **Usuarios (desde 2026-10-08):** una cuenta creada desde Créditos nace **inactiva y de solo lectura**; un admin la activa y le da su rol en Usuarios. Nadie que no sea admin puede cambiarse el rol ni activarse (trigger `trg_usuarios_app_proteger_rol`).
 
 ## Lo que ya está hecho (no rehacer)
@@ -119,7 +119,7 @@ El detalle completo de cada entrega (funciones, columnas, decisiones) está en *
 2. **Tope de crédito por cliente** según su score, con aviso al crear uno nuevo.
 3. ~~Cartera por antigüedad~~ **HECHO el 2026-10-04** (KPIs en Cobranza).
 4. ~~Migrar login de Inventario~~ **Ya usa Supabase Auth.** Queda la tabla vieja `inv_usuarios` (1 fila, contraseña en texto plano): Kinan debe decidir si se desactiva. Desde el 2026-10-08 la base exige personal activo en Inventario, pero los permisos por rol (cajera vs admin) de Inventario y Control siguen solo en el navegador: endurecer con RLS por rol cuando se haga el login único.
-5. **Seguridad (tanda del 2026-10-08 hecha, ver `docs/HISTORIAL.md`).** Falta: (a) pasar el login de mayorista a Supabase Auth y cerrar las tablas `may_*` (siguen abiertas con la key pública, y las claves de `may_usuarios` están en texto plano: cambiarlas después); (b) crear usuarios con una función del servidor y apagar el registro público en Supabase; (c) Kinan: activar "leaked password protection" en Supabase Auth. La key de Google que se mencionaba no aparece en el código ni en el historial de git. La key pública de Supabase no se puede restringir por dominio: la protección real son las políticas RLS.
+5. **Seguridad (tanda del 2026-10-08 hecha, ver `docs/HISTORIAL.md`).** ~~(a) Login de mayorista con Supabase Auth y tablas `may_*` cerradas~~ **HECHO el 2026-10-10.** Falta: (b) crear usuarios con una función del servidor y apagar el registro público en Supabase; (c) Kinan: activar "leaked password protection" en Supabase Auth. La key de Google que se mencionaba no aparece en el código ni en el historial de git. La key pública de Supabase no se puede restringir por dominio: la protección real son las políticas RLS.
 6. **Limpiar archivos muertos del repo** (ver tabla arriba). Borrarlos requiere confirmación de Kinan.
 7. ~~Tarjeta `gestion.html` 404~~ **HECHO el 2026-10-06** (`activa=false`).
 14. **Clientes del mayor:** solo DANIEL Y FRAN (Socopó y Pedraza) vienen del sistema de cobros anterior. Los otros 9 del documento se cargaron y se retiraron el 2026-10-09 a pedido de Kinan: él pasará cada cliente detallado (nombre, teléfono, grupo de WhatsApp, plazo, deuda). NO volver a cargarlos desde el respaldo. PEDRAZA tiene 2 abonos USDT de $13 el 2026-06-02 con 4 s de diferencia: confirmar si fue uno solo.

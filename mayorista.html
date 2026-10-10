@@ -86,6 +86,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
 .btn-block{width:100%;}
 .login-msg{font-size:13px; text-align:center; margin-top:12px; min-height:18px;}
 .login-msg.error{color:var(--red-soft);}
+.login-portal{display:block; text-align:center; margin-top:14px; font-size:13px; color:var(--muted); text-decoration:none;}
 
 /* ===== APP LAYOUT (sidebar lateral) ===== */
 #appView{display:none;}
@@ -323,10 +324,10 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
       <div class="logo">MERCANTIL YUMANA</div>
       <div class="sub">Ventas al Mayor</div>
     </div>
-    <div class="login-title">Inicia sesión para continuar</div>
+    <div class="login-title">Entra con tu usuario del Portal</div>
     <div class="fg">
-      <label>Usuario</label>
-      <input type="text" id="loginUser" autocomplete="username" placeholder="Tu usuario">
+      <label>Correo</label>
+      <input type="email" id="loginEmail" autocomplete="username" autocapitalize="off" placeholder="tu@correo.com">
     </div>
     <div class="fg">
       <label>Contraseña</label>
@@ -334,6 +335,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
     </div>
     <button class="btn btn-primary btn-block" id="btnLogin">Entrar</button>
     <div class="login-msg" id="loginMsg"></div>
+    <a href="portal.html" class="login-portal">Volver al Portal</a>
   </div>
 </div>
 
@@ -363,10 +365,6 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
       <button class="nav-item" data-view="stats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
         <span class="lbl">Estadísticas</span>
-      </button>
-      <button class="nav-item" data-view="usuarios" id="navUsuarios">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 100 10 5 5 0 000-10zM3 21v-2a7 7 0 0114 0v2"/></svg>
-        <span class="lbl">Usuarios</span>
       </button>
       <button class="nav-item" data-view="papelera" id="navPapelera">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
@@ -441,15 +439,6 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
     <div id="statsContent"></div>
   </div>
 
-  <!-- ===== VISTA USUARIOS ===== -->
-  <div class="container view-section" id="view-usuarios" style="display:none;">
-    <div class="screen-header">
-      <div><h1>Usuarios del <em>sistema</em></h1><div class="sub">Quién puede acceder al mayorista</div></div>
-      <button class="btn btn-primary" id="btnNuevoUsuario">+ Nuevo usuario</button>
-    </div>
-    <div id="usuList"></div>
-  </div>
-
   <!-- ===== VISTA PAPELERA ===== -->
   <div class="container view-section" id="view-papelera" style="display:none;">
     <div class="screen-header">
@@ -509,22 +498,6 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
     <div class="modal-actions">
       <button class="btn btn-ghost" id="ncCancelar">Cancelar</button>
       <button class="btn btn-primary" id="ncGuardar">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== MODAL USUARIO ===== -->
-<div class="modal-overlay" id="modalUsuario">
-  <div class="modal">
-    <h2 id="modalUsuarioTitle">Nuevo usuario</h2>
-    <div class="fg"><label>Nombre completo *</label><input type="text" id="nuNombre" placeholder="Ej: Fayssal Slikah"></div>
-    <div class="fg"><label>Usuario (para iniciar sesión) *</label><input type="text" id="nuUsuario" placeholder="fayssal" autocapitalize="off"></div>
-    <div class="fg"><label>Contraseña *</label><input type="text" id="nuClave" placeholder="Contraseña"></div>
-    <div class="fg"><label>Rol</label><select id="nuRol"><option value="vendedor">Vendedor (opera, no borra clientes)</option><option value="admin">Admin (acceso total)</option></select></div>
-    <div class="modal-msg" id="nuMsg"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="nuCancelar">Cancelar</button>
-      <button class="btn btn-primary" id="nuGuardar">Guardar</button>
     </div>
   </div>
 </div>
@@ -657,13 +630,11 @@ var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 var CURRENT_USER = null;
 var CLIENTES = [];
-var USUARIOS = [];
 var FACTURAS = [];
 var ABONOS = [];
 var ITEMS = [];
 var PRECIOS_CLI = [];
 var editingClienteId = null;
-var editingUsuarioId = null;
 
 // ===== UTILIDADES =====
 // Bloquea un botón mientras corre una acción async, para evitar doble-clic (duplicados).
@@ -710,46 +681,70 @@ function hoyLocal(){
 }
 function fmtDate(d){ if(!d) return '—'; var p = d.toString().substring(0,10).split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
 
-// ===== LOGIN =====
+// ===== LOGIN (el mismo usuario del Portal) =====
+// Antes el mayorista tenía usuarios y claves aparte (tabla may_usuarios). Ahora entra con la cuenta del Portal:
+// si ya abriste el Portal en este aparato, entra directo. Para usarlo hay que estar activo y que el rol tenga
+// el mayorista con acceso completo en Control (Permisos).
+function avisoLogin(texto){
+  var m = document.getElementById('loginMsg');
+  m.textContent = texto || '';
+  m.className = 'login-msg' + (texto ? ' error' : '');
+}
 async function intentarLogin(){
-  var u = document.getElementById('loginUser').value.trim();
-  var p = document.getElementById('loginPass').value;
-  var msg = document.getElementById('loginMsg');
-  msg.textContent = ''; msg.className = 'login-msg';
-  if(!u || !p){ msg.textContent = 'Escribe usuario y contraseña.'; msg.classList.add('error'); return; }
+  var email = document.getElementById('loginEmail').value.trim();
+  var clave = document.getElementById('loginPass').value;
+  var btn = document.getElementById('btnLogin');
+  avisoLogin('');
+  if(!email || !clave){ avisoLogin('Escribe tu correo y tu contraseña.'); return; }
+  if(btn.disabled) return;
+  btn.disabled = true; btn.textContent = 'Entrando...';
   try {
-    var r = await sb.from('may_usuarios').select('*').eq('usuario', u).eq('activo', true).maybeSingle();
-    if(r.error) throw r.error;
-    if(!r.data || r.data.clave !== p){
-      msg.textContent = 'Usuario o contraseña incorrectos.'; msg.classList.add('error'); return;
-    }
-    CURRENT_USER = r.data;
-    try { localStorage.setItem('may_user', JSON.stringify({id:r.data.id})); } catch(e){}
-    entrarApp();
+    var r = await sb.auth.signInWithPassword({ email: email, password: clave });
+    if(r.error){ avisoLogin(/invalid/i.test(r.error.message || '') ? 'Correo o contraseña incorrectos.' : 'No se pudo entrar. Revisa tu internet e intenta de nuevo.'); return; }
+    await cargarUsuario(r.data.user);
   } catch(e){
-    msg.textContent = 'Error al conectar. Intenta de nuevo.'; msg.classList.add('error');
+    avisoLogin('No se pudo entrar. Revisa tu internet e intenta de nuevo.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Entrar';
   }
+}
+// Revisa la cuenta en usuarios_app y el permiso del rol en portal_permisos. Si falla la conexión, lanza el error.
+async function cargarUsuario(user){
+  var r = await sb.from('usuarios_app').select('id, nombre, rol, activo').eq('id', user.id).maybeSingle();
+  if(r.error) throw r.error;
+  if(!r.data || !r.data.activo){ avisoLogin('Tu cuenta no está activa todavía. Pídele al administrador que la active en Control.'); return; }
+  var rp = await sb.from('portal_permisos').select('nivel').eq('rol', r.data.rol).eq('app_id', 'mayoristas').maybeSingle();
+  if(rp.error) throw rp.error;
+  if(!rp.data || rp.data.nivel !== 'completo'){ avisoLogin('Tu usuario no tiene acceso al mayorista. El administrador lo da en Control, en Permisos.'); return; }
+  CURRENT_USER = { id: r.data.id, nombre: r.data.nombre || user.email, rol: r.data.rol };
+  entrarApp();
 }
 
 function entrarApp(){
+  avisoLogin('');
   document.getElementById('loginView').style.display = 'none';
   document.getElementById('appView').style.display = 'block';
   document.getElementById('userName').textContent = CURRENT_USER.nombre;
   document.getElementById('userRol').textContent = CURRENT_USER.rol;
   document.getElementById('userAv').textContent = initials(CURRENT_USER.nombre);
-  // La pestaña Usuarios solo para admin
-  document.getElementById('navUsuarios').style.display = (CURRENT_USER.rol === 'admin') ? '' : 'none';
+  // Papelera, editar, anular y eliminar: solo admin
   document.getElementById('navPapelera').style.display = (CURRENT_USER.rol === 'admin') ? '' : 'none';
   switchView('panel');
   cargarDatos();
 }
 
-function logout(){
-  try { localStorage.removeItem('may_user'); } catch(e){}
+function mostrarLogin(aviso){
   CURRENT_USER = null;
+  document.querySelectorAll('.modal-overlay.active').forEach(function(m){ m.classList.remove('active'); });
   document.getElementById('appView').style.display = 'none';
   document.getElementById('loginView').style.display = 'flex';
   document.getElementById('loginPass').value = '';
+  avisoLogin(aviso);
+}
+// Salir cierra la sesión en todo el ecosistema (Portal incluido), igual que en las otras apps
+async function logout(){
+  mostrarLogin('');
+  try { await sb.auth.signOut(); } catch(e){}
 }
 
 // ===== CARGA DE DATOS =====
@@ -797,17 +792,14 @@ async function cargarDatos(){
     var facT = await traerTodo('may_facturas', 'fecha', false);
     var aboT = await traerTodo('may_abonos', 'fecha', false);
     var its = (await traerTodo('may_factura_items', null, false)).filter(esVivo);
-    var usu = USUARIOS;
-    if(CURRENT_USER.rol === 'admin'){ usu = await traerTodo('may_usuarios', 'nombre', true); }
     var pre = PRECIOS_CLI;
     try { pre = await traerTodo('may_precios_cliente', null, false); } catch(e){ console.warn('precios pactados', e); }
     CLIENTES = cliT.filter(esVivo); FACTURAS = facT.filter(esVivo); ABONOS = aboT.filter(esVivo);
-    ITEMS = its; USUARIOS = usu; PRECIOS_CLI = pre;
+    ITEMS = its; PRECIOS_CLI = pre;
     PAPELERA = { cli: soloBorrados(cliT), fac: soloBorrados(facT), abo: soloBorrados(aboT) };
     DATOS_CARGADOS = true;
     await cargarCatalogo();
     renderClientes();
-    renderUsuarios();
     renderPanel();
     renderFacturas();
     if(currentDetalleId && document.getElementById('view-detalle').style.display !== 'none') renderDetalle();
@@ -937,66 +929,6 @@ async function guardarCliente(){
     prAlVolverDeCliente(); // si se estaba creando desde el pedido rápido, vuelve a él
   } catch(e){
     msg.className='modal-msg error'; msg.textContent = 'Error al guardar: ' + e.message;
-  }
-}
-
-// ===== RENDER USUARIOS =====
-function renderUsuarios(){
-  if(CURRENT_USER.rol !== 'admin') return;
-  var cont = document.getElementById('usuList');
-  if(USUARIOS.length === 0){ cont.innerHTML = '<div class="empty-state"><p>Sin usuarios</p></div>'; return; }
-  cont.innerHTML = USUARIOS.map(function(u){
-    return '<div class="card cli-card" data-usu="' + u.id + '">' +
-      '<div class="av">' + initials(u.nombre) + '</div>' +
-      '<div class="info"><h3>' + u.nombre + '</h3><p>Usuario: ' + u.usuario + ' · <span class="tag ' + (u.rol==='admin'?'particular':'negocio') + '">' + (u.rol==='admin'?'Admin':'Vendedor') + '</span>' + (u.activo?'':' · <span style="color:var(--red-soft)">Inactivo</span>') + '</p></div>' +
-    '</div>';
-  }).join('');
-  cont.querySelectorAll('.cli-card').forEach(function(el){
-    el.addEventListener('click', function(){ abrirEditarUsuario(this.dataset.usu); });
-  });
-}
-function abrirNuevoUsuario(){
-  editingUsuarioId = null;
-  document.getElementById('modalUsuarioTitle').textContent = 'Nuevo usuario';
-  ['nuNombre','nuUsuario','nuClave'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('nuRol').value = 'vendedor';
-  document.getElementById('nuMsg').textContent = '';
-  document.getElementById('modalUsuario').classList.add('active');
-}
-function abrirEditarUsuario(id){
-  var u = USUARIOS.find(function(x){ return x.id === id; });
-  if(!u) return;
-  editingUsuarioId = id;
-  document.getElementById('modalUsuarioTitle').textContent = 'Editar usuario';
-  document.getElementById('nuNombre').value = u.nombre;
-  document.getElementById('nuUsuario').value = u.usuario;
-  document.getElementById('nuClave').value = u.clave;
-  document.getElementById('nuRol').value = u.rol;
-  document.getElementById('nuMsg').textContent = '';
-  document.getElementById('modalUsuario').classList.add('active');
-}
-async function guardarUsuario(){
-  var msg = document.getElementById('nuMsg');
-  var nombre = document.getElementById('nuNombre').value.trim();
-  var usuario = document.getElementById('nuUsuario').value.trim().toLowerCase();
-  var clave = document.getElementById('nuClave').value;
-  if(!nombre || !usuario || !clave){ msg.className='modal-msg error'; msg.textContent='Completa todos los campos.'; return; }
-  var data = { nombre:nombre, usuario:usuario, clave:clave, rol:document.getElementById('nuRol').value };
-  try {
-    if(editingUsuarioId){
-      var r = await sb.from('may_usuarios').update(data).eq('id', editingUsuarioId);
-      if(r.error) throw r.error;
-      toast('Usuario actualizado', 's');
-    } else {
-      var r2 = await sb.from('may_usuarios').insert(data);
-      if(r2.error) throw r2.error;
-      toast('Usuario creado', 's');
-    }
-    document.getElementById('modalUsuario').classList.remove('active');
-    await cargarDatos();
-  } catch(e){
-    msg.className='modal-msg error';
-    msg.textContent = (e.message && e.message.indexOf('duplicate')>=0) ? 'Ese nombre de usuario ya existe.' : ('Error: ' + e.message);
   }
 }
 
@@ -2851,6 +2783,7 @@ function initSearchClear(){
 // ===== EVENTOS =====
 document.getElementById('btnLogin').addEventListener('click', intentarLogin);
 document.getElementById('loginPass').addEventListener('keydown', function(e){ if(e.key==='Enter') intentarLogin(); });
+document.getElementById('loginEmail').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('loginPass').focus(); });
 document.getElementById('btnLogout').addEventListener('click', logout);
 document.getElementById('btnTheme').addEventListener('click', toggleTheme);
 document.querySelectorAll('.nav-item').forEach(function(b){ b.addEventListener('click', function(){ switchView(this.dataset.view); }); });
@@ -2918,9 +2851,6 @@ document.querySelectorAll('#abMetodos .method-opt').forEach(function(btn){
 protegerBoton('abGuardar', guardarAbono);
 document.getElementById('ncCancelar').addEventListener('click', function(){ document.getElementById('modalCliente').classList.remove('active'); prAlVolverDeCliente(); });
 protegerBoton('ncGuardar', guardarCliente);
-document.getElementById('btnNuevoUsuario').addEventListener('click', abrirNuevoUsuario);
-document.getElementById('nuCancelar').addEventListener('click', function(){ document.getElementById('modalUsuario').classList.remove('active'); });
-protegerBoton('nuGuardar', guardarUsuario);
 document.querySelectorAll('.modal-overlay').forEach(function(ov){
   ov.addEventListener('click', function(e){ if(e.target === ov) ov.classList.remove('active'); });
 });
@@ -2930,19 +2860,18 @@ try { var th = localStorage.getItem('may_theme'); if(th){ document.documentEleme
 
 initSearchClear();
 
-// Auto-login si hay sesión guardada
+// Si la sesión se cierra en otra pestaña (o vence y no se pudo renovar), volver al login en vez de fallar al guardar
+sb.auth.onAuthStateChange(function(evento){
+  if(evento === 'SIGNED_OUT' && CURRENT_USER) mostrarLogin('Tu sesión se cerró. Vuelve a entrar.');
+});
+// Entrada directa si ya hay sesión del Portal en este aparato
 (async function(){
+  try { localStorage.removeItem('may_user'); } catch(e){} // restos del login viejo
   try {
-    var saved = localStorage.getItem('may_user');
-    if(saved){
-      var id = JSON.parse(saved).id;
-      var r = await sb.from('may_usuarios').select('*').eq('id', id).eq('activo', true).maybeSingle();
-      if(r.error) throw r.error;
-      if(r.data){ CURRENT_USER = r.data; entrarApp(); }
-    }
+    var s = await sb.auth.getSession();
+    if(s.data.session && s.data.session.user) await cargarUsuario(s.data.session.user);
   } catch(e){
-    var lm = document.getElementById('loginMsg');
-    if(lm){ lm.textContent = 'No se pudo verificar tu sesión (sin conexión). Revisa el internet e intenta entrar.'; lm.className = 'login-msg error'; }
+    avisoLogin('No se pudo verificar tu sesión (sin conexión). Revisa el internet e intenta entrar.');
   }
 })();
 </script>
