@@ -121,3 +121,9 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - Muestra lo que debe cada cliente y la etiqueta de No venderle.
     - El `select#nfCliente` queda escondido con una primera opción vacía (`opcionesClientes`), así que sin elegir cliente la factura no se guarda.
   - **"+ Factura"** en la ficha del cliente: abre la factura nueva con ese cliente ya elegido (`abrirNuevaFactura(clienteId)`).
+- **Mayorista, 2026-10-10 (`?v=20261010d`): estado de cuenta resumido.**
+  - **"Estado cuenta PDF"** ahora sale resumido. Trae todas las facturas pendientes, las 2 últimas pagadas (`EC_PAGADAS_RECIENTES`) y solo los abonos que pagaron esas facturas. En el resumen se ve "Facturas de este estado / Abonado a ellas / Debe", con una nota de cuántas facturas anteriores, ya pagadas, se dejaron fuera.
+  - **Estado completo:** hay un botón **"Estado de cuenta completo (PDF)"** dentro de "Facturas pagadas", con toda la historia como salía antes.
+  - **"Estado por WhatsApp":** ahora trae las pendientes y los abonos que se aplicaron a ellas.
+  - **Cómo se sabe qué abono pagó qué factura:** la base no lo guarda. `repartoAbonos` reparte los abonos del más viejo al más nuevo entre las facturas de la más vieja a la más nueva, en centavos, y da exactamente el `monto_pagado` de cada factura (probado con 50 facturas y 132 abonos). Si un abono se repartió entre una factura que sale y una que no, se muestra la parte que fue a la que sale ("$400 de $1.000"). El modelo está en `modeloEstadoCuenta(cliente, pagadasRecientes)`.
+  - En el cliente de prueba, el PDF pasó de 22 hojas a 4.
