@@ -3,3 +3,6 @@
 # Mapa de operaciones: piezas SIN cifrar (se sacan con herramientas/mapa/descifrar.js). Nunca subirlas.
 herramientas/mapa/build/
 mapa_yumana_plano*.html
+
+# Copias de trabajo temporales de los ayudantes de Claude Code. Nunca subirlas.
+.claude/worktrees/
