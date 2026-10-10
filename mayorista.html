@@ -702,6 +702,12 @@ function initials(nombre){
   return (p[0][0] + (p[1]?p[1][0]:'')).toUpperCase();
 }
 function normalizar(txt){ return (txt||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+// Fecha de HOY en la hora de Venezuela (la del aparato). Antes se usaba toISOString(), que es la hora
+// internacional (UTC, 4 horas adelante): desde las 8 de la noche los abonos y facturas salían con fecha de mañana.
+function hoyLocal(){
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function fmtDate(d){ if(!d) return '—'; var p = d.toString().substring(0,10).split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
 
 // ===== LOGIN =====
@@ -1174,7 +1180,7 @@ function abrirNuevaFactura(clienteId){
   var sel = document.getElementById('nfCliente');
   sel.innerHTML = opcionesClientes();
   sel.value = (typeof clienteId === 'string' && CLIENTES.some(function(c){ return c.id === clienteId; })) ? clienteId : '';
-  var hoy = new Date().toISOString().substring(0,10);
+  var hoy = hoyLocal();
   document.getElementById('nfFecha').value = hoy;
   actualizarVencimiento();
   document.getElementById('nfNotas').value = '';
@@ -1807,7 +1813,7 @@ var FAC_FILTRO = 'todas';
 function renderFacturas(){
   var cont = document.getElementById('facList');
   var search = normalizar(document.getElementById('facSearch').value).trim();
-  var hoyF = new Date().toISOString().substring(0,10);
+  var hoyF = hoyLocal();
   var list = FACTURAS.slice();
   // filtro por estado
   if(FAC_FILTRO === 'pendientes') list = list.filter(function(f){ return saldoFactura(f) > 0.01; });
@@ -1825,7 +1831,7 @@ function renderFacturas(){
     cont.innerHTML = '<div class="empty-state"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg><h3>' + (search?'Sin resultados':'Aún no hay facturas') + '</h3><p>' + (search?'Prueba con otro término':'Registra tu primera venta al mayor con el botón de arriba') + '</p></div>';
     return;
   }
-  var hoy = new Date().toISOString().substring(0,10);
+  var hoy = hoyLocal();
   cont.innerHTML = list.map(function(f){
     var cli = CLIENTES.find(function(c){ return c.id === f.cliente_id; });
     var saldo = saldoFactura(f);
@@ -1880,7 +1886,7 @@ function renderDetalle(){
   var facturas = facturasDeCliente(c.id);
   var abonos = abonosDeCliente(c.id);
   var tot = totalesCliente(c.id), totalComprado = tot.comprado, totalPagado = tot.pagado, debe = tot.debe;
-  var hoy = new Date().toISOString().substring(0,10);
+  var hoy = hoyLocal();
   var pendientes = facturas.filter(function(f){ return saldoFactura(f) > 0.01; });
   var pagadas = facturas.filter(function(f){ return saldoFactura(f) <= 0.01; });
 
@@ -2022,7 +2028,7 @@ function abrirAbono(clienteId){
   var debe = facturasDeCliente(clienteId).reduce(function(s,f){ return s + saldoFactura(f); }, 0);
   document.getElementById('abInfo').innerHTML = '<b>' + c.nombre + '</b><br>Debe actualmente: <b style="color:var(--gold);">' + fmt(debe) + '</b>';
   document.getElementById('abMonto').value = '';
-  document.getElementById('abFecha').value = new Date().toISOString().substring(0,10);
+  document.getElementById('abFecha').value = hoyLocal();
   document.getElementById('abNotas').value = '';
   document.getElementById('abMsg').textContent = '';
   // resetear método a Efectivo USD
@@ -2036,7 +2042,7 @@ async function guardarAbono(){
   if(!monto || monto <= 0){ msg.className='modal-msg error'; msg.textContent='Escribe un monto válido.'; return; }
   monto = Math.round(monto * 100) / 100;
   // Aviso de pago repetido (mismo cliente, misma fecha y monto en los últimos 15 min): un doble toque o dos personas a la vez
-  var fechaAb = document.getElementById('abFecha').value || new Date().toISOString().substring(0,10);
+  var fechaAb = document.getElementById('abFecha').value || hoyLocal();
   var hace15 = Date.now() - 15*60*1000;
   var repetido = ABONOS.some(function(a){ return a.cliente_id === abonoClienteId && a.fecha === fechaAb && Math.abs(parseFloat(a.monto) - monto) < 0.005 && a.creado_en && new Date(a.creado_en).getTime() > hace15; });
   if(repetido && !confirm('Hace menos de 15 minutos ya se registró un abono de ' + fmt(monto) + ' a este cliente con la misma fecha.\n\n¿Es OTRO pago distinto y quieres registrarlo igual?')) {
@@ -2373,7 +2379,7 @@ function generarEstadoCuentaCliente(clienteId, completo){
   if(!c) return;
   var m = modeloEstadoCuenta(c.id, completo === true ? Infinity : EC_PAGADAS_RECIENTES);
   var facturas = m.facturas, debe = m.debe;
-  var hoy = new Date().toISOString().substring(0,10);
+  var hoy = hoyLocal();
 
   // Cada factura como bloque: número destacado + productos desglosados línea por línea
   function bloqueFactura(f){
@@ -2470,7 +2476,7 @@ function estadoCuentaWhatsApp(clienteId){
   var c = CLIENTES.find(function(x){ return x.id === clienteId; });
   if(!c) return;
   var m = modeloEstadoCuenta(c.id, 0); // solo las pendientes, de la más vieja a la más nueva
-  var msg = '*MERCANTIL YUMANA*\n*Estado de cuenta*\n' + c.nombre + '\nAl ' + fmtDate(new Date().toISOString().substring(0,10)) + '\n';
+  var msg = '*MERCANTIL YUMANA*\n*Estado de cuenta*\n' + c.nombre + '\nAl ' + fmtDate(hoyLocal()) + '\n';
   if(m.facturas.length){
     msg += '\n*Facturas pendientes (' + m.facturas.length + ')*\n';
     m.facturas.forEach(function(f){ msg += '• #' + f.numero + ' · ' + fmtDate(f.fecha) + ' · ' + fmt(saldoFactura(f)) + '\n'; });
@@ -2494,7 +2500,7 @@ function recordatorioWhatsApp(clienteId){
   var facturas = facturasDeCliente(c.id).filter(function(f){ return saldoFactura(f) > 0.01; });
   var debe = facturas.reduce(function(s,f){ return s + saldoFactura(f); }, 0);
   if(debe <= 0.01){ toast('Este cliente no tiene deuda pendiente', 's'); return; }
-  var hoy = new Date().toISOString().substring(0,10);
+  var hoy = hoyLocal();
   var nombre = c.nombre.split(' ')[0];
   var msg = '*MERCANTIL YUMANA*\n';
   msg += 'Recordatorio de pago\n';
@@ -2511,7 +2517,7 @@ function recordatorioWhatsApp(clienteId){
 
 // ===== PANEL DE CONTROL =====
 function renderPanel(){
-  var hoy = new Date().toISOString().substring(0,10);
+  var hoy = hoyLocal();
   var mesActual = hoy.substring(0,7); // YYYY-MM
 
   // Total que deben todos los clientes
@@ -2774,7 +2780,7 @@ function enviarFacturaWhatsApp(facturaId){
 
 // ===== EXPORTAR FACTURAS A CSV (Excel) =====
 function exportarFacturasCSV(){
-  var hoy = new Date().toISOString().substring(0,10);
+  var hoy = hoyLocal();
   var filas = [['Factura','Cliente','Fecha','Vencimiento','Total','Pagado','Saldo','Estado','Productos']];
   FACTURAS.slice().sort(function(a,b){ return a.numero - b.numero; }).forEach(function(f){
     var cli = CLIENTES.find(function(c){ return c.id === f.cliente_id; });

@@ -134,3 +134,8 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - #167, del 07/10: pedido de Notas por $2.333 (14 renglones).
   - Abono en efectivo de $1.400 el 07/10.
   - Debe $7.791, igual que el chat (9.191 − 1.400).
+- **Fecha de "hoy" con la hora de Venezuela (2026-10-10, mayorista `?v=20261010f`, Proveedores `?v=49`):** las dos apps usaban `new Date().toISOString()` (hora UTC). Desde las 8 pm, los abonos, facturas y pagos nuevos salían con la fecha de mañana y el panel marcaba como vencido lo que vencía hoy. Ahora usan `hoyLocal()`, también para el mes actual de Proveedores.
+  - Se corrigió la fecha de los 2 registros que el error afectó la noche del 09/10 en el mayorista: el abono de $1.075 de Reyen y la factura #165 de $1.250 de Daniel y Fran Socopó, que pasaron del 10/10 al 09/10 (a la factura también se le corrió el vencimiento un día). Quedó rastro en `historial_auditoria`.
+  - **Pendiente de Kinan:** en Proveedores hay 20 pagos, de julio a octubre, que se registraron después de las 8 pm y quedaron con fecha de un día después. No se tocaron.
+  - Créditos e Inventario no tenían este error.
+- **Respaldo `respaldo_20261010`:** 60 tablas de `public` (~13.600 filas), con los conteos verificados uno por uno y sin acceso para anon ni authenticated.

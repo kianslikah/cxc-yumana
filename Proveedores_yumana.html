@@ -602,6 +602,12 @@ document.addEventListener('touchend',function(e){
   ultimoTap=ahora;
 },{passive:false});
 // Resetear escala al volver a la pestaña (Safari guarda el zoom acumulado)
+// Fecha de HOY en la hora de Venezuela (la del aparato). Antes se usaba toISOString(), que es la hora
+// internacional (UTC, 4 horas adelante): desde las 8 de la noche los pagos salían con fecha de mañana.
+function hoyLocal(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 function resetearZoom(){
   var vp=document.querySelector('meta[name=viewport]');
   if(vp){ vp.setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover'); }
@@ -1243,8 +1249,8 @@ function pintarStats(){
       transito=d.transito||{num_transito:0,total_transito:0},
       resumenAbonos=d.resumenAbonos||{total_abonos:0,abono_promedio:0,abono_mayor:0};
   var c=document.getElementById('content');
-  var mesActual=new Date().toISOString().slice(0,7);
-  var hoy=new Date().toISOString().slice(0,10);
+  var mesActual=hoyLocal().slice(0,7);
+  var hoy=hoyLocal();
   // mes anterior
   var dAnt=new Date(); dAnt.setDate(1); dAnt.setMonth(dAnt.getMonth()-1);
   var mesAnterior=dAnt.toISOString().slice(0,7);
@@ -1641,7 +1647,7 @@ function abrirAbono(facId){
   document.getElementById('aTitularZelle').value='';
   document.getElementById('aObs').value='';
   document.getElementById('aTransito').checked=false;
-  document.getElementById('aFecha').value=new Date().toISOString().slice(0,10);
+  document.getElementById('aFecha').value=hoyLocal();
   document.getElementById('aCalc').style.display='none';
   document.getElementById('aTitularWrap').style.display='none';
   document.getElementById('aTasasBs').style.display='none';
@@ -1700,7 +1706,7 @@ async function confirmarAbono(){
     var tPU=parseFloat(document.getElementById('aTasaPagadaUsdt').value)||0;
     if(tV<=0||tPU<=0){ msg.className='modal-msg error'; msg.textContent='Completa la tasa de venta del USDT y la tasa a la que pagas.'; return; }
   }
-  var fecha=document.getElementById('aFecha').value||new Date().toISOString().slice(0,10);
+  var fecha=document.getElementById('aFecha').value||hoyLocal();
   var titular=document.getElementById('aTitularZelle').value.trim()||null;
   var obs=document.getElementById('aObs').value.trim()||null;
   var transito=document.getElementById('aTransito').checked;
@@ -1773,7 +1779,7 @@ function abrirFactura(facId, modoGlobal){
   } else { provWrap.style.display='none'; }
   document.getElementById('fNum').value=f?(f.num||''):'';
   document.getElementById('fMonto').value=f?(f.monto||''):'';
-  document.getElementById('fLlegada').value=f?(f.llegada||''):new Date().toISOString().slice(0,10);
+  document.getElementById('fLlegada').value=f?(f.llegada||''):hoyLocal();
   document.getElementById('fVence').value=f?(f.vence||''):'';
   document.getElementById('fDesc').value=f?(f.desc_factura||''):'';
   document.getElementById('fDisputada').checked=f?!!f.disputada:false;
@@ -2038,7 +2044,7 @@ async function confirmarTransito(abonoId, facId){
   try{
     var r=await sb.from('prov_abonos').update({
       en_transito:false,
-      fecha_confirmado:new Date().toISOString().slice(0,10)
+      fecha_confirmado:hoyLocal()
     }).eq('id',abonoId);
     if(r.error) throw r.error;
     toast('Pago confirmado. Saldo actualizado.');
@@ -2084,7 +2090,7 @@ async function editarAbono(abonoId, facId){
     var a=ra.data;
     EDIT_ABONO_ID=abonoId; EDIT_ABONO_FAC=facId; EDIT_ABONO_MONTO_VIEJO=Number(a.monto||0);
     document.getElementById('edAbMonto').value=a.monto||'';
-    document.getElementById('edAbFecha').value=a.fecha||new Date().toISOString().slice(0,10);
+    document.getElementById('edAbFecha').value=a.fecha||hoyLocal();
     document.getElementById('edAbObs').value=a.observaciones||'';
     document.getElementById('edAbMsg').textContent='';
     document.getElementById('modalEditAbono').classList.add('show');
@@ -2142,7 +2148,7 @@ function abrirDevol(facId){
   document.getElementById('dvNotas').value='';
   document.getElementById('dvMotivo').value='defectuoso';
   document.getElementById('dvEstado').value='pendiente';
-  document.getElementById('dvFecha').value=new Date().toISOString().slice(0,10);
+  document.getElementById('dvFecha').value=hoyLocal();
   document.getElementById('dvMsg').textContent='';
   document.getElementById('modalDevol').classList.add('show');
 }
@@ -2151,7 +2157,7 @@ async function guardarDevol(){
   if(!DEVOL_FAC) return;
   var msg=document.getElementById('dvMsg'); msg.className='modal-msg'; msg.textContent='';
   var monto=parseFloat(document.getElementById('dvMonto').value);
-  var fecha=document.getElementById('dvFecha').value||new Date().toISOString().slice(0,10);
+  var fecha=document.getElementById('dvFecha').value||hoyLocal();
   var desc=document.getElementById('dvDesc').value.trim();
   var motivo=document.getElementById('dvMotivo').value;
   var estado=document.getElementById('dvEstado').value;
@@ -2212,7 +2218,7 @@ async function descargarBackup(){
     var blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a');
-    var fecha=new Date().toISOString().slice(0,10);
+    var fecha=hoyLocal();
     a.href=url; a.download='backup_proveedores_'+fecha+'.json';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
@@ -2273,7 +2279,7 @@ async function generarEstadoCuenta(modo){
     doc.setFontSize(14); doc.setTextColor(40,40,40); doc.setFont('helvetica','bold');
     doc.text(p.proveedor||'Sin nombre',M,y); y+=6;
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(GREY[0],GREY[1],GREY[2]);
-    doc.text('Generado: '+fF(new Date().toISOString().slice(0,10))+(p.telefono?'   ·   Tel: '+p.telefono:''),M,y); y+=8;
+    doc.text('Generado: '+fF(hoyLocal())+(p.telefono?'   ·   Tel: '+p.telefono:''),M,y); y+=8;
 
     // totales
     var deudaTot=0, favor=Number(p.credito_a_favor||0);
