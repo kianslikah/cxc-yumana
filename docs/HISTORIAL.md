@@ -203,3 +203,11 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - Los créditos son de 30 días y la fecha límite se extiende cuando se negocia.
     - El "score" de la ficha nunca se calculó (todos tienen B).
   - **Para deshacer:** quitar la fila `estadisticas` de `portal_apps` y `portal_permisos` y revertir este commit. Las funciones `est_*` y `est_acceso` no afectan a ninguna otra app.
+- **Yessimar, factura nueva (2026-10-13): #172**, nota Valery 0000031250 del 13/10.
+  - La nota es de $12.020. Cambios que indicó Kinan:
+    - Se quitó 1 congelador NEWKOOL 254L (quedó 1 de 2).
+    - Se agregaron 2 cocinas FRIGILUX 4H negro ($150 c/u) y 1 cocina NERO 4H inox ($150).
+  - Queda en $12.200 (23 renglones, 15 enlazados; las dos cocinas agregadas se enlazaron por descripción a COFR-20N y 500B). Vence el 12/12.
+  - Abono de $2.200 en efectivo el 13/10. Por la regla de lo más viejo primero, va a la #159.
+  - Yessimar pasa de deber $37.033 a $47.033.
+  - Sigue pendiente el monto del descuento del Split Mabe 12mil.
