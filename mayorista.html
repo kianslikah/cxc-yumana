@@ -2403,8 +2403,9 @@ function generarEstadoCuentaCliente(clienteId, completo){
 }
 
 // ===== ESTADO DE CUENTA POR WHATSAPP (mensaje de texto) =====
-// Corto, a pedido de Kinan (clientes con muchas facturas chicas): cada factura pendiente con su número, fecha
-// y lo que se debe, los últimos 10 abonos, y al final solo el total pendiente. Sin vencimientos ni totales históricos.
+// Corto, a pedido de Kinan (clientes con muchas facturas chicas): cada factura pendiente con su número, fecha,
+// el monto original de la factura y lo que queda pendiente (Kinan, 2026-10-14), los últimos 10 abonos, y al final
+// solo el total pendiente. Sin vencimientos ni totales históricos.
 // Sale por el modal de envío (grupo, teléfonos o compartir) y se puede editar antes de mandarlo.
 function estadoCuentaWhatsApp(clienteId){
   var c = CLIENTES.find(function(x){ return x.id === clienteId; });
@@ -2413,7 +2414,9 @@ function estadoCuentaWhatsApp(clienteId){
   var msg = '*MERCANTIL YUMANA*\n*Estado de cuenta*\n' + c.nombre + '\nAl ' + fmtDate(hoyLocal()) + '\n';
   if(m.facturas.length){
     msg += '\n*Facturas pendientes (' + m.facturas.length + ')*\n';
-    m.facturas.forEach(function(f){ msg += '• #' + f.numero + ' · ' + fmtDate(f.fecha) + ' · ' + fmt(saldoFactura(f)) + '\n'; });
+    m.facturas.forEach(function(f){
+      msg += '• #' + f.numero + ' · ' + fmtDate(f.fecha) + '\n   Factura: ' + fmt(f.monto_total) + ' · Pendiente: ' + fmt(saldoFactura(f)) + '\n';
+    });
   } else {
     msg += '\nNo tiene facturas pendientes.\n';
   }
@@ -2443,7 +2446,7 @@ function recordatorioWhatsApp(clienteId){
   var vencidas = facturas.filter(function(f){ return f.fecha_vencimiento && f.fecha_vencimiento < hoy; });
   if(vencidas.length){
     msg += '\nFacturas vencidas:\n';
-    vencidas.forEach(function(f){ msg += '• #' + f.numero + ' — ' + fmt(saldoFactura(f)) + ' (venció ' + fmtDate(f.fecha_vencimiento) + ')\n'; });
+    vencidas.forEach(function(f){ msg += '• #' + f.numero + ' — debe ' + fmt(saldoFactura(f)) + ' de ' + fmt(f.monto_total) + ' (venció ' + fmtDate(f.fecha_vencimiento) + ')\n'; });
   }
   msg += '\nAgradecemos ponerte al día. Si ya pagaste, ignora este mensaje. ¡Gracias!';
   abrirEnviar(msg, c.telefono || null, c.whatsapp_grupo || null);

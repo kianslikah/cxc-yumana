@@ -223,3 +223,6 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - La app (`itemsDeFactura`) ordena por `orden`. Así salen el detalle, el PDF, el estado de cuenta y la edición.
   - **Facturas que ya existían:** el orden se sacó del orden físico en que se guardaron (cada factura entró de una sola vez). Se comprobó con la #177, que sale igual a la nota. La única excepción fue la #124 (Tío Badia): su exhibidor MYSTIC 290L se había corregido el 09/10 y cambió de lugar; se le devolvió su lugar original, el renglón 14, entre la nevera VIVAMAX y el exhibidor JAGUAR 330L. Quedaron 588 renglones con orden, sin huecos ni repetidos.
   - **Prueba** en una transacción que se deshizo: una factura con renglones "Zeta, Alfa, Mu" salió en ese orden. Después se devolvió la secuencia: la próxima factura es la #178.
+- **Mayorista, monto original en el estado por WhatsApp (2026-10-14, `?v=20261014b`):** a pedido de Kinan, cada factura pendiente del estado por WhatsApp muestra ahora el monto original y lo que queda pendiente ("• #159 · 11/08/2026 / Factura: $13,481.00 · Pendiente: $4,314.00").
+  - El recordatorio de pago también dice "debe X de Y" en cada factura vencida.
+  - El PDF del estado de cuenta ya traía, por factura, el total, lo pagado y lo pendiente.
