@@ -211,3 +211,7 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - Abono de $2.200 en efectivo el 13/10. Por la regla de lo más viejo primero, va a la #159.
   - Yessimar pasa de deber $37.033 a $47.033.
   - Sigue pendiente el monto del descuento del Split Mabe 12mil.
+- **Adriana Mora, factura nueva (2026-10-14): #177**, nota Valery 0000031307 del 14/10.
+  - La nota es de $8.975. Kinan corrigió el precio del exhibidor heladero SJ Electronic 558L: queda en $810 (la nota decía $920).
+  - Total $8.865 (24 renglones, 19 enlazados). Vence el 13/12. Sin abono.
+  - Adriana pasa de deber $20.166,85 a $29.031,85.
