@@ -215,3 +215,11 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - La nota es de $8.975. Kinan corrigió el precio del exhibidor heladero SJ Electronic 558L: queda en $810 (la nota decía $920).
   - Total $8.865 (24 renglones, 19 enlazados). Vence el 13/12. Sin abono.
   - Adriana pasa de deber $20.166,85 a $29.031,85.
+- **Mayorista, productos en el orden de la nota (2026-10-14, `?v=20261014`):** Kinan vio que las facturas salían con los productos revueltos.
+  - **Causa:** la app ordenaba los renglones por su id, que es un uuid al azar, y la base no guardaba el orden.
+  - **Arreglo** (migración `may_factura_items_orden`, después del respaldo `respaldo_20261014`):
+    - Columna nueva `may_factura_items.orden` (1, 2, 3…) y un índice por (factura, orden).
+    - `may_guardar_factura` guarda la posición de cada renglón tal como llega (`WITH ORDINALITY`). El resto de la función quedó idéntico; la versión anterior está en `respaldo_20261014.funciones_antes_orden_items`.
+    - La app (`itemsDeFactura`) ordena por `orden`. Así salen el detalle, el PDF, el estado de cuenta y la edición.
+  - **Facturas que ya existían:** el orden se sacó del orden físico en que se guardaron (cada factura entró de una sola vez). Se comprobó con la #177, que sale igual a la nota. La única excepción fue la #124 (Tío Badia): su exhibidor MYSTIC 290L se había corregido el 09/10 y cambió de lugar; se le devolvió su lugar original, el renglón 14, entre la nevera VIVAMAX y el exhibidor JAGUAR 330L. Quedaron 588 renglones con orden, sin huecos ni repetidos.
+  - **Prueba** en una transacción que se deshizo: una factura con renglones "Zeta, Alfa, Mu" salió en ese orden. Después se devolvió la secuencia: la próxima factura es la #178.
