@@ -62,7 +62,8 @@ var VistaInventario = {
       '<div class="kpi"><div class="t">Prendas</div><div class="v">' + activos.length + '</div><div class="s">modelos activos</div></div>' +
       '<div class="kpi"><div class="t">Unidades</div><div class="v">' + unidades + '</div><div class="s">en tienda</div></div>' +
       (modelosLlegar ? '<div class="kpi"><div class="t">Por llegar</div><div class="v">' + porLlegar + '</div><div class="s">' + modelosLlegar + ' prenda' + (modelosLlegar === 1 ? '' : 's') + ' · solo se apartan</div></div>' : '') +
-      '<div class="kpi"><div class="t">Valor a precio de venta</div><div class="v">' + fmtUSD(valorVenta) + '</div></div>' +
+      // Cuánto vale la mercancía solo lo ve la dueña
+      (esDuena() ? '<div class="kpi"><div class="t">Valor a precio de venta</div><div class="v">' + fmtUSD(valorVenta) + '</div></div>' : '') +
       (esDuena() ? '<div class="kpi"><div class="t">Valor a costo</div><div class="v">' + fmtUSD(valorCosto) + '</div><div class="s">' +
         (sinCosto ? sinCosto + ' prenda' + (sinCosto === 1 ? '' : 's') + ' sin costo' : 'todas con costo') + '</div></div>' : '') +
     '</div>';
