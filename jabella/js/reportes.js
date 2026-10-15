@@ -174,8 +174,8 @@ var VistaReportes = {
   async pintarCierres(c) {
     var lista = await traerTodo('jab_cierres', '*', null, 'id');
     lista.reverse();
-    c.innerHTML = '<p class="suave" style="margin-top:0">Al final del día, la vendedora (o tú) toca <b>Cerrar caja</b> en Ventas y cuenta el efectivo sin ver cuánto debería haber. Aquí ves la diferencia.</p>' +
-      (lista.length ? '<div class="lista" id="rpCierres"></div>' : '<div class="vacio"><h3>Todavía no hay cierres</h3>Se hacen desde Ventas → Por día → Cerrar caja.</div>');
+    c.innerHTML = '<p class="suave" style="margin-top:0">En la mañana se abre la caja contando el fondo para vueltos; en la noche se cierra contando todo, se deja el fondo y el resto se te entrega. Se cuenta sin ver cuánto debería haber. Aquí ves la diferencia de cada conteo.</p>' +
+      (lista.length ? '<div class="lista" id="rpCierres"></div>' : '<div class="vacio"><h3>Todavía no hay conteos</h3>Se hacen desde Ventas → Por día → Caja de hoy.</div>');
     if (lista.length) dibujarPorPartes($('#rpCierres'), lista, filaCierreHtml, 60);
   }
 };
@@ -187,9 +187,10 @@ function etiquetaCierre(ci) {
   if (Math.abs(dif) < 0.005) return '<span class="etq etq-aviso">Descuadre entre cuentas</span>';
   return '<span class="etq ' + (dif < 0 ? 'etq-error' : 'etq-aviso') + '">' + (dif < 0 ? 'Falta ' : 'Sobra ') + fmtUSD(Math.abs(dif)) + '</span>';
 }
+function tituloConteo(ci) { return (ci.tipo === 'apertura' ? 'Apertura' : 'Cierre') + ' #' + ci.numero; }
 function filaCierreHtml(ci) {
   var u = ST.usrPorId.get(ci.usuario_id);
-  return '<button type="button" class="item" data-cierre="' + ci.id + '"><div class="crece"><div class="titulo">Cierre #' + ci.numero + ' · ' + fmtFecha(ci.fecha) + '</div>' +
+  return '<button type="button" class="item" data-cierre="' + ci.id + '"><div class="crece"><div class="titulo">' + tituloConteo(ci) + ' · ' + fmtFecha(ci.fecha) + '</div>' +
     '<div class="sub">' + esc(u ? u.nombre : '—') + ' · ' + fmtHora(ci.creado_en) + (ci.revisado_en ? ' · revisado' : '') + '</div></div>' + etiquetaCierre(ci) + '</button>';
 }
 
@@ -265,43 +266,12 @@ function graficoVentas(cont, datos, haySinCosto) {
 }
 
 /* ---------------- Cierre de caja ---------------- */
-var _cierreAbierto = false;
-async function hojaCierre() {
-  if (_cierreAbierto) return;
-  _cierreAbierto = true;
-  try { await cargarMetodos(); } catch (e) { _cierreAbierto = false; toast(errMsg(e), 'error'); return; }
-  var cuentas = ST.cuentas.filter(function (c) { return c.activa && c.cuenta_en_cierre; });
-  if (!cuentas.length) { _cierreAbierto = false; toast('No hay cuentas de efectivo marcadas para el cierre (Ajustes → Cuentas de dinero).', 'error', 6000); return; }
-  var clave = nuevaClave();
-  var h = abrirHoja({
-    titulo: 'Cerrar caja', cerrarFuera: false, alCerrar: function () { _cierreAbierto = false; },
-    html: '<p class="suave" style="margin-top:0">Cuenta el dinero que hay ahora y escríbelo. No hace falta saber cuánto debería haber: el sistema lo compara y la dueña ve el resultado.</p>' +
-      '<div class="pila">' + cuentas.map(function (c) {
-        return '<label class="campo"><span>¿Cuánto hay en ' + esc(c.nombre) + '? (' + (c.moneda === 'VES' ? 'Bs' : '$') + ')</span><input data-cuenta="' + c.id + '" inputmode="decimal" placeholder="0,00"></label>';
-      }).join('') +
-      '<label class="campo"><span>Nota (opcional)</span><input id="ciNota" placeholder="Ej.: saqué $5 para el delivery"></label></div>',
-    pie: '<button type="button" class="btn btn-ancho" id="ciOk">Enviar cierre</button>'
-  });
-  setTimeout(function () { var i = h.$('[data-cuenta]'); if (i) i.focus(); }, 80);
-  protegerBoton(h.$('#ciOk'), async function () {
-    var conteos = $$('[data-cuenta]', h.el).map(function (inp) {
-      var n = parseNum(inp.value);
-      if (isNaN(n) || n < 0) throw new Error('Escribe cuánto hay en cada cuenta (0 si no hay nada).');
-      return { cuenta_id: Number(inp.dataset.cuenta), contado: redondear2(n) };
-    });
-    var id = await rpc('jab_registrar_cierre', { p: { clave: clave, nota: h.$('#ciNota').value.trim(), conteos: conteos } });
-    h.cerrar();
-    toast('Cierre enviado. ¡Buen trabajo!', 'ok');
-    if (esDuena()) verCierre(id);
-  }, 'Enviando…');
-}
-
 async function verCierre(id) {
   var r = await sb.from('jab_cierres').select('*').eq('id', id).single();
   if (r.error || !r.data) { toast(r.error ? errMsg(r.error) : 'No se encontró el cierre.', 'error'); return; }
   var ci = r.data, u = ST.usrPorId.get(ci.usuario_id), dif = Number(ci.diferencia_usd), cuadra = cierreCuadra(ci);
   var h = abrirHoja({
-    titulo: 'Cierre #' + ci.numero,
+    titulo: tituloConteo(ci),
     html: '<div class="tenue" style="margin-bottom:10px">' + fmtFechaLarga(ci.fecha) + ' · ' + fmtHora(ci.creado_en) + ' · ' + esc(u ? u.nombre : '—') + '</div>' +
       '<div class="tarjeta" style="padding:4px 12px"><table class="tabla"><thead><tr><th>Cuenta</th><th class="derecha">Debía haber</th><th class="derecha">Contado</th><th class="derecha">Diferencia</th></tr></thead><tbody>' +
       ci.detalle.map(function (d) {
@@ -309,6 +279,10 @@ async function verCierre(id) {
         return '<tr><td>' + esc(d.nombre) + '</td><td class="derecha num">' + fmtMonto(d.esperado, d.moneda) + '</td><td class="derecha num">' + fmtMonto(d.contado, d.moneda) + '</td>' +
           '<td class="derecha num ' + (Math.abs(df) < 0.005 ? 'ok-txt' : df < 0 ? 'error-txt' : 'aviso-txt') + '">' + (df > 0 ? '+' : '') + fmtMonto(df, d.moneda) + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
+      (ci.detalle.some(function (d) { return Number(d.entregado) > 0; }) ? '<div class="lista" style="margin-top:10px">' + ci.detalle.filter(function (d) { return Number(d.entregado) > 0; }).map(function (d) {
+        return '<div class="item"><div class="crece">' + esc(d.nombre) + '<div class="sub">Quedó en la caja ' + fmtMonto(d.queda, d.moneda) + '</div></div>' +
+          '<div class="derecha"><div class="num fuerte">' + fmtMonto(d.entregado, d.moneda) + '</div><div class="sub">te entregaron</div></div></div>';
+      }).join('') + '</div><p class="ayuda">Lo entregado pasó a su cuenta "guardado" en Dinero (no es gasto).</p>' : '') +
       '<div class="totales" style="margin-top:10px"><div class="fila-entre"><span>Diferencia total</span><span class="num grande ' + (cuadra ? 'ok-txt' : dif < 0 ? 'error-txt' : 'aviso-txt') + '">' +
         (cuadra ? 'Cuadra' : (dif > 0 ? '+' : '') + fmtUSD(dif)) + '</span></div>' +
         (!cuadra && Math.abs(dif) < 0.005 ? '<div class="ayuda">En dólares se compensa, pero cada cuenta tiene diferencia (¿un cobro en $ anotado como Bs?).</div>' : '') + '</div>' +

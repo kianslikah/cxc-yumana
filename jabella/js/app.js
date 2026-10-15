@@ -136,6 +136,7 @@ async function entrar() {
       '<br><button type="button" class="btn btn-sec btn-chico" onclick="location.reload()" style="margin-top:10px">Reintentar</button></div>';
     return;
   }
+  await cargarCaja();
   ir(location.hash.slice(1) || 'vender');
   if (ST.yo.debe_cambiar_clave) await hojaCambiarClave(true);
   suscribirCambios();
@@ -150,6 +151,7 @@ var _aplicarCambios = debounce(async function () {
     if (p.has('catalogo')) tareas.push(cargarCatalogo());
     if (p.has('config')) tareas.push(cargarConfig());
     if (p.has('clientes')) tareas.push(cargarClientes());
+    if (p.has('caja')) tareas.push(cargarCaja());
     // Si la dueña cambió mis permisos o mi comisión, tomarlos sin tener que volver a entrar
     if (p.has('yo')) tareas.push(sb.from('jab_usuarios').select('*').eq('id', ST.yo.id).maybeSingle().then(function (r) {
       if (r.error || !r.data) return;
@@ -176,7 +178,7 @@ function suscribirCambios() {
 }
 // Al volver a la app (el teléfono corta la conexión en segundo plano) se recarga todo
 document.addEventListener('visibilitychange', function () {
-  if (document.visibilityState === 'visible' && ST.yo) { marcarCambio('catalogo'); marcarCambio('config'); marcarCambio('clientes'); marcarCambio('yo'); }
+  if (document.visibilityState === 'visible' && ST.yo) { marcarCambio('catalogo'); marcarCambio('config'); marcarCambio('clientes'); marcarCambio('yo'); marcarCambio('caja'); }
 });
 
 /* ---------------- Eventos globales ---------------- */

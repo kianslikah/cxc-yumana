@@ -352,3 +352,4 @@ input[type=checkbox] { accent-color: var(--ciruela); }
 .rp-tip { position: absolute; top: 0; display: none; pointer-events: none; white-space: nowrap; font-size: .85rem; padding: 8px 10px;
   background: var(--tinta); color: var(--tinta-txt); border-radius: 10px; box-shadow: var(--sombra-alta); z-index: 2; }
 .rp-svg { display: block; overflow: visible; }
+.mensaje-wa { white-space: pre-wrap; word-break: break-word; font-family: inherit; font-size: .92rem; line-height: 1.45; background: var(--superficie-2); border: 1px solid var(--borde); border-radius: 12px; padding: 12px 14px; margin: 0; }

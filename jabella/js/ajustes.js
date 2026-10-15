@@ -92,6 +92,8 @@ var VistaAjustes = {
           '<div class="campos-2"><label class="campo"><span>Días para retirar un apartado</span><input id="ajDias" inputmode="numeric" value="' + cfg.dias_apartado + '"></label>' +
           '<label class="campo"><span>Abono mínimo para apartar (%)</span><input id="ajPct" inputmode="decimal" value="' + fmtNum(cfg.abono_minimo_pct).replace(/,00$/, '') + '"></label></div>' +
           '<label class="campo"><span>Flete por libra del courier ($)</span><input id="ajTarifa" inputmode="decimal" value="' + fmtNum(cfg.tarifa_libra) + '"></label>' +
+          '<label class="campo"><span>Tu WhatsApp para los avisos</span><input id="ajWa" type="tel" inputmode="tel" value="' + esc(cfg.whatsapp_duena || '') + '" placeholder="Ej.: 0414 123 4567"></label>' +
+          '<div class="ayuda">La vendedora te avisa por aquí cada venta, cuando abre y cuando cierra la caja. Vacío = sin avisos.</div>' +
           '<button type="button" class="btn btn-chico" data-a="reglas" style="align-self:flex-start">Guardar reglas</button></div></div>' +
         '<div class="tarjeta"><h3>Historial de la tasa</h3><div id="ajTasas" style="margin-top:8px"><div class="cargando">Cargando…</div></div></div>' +
         '<div class="tarjeta"><div class="fila-entre"><h3>Usuarios</h3><button type="button" class="btn btn-chico" data-a="nuevoUsuario">' + icono('mas', 'ic-chico') + ' Nuevo usuario</button></div>' +
@@ -146,9 +148,11 @@ var VistaAjustes = {
     if (isNaN(tarifa) || tarifa < 0) throw new Error('Revisa el flete por libra.');
     if (!Number.isInteger(dias) || dias < 1 || dias > 120) throw new Error('Los días deben estar entre 1 y 120.');
     if (isNaN(pct) || pct < 0 || pct > 100) throw new Error('El porcentaje debe estar entre 0 y 100.');
+    var wa = $('#ajWa').value.trim();
+    if (wa && (!/^[0-9+() -]{7,20}$/.test(wa) || telefonoWa(wa).length < 10)) throw new Error('Revisa tu número de WhatsApp (ej.: 0414 123 4567).');
     btn.disabled = true;
     try {
-      await rpc('jab_actualizar_config', { p: { dias_apartado: dias, abono_minimo_pct: pct, tarifa_libra: redondear2(tarifa) } });
+      await rpc('jab_actualizar_config', { p: { dias_apartado: dias, abono_minimo_pct: pct, tarifa_libra: redondear2(tarifa), whatsapp_duena: wa } });
       await cargarConfig();
       toast('Reglas guardadas', 'ok');
     } finally { btn.disabled = false; }

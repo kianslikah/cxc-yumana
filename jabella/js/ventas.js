@@ -67,14 +67,14 @@ var VistaVentas = {
     var res = await Promise.all([
       rpc('jab_resumen_dia', { p_fecha: this.fecha }),
       traerTodo('jab_ventas', '*', function (q) { return q.gte('creado_en', rango[0]).lt('creado_en', rango[1]); }),
-      conComision ? rpc('jab_mi_comision').catch(function () { return null; }) : null
+      conComision ? rpc('jab_mi_comision').catch(function () { return null; }) : null,
+      esHoy ? cargarCaja() : null
     ]);
     var r = res[0], ventas = res[1].sort(function (a, b) { return b.id - a.id; });
-    c.innerHTML = (res[2] ? tarjetaMiComision(res[2]) : '') +
+    c.innerHTML = (esHoy ? tarjetaCaja() : '') + (res[2] ? tarjetaMiComision(res[2]) : '') +
       '<div class="fila" style="margin-bottom:12px;flex-wrap:wrap">' +
         '<label class="campo crece" style="min-width:170px"><span>Día</span><input type="date" id="vtFecha" value="' + this.fecha + '" max="' + hoyCaracas() + '"></label>' +
         (esDuena() ? '<button type="button" class="btn btn-sec" id="vtCambioLibre" style="align-self:flex-end">' + icono('cambio', 'ic-chico') + ' Cambio sin venta</button>' : '') +
-        (esHoy ? '<button type="button" class="btn btn-sec" id="vtCierre" style="align-self:flex-end">' + icono('dinero', 'ic-chico') + ' Cerrar caja</button>' : '') +
       '</div>' +
       '<div class="tenue" style="margin-bottom:8px">' + esc(esHoy ? 'Hoy, ' + fmtFechaLarga(this.fecha) : fmtFechaLarga(this.fecha)) + '</div>' +
       '<div class="tarjetas-kpi">' +
@@ -92,8 +92,6 @@ var VistaVentas = {
     $('#vtFecha').addEventListener('change', function (e) { if (e.target.value) { self.fecha = e.target.value; self.pintar(); } });
     var cl = $('#vtCambioLibre');
     if (cl) cl.onclick = function () { hojaCambio(null, []); };
-    var ci = $('#vtCierre');
-    if (ci) ci.onclick = hojaCierre;
   },
   async pintarApartados(c) {
     var lista = await traerTodo('jab_ventas', '*', function (q) { return q.eq('tipo', 'apartado').eq('estado', 'activa').eq('entregada', false); });
@@ -285,6 +283,8 @@ async function verVenta(id, opts) {
     '<div class="botonera" style="margin-top:18px">' + acciones.join('') + '</div>' +
     (accDuena.length ? '<div class="botonera" style="margin-top:10px">' + accDuena.join('') + '</div>' : '');
   h.cuerpo.innerHTML = html;
+  // La vendedora le avisa a la dueña cada venta nueva (obligatorio si la dueña dejó su WhatsApp)
+  if (opts.recien) avisarDuena('Avísale a ' + nombreDuena(), textoAvisoVenta(d));
 
   async function trasCambio(msg) {
     toast(msg, 'ok');

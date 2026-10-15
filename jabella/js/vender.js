@@ -80,7 +80,7 @@ var VistaVender = {
   titulo: 'Vender',
   cat: 'Todas',
   mostrar(cont) {
-    cont.innerHTML =
+    cont.innerHTML = '<div id="venCaja">' + avisoCajaVender() + '</div>' +
       '<div class="buscador" style="margin-bottom:10px">' + icono('buscar', 'ic-chico') +
         '<input class="entrada" id="venBuscar" placeholder="Buscar prenda o código" autocomplete="off"></div>' +
       '<div class="chips" id="venCats" style="margin-bottom:14px"></div>' +
@@ -104,7 +104,7 @@ var VistaVender = {
     });
     this.pintarCats(); this.pintarRejilla(); this.pintarBarra();
   },
-  refrescar() { if ($('#venRejilla')) { this.pintarCats(); this.pintarRejilla(); this.pintarBarra(); } },
+  refrescar() { if ($('#venRejilla')) { $('#venCaja').innerHTML = avisoCajaVender(); this.pintarCats(); this.pintarRejilla(); this.pintarBarra(); } },
   pintarCats() {
     var cats = ['Todas'].concat(ST.productos.some(function (p) { return p.activo && p.por_llegar; }) ? ['Por llegar'] : [], categorias());
     if (cats.indexOf(this.cat) < 0) this.cat = 'Todas';

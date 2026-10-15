@@ -43,3 +43,12 @@
 - Pendientes chicos hechos: límite de fiado por clienta, "Recordarle" por WhatsApp en apartados y fiados (y en la ficha de la clienta con lo que debe), "Por reembolsar" en Compras, sugerir prenda existente al recibir una caja.
 - Respaldo automático diario de todas las tablas `jab_` dentro de la base (`jab_respaldo.diario`), con la lista de fotos y los correos de las cuentas.
 - Decidido: los apartados no dan comisión (aunque se entreguen) porque Albany paga solo lo cobrado en el momento. Si quiere que cuenten al entregarse, es un cambio chico.
+
+## Entrega 5 — 2026-10-15: caja del día y avisos a Albany
+
+- Respaldo previo: `respaldo_20261015c` (61 tablas, 15.713 filas, igual al original). Migración `jabella_09_caja_diaria` (= `006`). Las 72 funciones `jab_` iguales a las probadas; 43 RPC para `authenticated`, 0 para `anon`; huellas de Yumana iguales antes y después. Pruebas: 111 + 85 + 32 + 64 + 48 en local y 25 en la interfaz simulada.
+- Abrir caja (mañana): se cuenta el efectivo para vueltos. Vender avisa si la caja no está abierta (no bloquea). No se abre dos veces seguidas.
+- Cerrar caja (noche): se cuenta todo, se dice cuánto se deja para mañana (por defecto lo que había al abrir) y el resto se le entrega a Albany: pasa a "Efectivo guardado $" / "Efectivo guardado Bs" (cuentas nuevas en Dinero), no es gasto. Albany ve en Reportes → Cierres de caja si cuadró cada apertura y cada cierre.
+- Tarjeta "Caja de hoy" en Ventas → Por día (sin abrir / abierta / cerrada y lo entregado).
+- WhatsApp de Albany en Ajustes → Reglas. Con eso, la vendedora tiene que avisarle cada venta (prendas, total, cómo pagó, quién vendió), la apertura y el cierre (lo contado, lo que deja, lo que entrega y las ventas del día). La hoja del aviso no se cierra hasta tocar Enviar o Copiar.
+- Pendiente de Albany: poner su número en Ajustes. Antes de la primera apertura: el sistema cree que en "Efectivo $" hay $40 (tres ventas en efectivo del 12 al 14 de octubre); si ese dinero ya no está en la caja, moverlo en Dinero a "Efectivo guardado $".

@@ -11,7 +11,8 @@ var ST = {
   productos: [], variantes: [], prodPorId: new Map(), varPorId: new Map(), varPorProducto: new Map(),
   costos: new Map(),
   clientes: [], cliPorId: new Map(),
-  cuentas: [], metodos: [], usuarios: [], usrPorId: new Map()
+  cuentas: [], metodos: [], usuarios: [], usrPorId: new Map(),
+  caja: null
 };
 
 /* ---------------- DOM y texto ---------------- */
@@ -369,7 +370,7 @@ function elegirFoto() {
 
 /* ---------------- Ventanas (hojas) ---------------- */
 var _hojas = [];
-// o = {titulo, html, pie, clase, cerrarFuera (true por defecto), alCerrar}
+// o = {titulo, html, pie, clase, cerrarFuera (true por defecto), alCerrar, fija (sin X ni Escape: se cierra solo desde el código)}
 function abrirHoja(o) {
   var velo = document.createElement('div');
   velo.className = 'velo';
@@ -386,6 +387,7 @@ function abrirHoja(o) {
     velo: velo, el: velo.querySelector('.hoja'), cuerpo: velo.querySelector('.hoja-cuerpo'), pie: velo.querySelector('.hoja-pie'),
     $: function (sel) { return velo.querySelector(sel); },
     cerrado: false,
+    fija: !!o.fija,
     cerrar: function () {
       if (h.cerrado) return;
       h.cerrado = true;
@@ -400,12 +402,13 @@ function abrirHoja(o) {
     }
   };
   velo.addEventListener('click', function (e) { if (e.target === velo && o.cerrarFuera !== false) h.cerrar(); });
+  if (o.fija) velo.querySelector('[data-cerrar]').hidden = true;
   velo.querySelector('[data-cerrar]').addEventListener('click', function () { h.cerrar(); });
   _hojas.push(h);
   return h;
 }
 document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape' && _hojas.length) _hojas[_hojas.length - 1].cerrar();
+  if (e.key === 'Escape' && _hojas.length && !_hojas[_hojas.length - 1].fija) _hojas[_hojas.length - 1].cerrar();
 });
 
 // Pregunta de sí/no, opcionalmente con un texto (motivo) o número
