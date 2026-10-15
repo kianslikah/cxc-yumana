@@ -121,6 +121,7 @@ input[type=date] { -webkit-appearance: none; appearance: none; width: 100% !impo
 .seg { display: flex; background: var(--superficie-2); border-radius: 12px; padding: 4px; gap: 4px; }
 .seg button { flex: 1; min-height: 40px; border: 0; border-radius: 9px; background: transparent; font-weight: 500; color: var(--texto-2); }
 .seg button.activo { background: var(--superficie); color: var(--texto); box-shadow: var(--sombra); }
+.seg button:disabled { opacity: .35; text-decoration: line-through; cursor: not-allowed; }
 
 .etq { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: .78rem; font-weight: 500; background: var(--superficie-2); color: var(--texto-2); white-space: nowrap; }
 .etq-ok { background: var(--ok-suave); color: var(--ok); }
