@@ -23,7 +23,7 @@ function elegirVariante(p, opts) {
     var disp = function (v) { return opts.cualquiera ? 99 : v.stock - (opts.sinCarrito ? 0 : enCarrito(v.id)); };
     var elegida = vars.filter(function (v) { return disp(v) > 0; }).length === 1 ? vars.find(function (v) { return disp(v) > 0; }) : null;
     var cant = 1, listo = false;
-    var precioEdit = opts.precioEditable != null ? opts.precioEditable : esDuena();
+    var precioEdit = opts.precioEditable != null ? opts.precioEditable : puede('descuentos');
     var h = abrirHoja({
       titulo: p.nombre,
       html:
@@ -32,6 +32,7 @@ function elegirVariante(p, opts) {
           '<div style="font-size:1.4rem;font-weight:600" class="num">' + fmtUSD(p.precio) + '</div></div>' +
           (ST.cfg.tasa_bs ? '<div class="tenue derecha">' + fmtBs(p.precio * ST.cfg.tasa_bs) + '</div>' : '') + '</div>' +
         (p.notas ? '<p class="suave" style="margin:4px 0 10px">' + esc(p.notas) + '</p>' : '') +
+        (p.por_llegar && !opts.cualquiera ? '<div class="aviso fila" style="margin:8px 0">' + icono('camion', 'ic-chico') + ' Todavía no llegó a la tienda: solo se puede apartar.</div>' : '') +
         '<div class="tenue" style="margin:10px 0 6px">Talla y color</div>' +
         '<div class="variantes" id="evVars">' + (vars.length ? vars.map(function (v) {
           var d = disp(v);
@@ -105,7 +106,7 @@ var VistaVender = {
   },
   refrescar() { if ($('#venRejilla')) { this.pintarCats(); this.pintarRejilla(); this.pintarBarra(); } },
   pintarCats() {
-    var cats = ['Todas'].concat(categorias());
+    var cats = ['Todas'].concat(ST.productos.some(function (p) { return p.activo && p.por_llegar; }) ? ['Por llegar'] : [], categorias());
     if (cats.indexOf(this.cat) < 0) this.cat = 'Todas';
     var self = this;
     $('#venCats').innerHTML = cats.length > 2 ? cats.map(function (c) {
@@ -117,10 +118,10 @@ var VistaVender = {
     var q = normalizar($('#venBuscar').value.trim()), cat = this.cat;
     var lista = ST.productos.filter(function (p) {
       if (!p.activo) return false;
-      if (cat !== 'Todas' && p.categoria !== cat) return false;
+      if (cat === 'Por llegar' ? !p.por_llegar : cat !== 'Todas' && p.categoria !== cat) return false;
       return !q || normalizar(p.nombre).indexOf(q) >= 0 || normalizar(p.codigo).indexOf(q) >= 0;
     });
-    lista.sort(function (a, b) { return (stockProducto(b.id) > 0) - (stockProducto(a.id) > 0) || b.id - a.id; });
+    lista.sort(function (a, b) { return (stockProducto(b.id) > 0) - (stockProducto(a.id) > 0) || a.por_llegar - b.por_llegar || b.id - a.id; });
     if (!lista.length) {
       cont.innerHTML = ST.productos.length
         ? '<div class="vacio">No hay prendas que coincidan.</div>'
@@ -134,7 +135,8 @@ var VistaVender = {
         imgProducto(p, 'foto') +
         '<div class="info"><div class="nombre">' + esc(p.nombre) + '</div>' +
         '<div class="precio num">' + fmtUSD(p.precio) + '</div>' +
-        '<div class="disp">' + (s > 0 ? s + ' disponible' + (s === 1 ? '' : 's') : 'Agotada') + '</div></div></button>';
+        '<div class="disp">' + (s > 0 ? s + (p.por_llegar ? ' por llegar' : ' disponible' + (s === 1 ? '' : 's')) : 'Agotada') + '</div></div>' +
+        (p.por_llegar ? '<span class="etq etq-aviso prenda-etq">Por llegar</span>' : '') + '</button>';
     }, 60, '.rejilla');
   },
   pintarBarra() {
@@ -149,10 +151,21 @@ var VistaVender = {
   }
 };
 
+// ¿Hay en el carrito prendas que todavía no llegan? Esas solo se pueden apartar.
+function carritoPorLlegar() {
+  return Carrito.items.some(function (i) {
+    var v = ST.varPorId.get(i.variante_id), p = v && ST.prodPorId.get(v.producto_id);
+    return p && p.por_llegar;
+  });
+}
+
 function hojaCobro() {
-  var estado = { tipo: 'contado', cliente: null, saldoFavor: 0 };
+  var porLlegar = carritoPorLlegar();
+  if (porLlegar && !puede('apartar')) { toast('En la venta hay prendas que todavía no llegan: solo se pueden apartar y no tienes permiso para apartar.', 'error', 6000); return; }
+  var estado = { tipo: porLlegar ? 'apartado' : 'contado', cliente: null, saldoFavor: 0 };
   var clave = nuevaClave(); // la misma en cada reintento de este cobro
-  var puedeFiar = esDuena() || ST.cfg.vendedora_fia;
+  // La dueña puede anotar la venta a nombre de la vendedora que atendió (para su comisión)
+  var otras = esDuena() ? ST.usuarios.filter(function (u) { return u.activo && u.id !== ST.yo.id; }) : [];
   var h = abrirHoja({
     titulo: 'Cobrar',
     clase: 'completa',
@@ -160,11 +173,15 @@ function hojaCobro() {
     html:
       '<div id="cbItems"></div>' +
       '<div class="seg" id="cbTipo" style="margin:14px 0">' +
-        '<button type="button" data-t="contado" class="activo">Contado</button>' +
-        '<button type="button" data-t="apartado">Apartado</button>' +
-        (puedeFiar ? '<button type="button" data-t="fiado">Fiado</button>' : '') +
+        '<button type="button" data-t="contado">Contado</button>' +
+        (puede('apartar') ? '<button type="button" data-t="apartado">Apartado</button>' : '') +
+        (puede('fiar') ? '<button type="button" data-t="fiado">Fiado</button>' : '') +
       '</div>' +
       '<div id="cbAyuda" class="tenue" style="margin:-6px 0 12px"></div>' +
+      (otras.length ? '<label class="campo" style="margin-bottom:12px"><span>¿Quién vendió?</span><select id="cbVend">' +
+        '<option value="">' + esc(ST.yo.nombre) + ' (yo)</option>' + otras.map(function (u) {
+          return '<option value="' + u.id + '">' + esc(u.nombre) + (Number(u.comision_pct) > 0 ? ' · comisión ' + fmtNum(u.comision_pct).replace(/,00$/, '') + ' %' : '') + '</option>';
+        }).join('') + '</select></label>' : '') +
       '<div class="tarjeta" style="padding:12px 14px;margin-bottom:12px"><div class="fila-entre">' +
         '<div class="crece"><div class="tenue">Clienta</div><div id="cbCliente" class="corta">Sin clienta</div></div>' +
         '<button type="button" class="btn btn-sec btn-chico" id="cbElegir">Elegir</button></div></div>' +
@@ -186,15 +203,21 @@ function hojaCobro() {
       apartado: 'La prenda queda reservada ' + ST.cfg.dias_apartado + ' días. Abono mínimo: ' + Number(ST.cfg.abono_minimo_pct) + '%.',
       fiado: 'Se lleva la prenda y queda debiendo. Puede dejar un abono ahora.'
     }[estado.tipo];
+    if (porLlegar) ayuda = 'Hay prendas que todavía no llegan: solo se pueden apartar. ' + ayuda;
     h.$('#cbAyuda').textContent = ayuda;
+    $$('#cbTipo button', h.el).forEach(function (x) {
+      x.classList.toggle('activo', x.dataset.t === estado.tipo);
+      x.disabled = porLlegar && x.dataset.t !== 'apartado';
+    });
     h.$('#cbOk').textContent = { contado: 'Cobrar ' + fmtUSD(t), apartado: 'Apartar', fiado: 'Dejar fiado' }[estado.tipo];
   }
   function pintarItems() {
     if (!Carrito.items.length) { h.cerrar(); VistaVender.refrescar(); return; }
+    porLlegar = carritoPorLlegar();
     h.$('#cbItems').innerHTML = Carrito.items.map(function (i, idx) {
       var v = ST.varPorId.get(i.variante_id), p = ST.prodPorId.get(v.producto_id);
       return '<div class="linea">' + imgProducto(p, 'miniatura') +
-        '<div class="crece"><div class="corta">' + esc(p.nombre) + '</div>' +
+        '<div class="crece"><div class="corta">' + esc(p.nombre) + (p.por_llegar ? ' <span class="etq etq-aviso">Por llegar</span>' : '') + '</div>' +
         '<div class="sub tenue">' + esc(descVariante(v)) + ' · ' + fmtUSD(precioItem(i)) + (i.precio != null ? ' <span class="etq etq-lila">precio especial</span>' : '') + '</div></div>' +
         '<div class="contador"><button type="button" data-menos="' + idx + '" aria-label="Menos">−</button><span>' + i.cantidad + '</span>' +
         '<button type="button" data-mas="' + idx + '" aria-label="Más">+</button></div></div>';
@@ -211,13 +234,16 @@ function hojaCobro() {
       if (enCarrito(v.id) >= v.stock) { toast('No hay más de esa talla'); return; }
       it.cantidad++;
     } else return;
-    pintarItems(); if (Carrito.items.length) actualizarTotales();
+    pintarItems();
+    if (Carrito.items.length) {
+      if (!porLlegar && estado.tipo === 'apartado' && h.$('#cbTipo [data-t="contado"]').disabled) estado.tipo = 'contado';
+      actualizarTotales();
+    }
     VistaVender.refrescar();
   });
   h.$('#cbTipo').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-t]'); if (!b) return;
+    var b = e.target.closest('[data-t]'); if (!b || b.disabled) return;
     estado.tipo = b.dataset.t;
-    $$('#cbTipo button', h.el).forEach(function (x) { x.classList.toggle('activo', x === b); });
     actualizarTotales();
   });
   h.$('#cbElegir').onclick = async function () {
@@ -244,6 +270,7 @@ function hojaCobro() {
     if (!Carrito.items.length) throw new Error('No hay prendas en la venta.');
     if (editor.errores()) throw new Error('Revisa los montos del pago: hay uno que no es un número.');
     if (estado.tipo !== 'contado' && !estado.cliente) throw new Error('Elige la clienta para el ' + estado.tipo + '.');
+    if (carritoPorLlegar() && estado.tipo !== 'apartado') throw new Error('Hay prendas que todavía no llegan: solo se pueden apartar.');
     await cargarConfig();
     if (editor.tasaCambio()) throw new Error('La tasa cambió. Revisa el cobro y vuelve a tocar el botón.');
     var cobrado = editor.cobrado();
@@ -256,6 +283,7 @@ function hojaCobro() {
       tipo: estado.tipo,
       cliente_id: estado.cliente ? estado.cliente.id : null,
       nota: h.$('#cbNota').value.trim(),
+      vendedora_id: h.$('#cbVend') && h.$('#cbVend').value ? h.$('#cbVend').value : null,
       items: Carrito.items.map(function (i) {
         var x = { variante_id: i.variante_id, cantidad: i.cantidad };
         if (i.precio != null) x.precio = i.precio;

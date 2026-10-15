@@ -62,13 +62,15 @@ var VistaVentas = {
   },
   async pintarDia(c) {
     var self = this, rango = rangoDia(this.fecha);
+    var esHoy = this.fecha === hoyCaracas();
+    var conComision = esHoy && Number(ST.yo.comision_pct) > 0;
     var res = await Promise.all([
       rpc('jab_resumen_dia', { p_fecha: this.fecha }),
-      traerTodo('jab_ventas', '*', function (q) { return q.gte('creado_en', rango[0]).lt('creado_en', rango[1]); })
+      traerTodo('jab_ventas', '*', function (q) { return q.gte('creado_en', rango[0]).lt('creado_en', rango[1]); }),
+      conComision ? rpc('jab_mi_comision').catch(function () { return null; }) : null
     ]);
     var r = res[0], ventas = res[1].sort(function (a, b) { return b.id - a.id; });
-    var esHoy = this.fecha === hoyCaracas();
-    c.innerHTML =
+    c.innerHTML = (res[2] ? tarjetaMiComision(res[2]) : '') +
       '<div class="fila" style="margin-bottom:12px;flex-wrap:wrap">' +
         '<label class="campo crece" style="min-width:170px"><span>Día</span><input type="date" id="vtFecha" value="' + this.fecha + '" max="' + hoyCaracas() + '"></label>' +
         (esDuena() ? '<button type="button" class="btn btn-sec" id="vtCambioLibre" style="align-self:flex-end">' + icono('cambio', 'ic-chico') + ' Cambio sin venta</button>' : '') +
@@ -137,6 +139,19 @@ var VistaVentas = {
   }
 };
 
+// Lo que lleva ganado la vendedora: solo ventas de contado cobradas completas
+function tarjetaMiComision(m) {
+  var debe = redondear2(Number(m.ganada) - Number(m.pagada));
+  function celda(t, x) {
+    return '<div class="kpi"><div class="t">' + t + '</div><div class="v">' + fmtUSD(x.comision) + '</div>' +
+      '<div class="s">' + x.ventas_n + ' venta' + (x.ventas_n === 1 ? '' : 's') + ' · ' + fmtUSD(x.vendido) + '</div></div>';
+  }
+  return '<div class="tarjeta" style="margin-bottom:14px"><div class="fila-entre"><h3>Tu comisión</h3><span class="etq etq-lila">' + fmtNum(m.pct).replace(/,00$/, '') + ' % de contado</span></div>' +
+    '<div class="tarjetas-kpi" style="margin-top:10px">' + celda('Hoy', m.hoy) + celda('Esta semana', m.semana) + celda('Este mes', m.mes) +
+      '<div class="kpi"><div class="t">Por cobrarle a la tienda</div><div class="v ' + (debe > 0.004 ? 'ok-txt' : '') + '">' + fmtUSD(debe) + '</div><div class="s">ya te pagaron ' + fmtUSD(m.pagada) + '</div></div></div>' +
+    '<p class="ayuda" style="margin:8px 0 0">Cuenta solo lo vendido de contado y cobrado completo. Apartados y fiados no suman.</p></div>';
+}
+
 /* ---------------- Detalle de una venta ---------------- */
 async function datosVenta(id) {
   var res = await Promise.all([
@@ -179,6 +194,23 @@ function textoRecibo(d) {
   return t.join('\n');
 }
 
+// Mensaje para recordarle a la clienta lo que debe (apartado o fiado)
+function textoRecordatorio(d) {
+  var v = d.venta, cli = v.cliente_id ? ST.cliPorId.get(v.cliente_id) : null, s = saldoVenta(v);
+  var nombre = cli ? cli.nombre.split(' ')[0] : '';
+  var prendas = d.items.filter(function (i) { return i.cantidad > 0; }).map(function (i) { return i.descripcion; }).join(', ');
+  var t = 'Hola' + (nombre ? ' ' + nombre : '') + ', te escribimos de JABELLA Store. ';
+  if (v.tipo === 'apartado' && !v.entregada) {
+    t += 'Te recordamos tu apartado #' + v.numero + (prendas ? ' (' + prendas + ')' : '') + '. ';
+    if (s > 0.004) t += 'Falta pagar ' + fmtUSD(s) + '. ';
+    t += v.vence_en < hoyCaracas() ? 'El plazo para retirarlo venció el ' + fmtFecha(v.vence_en) + '; escríbenos para ayudarte.'
+      : 'Lo tienes reservado hasta el ' + fmtFecha(v.vence_en) + '. ¡Te esperamos!';
+  } else {
+    t += 'Te recordamos que de tu compra #' + v.numero + ' del ' + fmtFecha(v.creado_en) + ' queda pendiente ' + fmtUSD(s) + '. ¡Gracias!';
+  }
+  return t;
+}
+
 async function verVenta(id, opts) {
   opts = opts || {};
   var h = abrirHoja({ titulo: 'Venta', clase: 'completa', html: '<div class="cargando">Cargando…</div>' });
@@ -186,7 +218,8 @@ async function verVenta(id, opts) {
   try { d = await datosVenta(id); } catch (e) { h.cuerpo.innerHTML = '<div class="aviso aviso-error">' + esc(errMsg(e)) + '</div>'; return; }
   var v = d.venta, s = saldoVenta(v);
   var cli = v.cliente_id ? ST.cliPorId.get(v.cliente_id) : null;
-  var vendedora = ST.usrPorId.get(v.usuario_id);
+  var vendedora = ST.usrPorId.get(v.vendedora_id || v.usuario_id);
+  var anoto = v.vendedora_id && v.vendedora_id !== v.usuario_id ? ST.usrPorId.get(v.usuario_id) : null;
   var activa = v.estado === 'activa';
   var esApartadoPend = activa && v.tipo === 'apartado' && !v.entregada;
   h.el.querySelector('.hoja-cab h2').textContent = (v.tipo === 'cambio' ? 'Cambio' : 'Venta') + ' #' + v.numero;
@@ -194,8 +227,9 @@ async function verVenta(id, opts) {
   var acciones = [];
   if (activa && (v.tipo === 'apartado' || v.tipo === 'fiado') && s > 0.004) acciones.push('<button type="button" class="btn" data-acc="abonar">Registrar abono</button>');
   if (esApartadoPend) acciones.push('<button type="button" class="btn btn-sec" data-acc="entregar">' + icono('entregar', 'ic-chico') + ' Entregar</button>');
-  if (activa && v.entregada) acciones.push('<button type="button" class="btn btn-sec" data-acc="cambio">' + icono('cambio', 'ic-chico') + ' Cambio</button>');
+  if (activa && v.entregada && puede('cambios')) acciones.push('<button type="button" class="btn btn-sec" data-acc="cambio">' + icono('cambio', 'ic-chico') + ' Cambio</button>');
   acciones.push('<button type="button" class="btn btn-sec" data-acc="recibo">' + icono('enviar', 'ic-chico') + ' Enviar recibo</button>');
+  if (activa && cli && (v.tipo === 'apartado' && !v.entregada || v.tipo === 'fiado' && s > 0.004)) acciones.push('<button type="button" class="btn btn-sec" data-acc="recordar">' + icono('chat', 'ic-chico') + ' Recordarle</button>');
   var accDuena = [];
   if (esDuena() && esApartadoPend) {
     accDuena.push('<button type="button" class="btn btn-sec btn-chico" data-acc="extender">' + icono('calendario', 'ic-chico') + ' Dar más días</button>');
@@ -209,7 +243,10 @@ async function verVenta(id, opts) {
     '<div class="tarjeta" style="padding:12px 14px">' +
       '<div class="fila-entre"><span class="tenue">Clienta</span>' +
         (cli ? '<button type="button" class="btn btn-plano btn-chico" data-acc="cliente">' + esc(cli.nombre) + '</button>' : '<span>Sin clienta</span>') + '</div>' +
-      (vendedora ? '<div class="fila-entre"><span class="tenue">Atendió</span><span>' + esc(vendedora.nombre) + '</span></div>' : '') +
+      (vendedora ? '<div class="fila-entre"><span class="tenue">Vendió</span><span>' + esc(vendedora.nombre) +
+        (v.tipo === 'contado' && Number(v.comision_pct) > 0 && v.estado === 'activa' && (esDuena() || v.vendedora_id === ST.yo.id)
+          ? ' <span class="tenue">· comisión ' + fmtUSD(redondear2(v.total * v.comision_pct / 100)) + '</span>' : '') + '</span></div>' : '') +
+      (anoto ? '<div class="fila-entre"><span class="tenue">La anotó</span><span>' + esc(anoto.nombre) + '</span></div>' : '') +
       (esApartadoPend ? '<div class="fila-entre"><span class="tenue">Apartado hasta</span><span class="' + (v.vence_en < hoyCaracas() ? 'error-txt' : '') + '">' + fmtFechaLarga(v.vence_en) + '</span></div>' : '') +
       (d.origen ? '<div class="fila-entre"><span class="tenue">Cambio de</span><button type="button" class="btn btn-plano btn-chico" data-ir="' + d.origen.id + '">Venta #' + d.origen.numero + '</button></div>' : '') +
       (d.cambios.length ? '<div class="fila-entre"><span class="tenue">Cambios</span><span>' + d.cambios.map(function (x) {
@@ -240,6 +277,8 @@ async function verVenta(id, opts) {
         '<div class="sub">' + fmtFechaHora(p.creado_en) + (p.anulado_en ? ' · anulado: ' + esc(p.motivo_anulacion || '') : '') + '</div></div>' +
         '<div class="derecha num"><div class="' + (p.anulado_en ? 'tachado' : 'fuerte') + '">' + fmtMonto(p.monto, p.moneda) + '</div>' +
         (p.moneda === 'VES' ? '<div class="sub">≈ ' + fmtUSD(p.monto_usd) + ' a ' + fmtTasa(p.tasa) + '</div>' : '') + '</div>' +
+        (p.comprobante ? '<button type="button" class="btn btn-plano btn-icono" data-ver-foto="' + esc(p.comprobante) + '" aria-label="Ver foto del pago" title="Ver foto del pago">' + icono('foto', 'ic-chico ok-txt') + '</button>'
+          : !p.anulado_en && p.cuenta_id ? '<button type="button" class="btn btn-plano btn-icono" data-poner-foto="' + p.id + '" aria-label="Agregar foto del pago" title="Agregar foto del pago">' + icono('camara', 'ic-chico') + '</button>' : '') +
         (puedeAnular ? '<button type="button" class="btn btn-plano btn-icono" data-anular-pago="' + p.id + '" aria-label="Anular abono">' + icono('basura', 'ic-chico') + '</button>' : '') +
       '</div>';
     }).join('') + '</div>' : '') +
@@ -260,7 +299,25 @@ async function verVenta(id, opts) {
   h.cuerpo.addEventListener('click', async function (e) {
     var ir = e.target.closest('[data-ir]');
     if (ir) { h.cerrar(); verVenta(Number(ir.dataset.ir)); return; }
+    var vf = e.target.closest('[data-ver-foto]');
+    if (vf) { verComprobante(vf.dataset.verFoto); return; }
     if (ocupado) return;
+    var pf = e.target.closest('[data-poner-foto]');
+    if (pf) {
+      // La cámara se abre en el mismo toque (si no, el teléfono la bloquea)
+      var archivo = elegirFoto();
+      ocupado = true;
+      try {
+        var f = await archivo;
+        if (!f) return;
+        pf.disabled = true;
+        var ruta = await subirComprobante(f);
+        await rpc('jab_foto_pago', { p_pago: Number(pf.dataset.ponerFoto), p_ruta: ruta });
+        await trasCambio('Foto del pago guardada');
+      } catch (err) { toast(errMsg(err), 'error'); pf.disabled = false; }
+      finally { ocupado = false; }
+      return;
+    }
     var ap = e.target.closest('[data-anular-pago]');
     var b = e.target.closest('[data-acc]');
     if (!ap && !b) return;
@@ -275,11 +332,17 @@ async function verVenta(id, opts) {
     try {
       if (acc === 'cliente') { verCliente(v.cliente_id); return; }
       if (acc === 'recibo') { compartirTexto(textoRecibo(d), cli && cli.telefono); return; }
+      if (acc === 'recordar') {
+        if (!cli.telefono) toast('La clienta no tiene teléfono: se copia el mensaje para que lo envíes.');
+        compartirTexto(textoRecordatorio(d), cli.telefono); return;
+      }
       if (acc === 'abonar') { if (await hojaAbono(v)) await trasCambio('Abono registrado'); return; }
       if (acc === 'cambio') { h.cerrar(); hojaCambio(v, d.items); return; }
       if (acc === 'entregar') {
+        var noLlegan = d.items.filter(function (i) { var p = ST.prodPorId.get(i.producto_id); return i.cantidad > 0 && p && p.por_llegar; });
+        if (noLlegan.length) { toast('Todavía no llegó: ' + noLlegan.map(function (i) { return i.descripcion; }).join(', ') + '. Cuando llegue, márcala en Inventario con "Ya llegó".', 'error', 7000); return; }
         if (s > 0.004) {
-          if (!esDuena() && !ST.cfg.vendedora_fia) { toast('Falta pagar ' + fmtUSD(s) + ' para entregar.', 'error'); return; }
+          if (!puede('fiar')) { toast('Falta pagar ' + fmtUSD(s) + ' para entregar.', 'error'); return; }
           if (!(await confirmar({ titulo: 'Entregar con deuda', mensaje: 'Falta pagar ' + fmtUSD(s) + '. ¿Se lo lleva y queda como fiado?', boton: 'Entregar y dejar fiado' }))) return;
           await rpc('jab_entregar_apartado', { p_venta: id, p_dejar_fiado: true });
         } else {

@@ -13,22 +13,25 @@ var VistaInventario = {
       '<div class="fila" style="margin-bottom:10px;flex-wrap:wrap">' +
         '<div class="buscador crece" style="min-width:200px">' + icono('buscar', 'ic-chico') +
           '<input class="entrada" id="invBuscar" placeholder="Buscar prenda o código" autocomplete="off"></div>' +
-        '<select class="entrada" id="invCat" style="width:auto;min-width:150px" aria-label="Categoría"></select></div>' +
+        '<select class="entrada" id="invCat" style="width:auto;min-width:150px" aria-label="Categoría"></select>' +
+        (esDuena() ? '<button type="button" class="btn btn-sec btn-chico" id="invCats">Ordenar categorías</button>' : '') + '</div>' +
       '<div class="chips" id="invFiltro" style="margin-bottom:12px">' +
         '<button type="button" class="chip activo" data-f="todas">Todas</button>' +
         '<button type="button" class="chip" data-f="con">Con existencia</button>' +
         '<button type="button" class="chip" data-f="agotadas">Agotadas</button>' +
+        '<button type="button" class="chip" data-f="porllegar">Por llegar</button>' +
         (esDuena() ? '<button type="button" class="chip" data-f="sincosto">Sin costo</button><button type="button" class="chip" data-f="archivadas">Archivadas</button>' : '') +
       '</div>' +
+      '<div id="invLlegada"></div>' +
       '<div id="invLista"></div>';
     var self = this;
     var nb = $('#invNueva'); if (nb) nb.onclick = function () { editarProducto(null); };
+    var oc = $('#invCats'); if (oc) oc.onclick = hojaCategorias;
     $('#invBuscar').addEventListener('input', debounce(function () { self.pintarLista(); }, 220));
     $('#invCat').addEventListener('change', function (e) { self.cat = e.target.value; self.pintarLista(); });
     $('#invFiltro').addEventListener('click', function (e) {
       var b = e.target.closest('[data-f]'); if (!b) return;
       self.filtro = b.dataset.f;
-      $$('#invFiltro .chip').forEach(function (x) { x.classList.toggle('activo', x === b); });
       self.pintarLista();
     });
     $('#invLista').addEventListener('click', function (e) {
@@ -48,15 +51,17 @@ var VistaInventario = {
   },
   pintarKpi() {
     var activos = ST.productos.filter(function (p) { return p.activo; });
-    var unidades = 0, valorVenta = 0, valorCosto = 0, sinCosto = 0;
+    var unidades = 0, valorVenta = 0, valorCosto = 0, sinCosto = 0, porLlegar = 0, modelosLlegar = 0;
     activos.forEach(function (p) {
       var s = stockProducto(p.id);
-      unidades += s; valorVenta += s * Number(p.precio);
+      if (p.por_llegar) { porLlegar += s; modelosLlegar++; } else unidades += s;
+      valorVenta += s * Number(p.precio);
       if (ST.costos.has(p.id)) valorCosto += s * ST.costos.get(p.id); else if (s > 0) sinCosto++;
     });
     $('#invKpi').innerHTML = '<div class="tarjetas-kpi">' +
       '<div class="kpi"><div class="t">Prendas</div><div class="v">' + activos.length + '</div><div class="s">modelos activos</div></div>' +
       '<div class="kpi"><div class="t">Unidades</div><div class="v">' + unidades + '</div><div class="s">en tienda</div></div>' +
+      (modelosLlegar ? '<div class="kpi"><div class="t">Por llegar</div><div class="v">' + porLlegar + '</div><div class="s">' + modelosLlegar + ' prenda' + (modelosLlegar === 1 ? '' : 's') + ' · solo se apartan</div></div>' : '') +
       '<div class="kpi"><div class="t">Valor a precio de venta</div><div class="v">' + fmtUSD(valorVenta) + '</div></div>' +
       (esDuena() ? '<div class="kpi"><div class="t">Valor a costo</div><div class="v">' + fmtUSD(valorCosto) + '</div><div class="s">' +
         (sinCosto ? sinCosto + ' prenda' + (sinCosto === 1 ? '' : 's') + ' sin costo' : 'todas con costo') + '</div></div>' : '') +
@@ -65,6 +70,7 @@ var VistaInventario = {
   pintarLista() {
     var cont = $('#invLista'); if (!cont) return;
     var q = normalizar($('#invBuscar').value.trim()), f = this.filtro, cat = this.cat;
+    $$('#invFiltro .chip').forEach(function (x) { x.classList.toggle('activo', x.dataset.f === f); });
     var lista = ST.productos.filter(function (p) {
       if (f === 'archivadas' ? p.activo : !p.activo) return false;
       if (cat && p.categoria !== cat) return false;
@@ -73,8 +79,14 @@ var VistaInventario = {
       if (f === 'con') return s > 0;
       if (f === 'agotadas') return s <= 0;
       if (f === 'sincosto') return !ST.costos.has(p.id);
+      if (f === 'porllegar') return p.por_llegar;
       return true;
     }).sort(function (a, b) { return b.id - a.id; });
+    var ll = $('#invLlegada');
+    ll.innerHTML = f === 'porllegar' && esDuena() && lista.length
+      ? '<div class="aviso fila-entre" style="margin-bottom:12px;flex-wrap:wrap;gap:8px"><span class="crece">Cuando lleguen a la tienda, márcalas para poder venderlas de contado.</span>' +
+        '<button type="button" class="btn btn-chico" id="invLlegaron">' + icono('check', 'ic-chico') + ' Llegaron varias</button></div>' : '';
+    if ($('#invLlegaron')) $('#invLlegaron').onclick = function () { hojaLlegada(lista); };
     if (!lista.length) {
       cont.innerHTML = ST.productos.length
         ? '<div class="vacio">Ninguna prenda coincide con el filtro.</div>'
@@ -93,7 +105,7 @@ var VistaInventario = {
           '<div class="sub corta">' + esc(p.codigo) + ' · ' + esc(p.categoria) + '</div>' +
           '<div class="sub corta">' + (resumen || 'Sin tallas') + '</div></div>' +
         '<div class="derecha"><div class="num fuerte">' + fmtUSD(p.precio) + '</div>' +
-          '<div class="sub ' + (s <= 0 ? 'error-txt' : '') + '">' + (s > 0 ? s + ' en tienda' : 'Agotada') + '</div>' +
+          '<div class="sub ' + (s <= 0 ? 'error-txt' : p.por_llegar ? 'aviso-txt' : '') + '">' + (s > 0 ? s + (p.por_llegar ? ' por llegar' : ' en tienda') : 'Agotada') + '</div>' +
           (esDuena() && !ST.costos.has(p.id) ? '<div class="sub aviso-txt">sin costo</div>' : '') + '</div></button>';
     }, 60, '.lista');
   }
@@ -107,6 +119,7 @@ function verProducto(p) {
       '<div class="fila-entre" style="margin:14px 0"><div class="tenue">' + esc(p.codigo) + ' · ' + esc(p.categoria) + '</div>' +
       '<div class="num fuerte" style="font-size:1.3rem">' + fmtUSD(p.precio) + '</div></div>' +
       (p.notas ? '<p class="suave">' + esc(p.notas) + '</p>' : '') +
+      (p.por_llegar ? '<div class="aviso fila" style="margin-bottom:12px">' + icono('camion', 'ic-chico') + ' Todavía no llegó a la tienda: solo se puede apartar.</div>' : '') +
       '<div class="lista">' + variantesActivas(p.id).map(function (v) {
         return '<div class="item"><div class="crece">' + esc(descVariante(v)) + '</div><span class="num ' + (v.stock ? 'fuerte' : 'error-txt') + '">' + (v.stock || 'Agotada') + '</span></div>';
       }).join('') + '</div>'
@@ -152,6 +165,7 @@ function editarProducto(p, opts) {
         '</div>' +
         '<div class="ayuda" id="epGanancia">El costo es lo que te costó cada prenda (SHEIN + su parte del flete). Solo tú lo ves.</div>' +
         '<label class="campo"><span>Notas (opcional)</span><input id="epNotas" value="' + esc(p.notas || '') + '" placeholder="Tela, detalles, de qué pedido viene…"></label>' +
+        '<label class="fila"><input type="checkbox" id="epPorLlegar"' + (p.por_llegar || esPendienteLlegar(p.categoria) ? ' checked' : '') + ' style="width:20px;height:20px"> Todavía no llega a la tienda (solo se puede apartar)</label>' +
       '</div>' +
       '<h3 style="margin:20px 0 8px">Tallas, colores y existencia</h3>' +
       '<div class="chips" id="epPresets" style="margin-bottom:10px">' + PRESETS_TALLAS.map(function (x, i) {
@@ -191,6 +205,7 @@ function editarProducto(p, opts) {
     }
   }
 
+  h.$('#epCat').addEventListener('change', function () { if (esPendienteLlegar(h.$('#epCat').value)) h.$('#epPorLlegar').checked = true; });
   h.$('#epPrecio').addEventListener('input', pintarGanancia);
   h.$('#epCosto').addEventListener('input', pintarGanancia);
   h.$('#epVars').addEventListener('input', function (e) {
@@ -243,8 +258,10 @@ function editarProducto(p, opts) {
       if (!Number.isInteger(st) || st < 0) throw new Error('La existencia de la talla "' + (f.talla || '—') + '" debe ser un número entero.');
       return { talla: f.talla.trim() || (vars.length === 1 ? 'Única' : ''), color: f.color.trim(), stock: st };
     });
+    var porLlegar = h.$('#epPorLlegar').checked, cat = h.$('#epCat').value.trim();
+    if (!porLlegar && esPendienteLlegar(cat)) throw new Error('Ya llegó: cámbiale la categoría "' + cat + '" por la real (Blusas, Vestidos…).');
     var datos = {
-      id: nueva ? null : p.id, nombre: nombre, categoria: h.$('#epCat').value.trim(),
+      id: nueva ? null : p.id, nombre: nombre, categoria: cat, por_llegar: porLlegar,
       precio: redondear2(precio), notas: h.$('#epNotas').value.trim(), variantes: payloadVars
     };
     if (costoN != null) datos.costo = costoN;
@@ -301,4 +318,80 @@ function ajustarExistencia(fila, p) {
       listo = true; h.cerrar(); resolver(n);
     });
   });
+}
+
+function esPendienteLlegar(cat) { return normalizar(String(cat || '').trim()) === 'pendiente por llegar'; }
+
+// Marcar como llegadas varias prendas a la vez (y ponerles su categoría real)
+function hojaLlegada(lista) {
+  var elegidas = new Set();
+  var cats = Array.from(new Set(categorias().concat(CATEGORIAS_BASE))).filter(function (c) { return !esPendienteLlegar(c); })
+    .sort(function (a, b) { return a.localeCompare(b, 'es'); });
+  var h = abrirHoja({
+    titulo: 'Llegaron a la tienda', clase: 'completa', cerrarFuera: false,
+    html: '<p class="suave" style="margin-top:0">Toca las prendas que llegaron. Si son de distintas categorías, hazlo por grupos (primero las blusas, luego los vestidos…).</p>' +
+      '<label class="campo" style="margin-bottom:12px"><span>Categoría real</span><input id="llCat" list="llCats" placeholder="Ej.: Blusas"><datalist id="llCats">' +
+        cats.map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></label>' +
+      '<div class="ayuda" style="margin:-4px 0 10px">Si la dejas vacía, las que ya tienen categoría la conservan.</div>' +
+      '<div class="lista" id="llLista">' + lista.map(function (p) {
+        return '<label class="item"><input type="checkbox" data-ll="' + p.id + '" style="width:22px;height:22px;flex:none">' + imgProducto(p, 'miniatura') +
+          '<div class="crece"><div class="titulo corta">' + esc(p.nombre) + '</div><div class="sub corta">' + esc(p.codigo) + ' · ' + esc(p.categoria) + ' · ' + stockProducto(p.id) + ' pzs</div></div></label>';
+      }).join('') + '</div>',
+    pie: '<button type="button" class="btn btn-ancho" id="llOk" disabled>Marcar como llegadas</button>'
+  });
+  h.$('#llLista').addEventListener('change', function (e) {
+    var id = Number(e.target.dataset.ll); if (!id) return;
+    if (e.target.checked) elegidas.add(id); else elegidas.delete(id);
+    h.$('#llOk').disabled = !elegidas.size;
+    h.$('#llOk').textContent = elegidas.size ? 'Marcar ' + elegidas.size + ' como llegada' + (elegidas.size === 1 ? '' : 's') : 'Marcar como llegadas';
+  });
+  protegerBoton(h.$('#llOk'), async function () {
+    var cat = h.$('#llCat').value.trim();
+    if (esPendienteLlegar(cat)) throw new Error('Escribe la categoría real (Blusas, Vestidos…).');
+    var ids = Array.from(elegidas);
+    var sinCat = ids.map(function (id) { return ST.prodPorId.get(id); }).filter(function (p) { return esPendienteLlegar(p.categoria); });
+    if (!cat && sinCat.length) throw new Error('Elige la categoría: ' + sinCat.length + ' de las elegidas están en "' + sinCat[0].categoria + '".');
+    var hechas = 0;
+    try {
+      for (var i = 0; i < ids.length; i++) {
+        await rpc('jab_marcar_llegada', { p_producto: ids[i], p_categoria: cat || null });
+        hechas++; elegidas.delete(ids[i]);
+      }
+    } finally {
+      await cargarCatalogo();
+      if (VistaActual && VistaActual.refrescar) VistaActual.refrescar();
+    }
+    toast(hechas + ' prenda' + (hechas === 1 ? '' : 's') + ' ya se pueden vender', 'ok');
+    h.cerrar();
+  }, 'Guardando…');
+}
+
+// Renombrar o unir categorías (ej.: "blusa" y "Blusas" quedan en una sola)
+function hojaCategorias() {
+  var h = abrirHoja({ titulo: 'Ordenar categorías', html: '<div id="ocLista"></div>' });
+  function pintar() {
+    var cuenta = new Map();
+    ST.productos.forEach(function (p) { if (p.activo) cuenta.set(p.categoria, (cuenta.get(p.categoria) || 0) + 1); });
+    var cats = Array.from(cuenta.keys()).sort(function (a, b) { return a.localeCompare(b, 'es'); });
+    h.$('#ocLista').innerHTML = '<p class="suave" style="margin-top:0">Toca una categoría para cambiarle el nombre. Si le pones el nombre de otra que ya existe, se unen.</p>' +
+      '<div class="lista">' + cats.map(function (c) {
+        return '<button type="button" class="item" data-cat="' + esc(c) + '"><div class="crece">' + esc(c) + '</div><span class="tenue">' + cuenta.get(c) + '</span>' + icono('editar', 'ic-chico') + '</button>';
+      }).join('') + '</div>';
+  }
+  h.cuerpo.addEventListener('click', async function (e) {
+    var b = e.target.closest('[data-cat]'); if (!b || b.disabled) return;
+    var de = b.dataset.cat;
+    var a = await confirmar({ titulo: 'Categoría "' + de + '"', mensaje: 'Nombre nuevo. Si ya existe otra con ese nombre, las prendas se pasan a esa.', pedir: 'Nombre nuevo', valor: de, boton: 'Guardar' });
+    if (!a || a.trim() === de) return;
+    b.disabled = true;
+    try {
+      var existente = categorias().find(function (c) { return c !== de && normalizar(c) === normalizar(a.trim()); });
+      var n = await rpc('jab_renombrar_categoria', { p_de: de, p_a: existente || a.trim() });
+      await cargarCatalogo();
+      toast(n + ' prenda' + (n === 1 ? '' : 's') + ' pasaron a "' + (existente || a.trim()) + '"', 'ok');
+      pintar();
+      if (VistaActual && VistaActual.refrescar) VistaActual.refrescar();
+    } catch (err) { toast(errMsg(err), 'error'); b.disabled = false; }
+  });
+  pintar();
 }

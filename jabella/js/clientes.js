@@ -10,6 +10,8 @@ function formClienteHtml(c) {
       '<label class="campo"><span>Cédula</span><input id="cliCedula" inputmode="numeric" value="' + esc(c.cedula) + '"></label>' +
     '</div>' +
     '<label class="campo"><span>Notas</span><textarea id="cliNotas" placeholder="Talla, gustos, dirección…">' + esc(c.notas) + '</textarea></label>' +
+    (esDuena() ? '<label class="campo"><span>Límite de fiado ($)</span><input id="cliLimite" inputmode="decimal" value="' + (c.limite_fiado != null ? esc(fmtNum(c.limite_fiado)) : '') + '" placeholder="Sin límite"></label>' +
+      '<div class="ayuda">Lo máximo que la vendedora le puede dejar fiado. Vacío = sin límite. Tú siempre puedes pasarlo.</div>' : '') +
   '</div>';
 }
 
@@ -21,6 +23,12 @@ function leerFormCliente(h) {
     notas: h.$('#cliNotas').value.trim() || null
   };
   if (!d.nombre) throw new Error('Escribe el nombre de la clienta.');
+  var lim = h.$('#cliLimite');
+  if (lim) {
+    var t = lim.value.trim(), n = t ? parseNum(t) : null;
+    if (t && (isNaN(n) || n < 0)) throw new Error('Revisa el límite de fiado.');
+    d.limite_fiado = n == null ? null : redondear2(n);
+  }
   return d;
 }
 
@@ -196,6 +204,7 @@ async function verCliente(id) {
         '<div class="fila-entre"><div><div class="tenue">Teléfono</div>' + esc(c.telefono || '—') + '</div>' +
           '<div><div class="tenue">Cédula</div>' + esc(c.cedula || '—') + '</div></div>' +
         (c.notas ? '<div style="margin-top:10px"><div class="tenue">Notas</div>' + esc(c.notas) + '</div>' : '') +
+        (c.limite_fiado != null ? '<div style="margin-top:10px"><div class="tenue">Límite de fiado</div>' + fmtUSD(c.limite_fiado) + '</div>' : '') +
         '<div class="botonera" style="margin-top:12px">' +
           (c.telefono ? '<button type="button" class="btn btn-sec btn-chico" id="cliWa">' + icono('enviar', 'ic-chico') + ' WhatsApp</button>' : '') +
           '<button type="button" class="btn btn-sec btn-chico" id="cliEditar">' + icono('editar', 'ic-chico') + ' Editar</button>' +
@@ -211,7 +220,10 @@ async function verCliente(id) {
     h.cuerpo.innerHTML = html;
 
     var wa = h.$('#cliWa');
-    if (wa) wa.onclick = function () { compartirTexto('Hola ' + c.nombre.split(' ')[0] + ', te escribimos de JABELLA Store.', c.telefono); };
+    if (wa) wa.onclick = function () {
+      compartirTexto('Hola ' + c.nombre.split(' ')[0] + ', te escribimos de JABELLA Store.' +
+        (debe > 0.004 ? ' Te recordamos que tienes pendiente ' + fmtUSD(debe) + ' con nosotras. ¡Gracias!' : ''), c.telefono);
+    };
     h.$('#cliEditar').onclick = async function () {
       var n = await editarCliente(c);
       if (n) { h.cerrar(); verCliente(id); if (VistaActual === VistaClientes) VistaClientes.pintar(); }

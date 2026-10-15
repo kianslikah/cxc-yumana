@@ -94,7 +94,28 @@ function editorPagos(cont, o) {
       '</div>' +
       '<div class="equiv" data-equiv>' + esc(equiv) + '</div>' +
       (pideReferencia(m) ? '<input class="entrada" data-ref style="margin-top:6px" placeholder="Referencia (opcional)" value="' + esc(f.referencia) + '">' : '') +
+      (m && !m.es_saldo_favor ? htmlFoto(f) : '') +
     '</div>';
+  }
+
+  // Foto del pago (opcional): se sube apenas se toma, así al cobrar ya está lista
+  function htmlFoto(f) {
+    if (f.subiendo) return '<div class="pago-foto tenue">' + icono('foto', 'ic-chico') + ' Subiendo foto…</div>';
+    if (f.comprobante) return '<div class="pago-foto">' + (f.vista ? '<img src="' + esc(f.vista) + '" alt="">' : '') +
+      '<span class="ok-txt crece">' + icono('check', 'ic-chico') + ' Foto del pago lista</span>' +
+      '<button type="button" class="btn btn-plano btn-chico" data-sin-foto>Quitar</button></div>';
+    return '<button type="button" class="btn btn-plano btn-chico pago-foto-btn" data-foto>' + icono('camara', 'ic-chico') + ' Foto del pago</button>';
+  }
+  async function tomarFoto(f) {
+    var file = await elegirFoto();
+    if (!file) return;
+    f.subiendo = true; pintar();
+    try {
+      var ruta = await subirComprobante(file);
+      if (f.vista) URL.revokeObjectURL(f.vista);
+      f.comprobante = ruta; f.vista = URL.createObjectURL(file);
+    } catch (e) { toast('No se pudo subir la foto: ' + errMsg(e), 'error'); }
+    finally { f.subiendo = false; if (filas.indexOf(f) >= 0) pintar(); }
   }
 
   function htmlResumen() {
@@ -143,6 +164,13 @@ function editorPagos(cont, o) {
   });
   cont.addEventListener('click', function (e) {
     if (e.target.closest('[data-agregar]')) { agregar(); return; }
+    var fb = e.target.closest('[data-foto]'), sf = e.target.closest('[data-sin-foto]');
+    if (fb || sf) {
+      var fila = filas[Number(e.target.closest('.pago').dataset.i)];
+      if (fb) tomarFoto(fila);
+      else { fila.comprobante = null; if (fila.vista) URL.revokeObjectURL(fila.vista); fila.vista = null; pintar(); }
+      return;
+    }
     var q = e.target.closest('[data-quitar]');
     if (q) { filas.splice(Number(q.closest('.pago').dataset.i), 1); pintar(); }
   });
@@ -168,12 +196,14 @@ function editorPagos(cont, o) {
     },
     // Lista para enviar a la base (descarta filas vacías)
     pagos: function () {
+      if (filas.some(function (f) { return f.subiendo; })) throw new Error('Espera a que termine de subir la foto del pago.');
       var lista = [];
       filas.forEach(function (f) {
         var usd = usdFila(f);
         if (usd <= 0) return;
         var m = metodo(f.metodo_id);
         var p = { metodo_id: m.id, monto_usd: usd, referencia: (f.referencia || '').trim() };
+        if (f.comprobante && !m.es_saldo_favor) p.comprobante = f.comprobante;
         if (monedaMetodo(m) === 'VES' && !m.es_saldo_favor) { p.monto = redondear2(parseNum(f.texto)); p.tasa = tasa(); }
         lista.push(p);
       });

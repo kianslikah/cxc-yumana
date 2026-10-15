@@ -150,6 +150,12 @@ var _aplicarCambios = debounce(async function () {
     if (p.has('catalogo')) tareas.push(cargarCatalogo());
     if (p.has('config')) tareas.push(cargarConfig());
     if (p.has('clientes')) tareas.push(cargarClientes());
+    // Si la dueña cambió mis permisos o mi comisión, tomarlos sin tener que volver a entrar
+    if (p.has('yo')) tareas.push(sb.from('jab_usuarios').select('*').eq('id', ST.yo.id).maybeSingle().then(function (r) {
+      if (r.error || !r.data) return;
+      if (!r.data.activo) { salir(); return; }
+      ST.yo = r.data;
+    }));
     await Promise.all(tareas);
     // No repintar mientras haya una ventana abierta encima (se repinta al cerrarla o al volver)
     if (_hojas.length) window._repintarAlCerrar = true;
@@ -170,7 +176,7 @@ function suscribirCambios() {
 }
 // Al volver a la app (el teléfono corta la conexión en segundo plano) se recarga todo
 document.addEventListener('visibilitychange', function () {
-  if (document.visibilityState === 'visible' && ST.yo) { marcarCambio('catalogo'); marcarCambio('config'); marcarCambio('clientes'); }
+  if (document.visibilityState === 'visible' && ST.yo) { marcarCambio('catalogo'); marcarCambio('config'); marcarCambio('clientes'); marcarCambio('yo'); }
 });
 
 /* ---------------- Eventos globales ---------------- */

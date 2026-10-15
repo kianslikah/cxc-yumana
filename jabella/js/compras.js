@@ -113,11 +113,18 @@ var VistaCompras = {
     });
     var enCasillero = CP.paquetes.filter(function (p) { var c = compraPorId(p.compra_id); return c && !c.anulada_en && p.estado === 'casillero' && !p.envio_id && piezasPendientes(c.id) > 0; }).length;
     var viajando = CP.envios.filter(function (e) { return !e.anulado_en && e.estado !== 'recibido'; }).length;
+    // Faltantes que SHEIN todavía no ha devuelto
+    var porReembolsar = redondear2(CP.items.reduce(function (s, i) {
+      var cp = compraPorId(i.compra_id);
+      if (!(i.faltantes > 0) || !cp || cp.anulada_en) return s;
+      return s + Math.max(0, i.faltantes * Number(i.precio) * factorCompra(cp) - Number(i.reembolsado));
+    }, 0));
     $('#cpKpi').innerHTML = '<div class="tarjetas-kpi">' +
       '<div class="kpi"><div class="t">Piezas por llegar</div><div class="v">' + piezas + '</div></div>' +
       '<div class="kpi"><div class="t">Invertido en camino</div><div class="v">' + fmtUSD(plata) + '</div><div class="s">sin contar flete</div></div>' +
       '<div class="kpi"><div class="t">Paquetes en el casillero</div><div class="v">' + enCasillero + '</div><div class="s">sin caja todavía</div></div>' +
-      '<div class="kpi"><div class="t">Cajas viajando</div><div class="v">' + viajando + '</div></div></div>';
+      '<div class="kpi"><div class="t">Cajas viajando</div><div class="v">' + viajando + '</div></div>' +
+      (porReembolsar > 0.004 ? '<div class="kpi"><div class="t">Por reembolsar</div><div class="v aviso-txt">' + fmtUSD(porReembolsar) + '</div><div class="s">faltantes que SHEIN debe</div></div>' : '') + '</div>';
     var c = $('#cpCuerpo');
     ({ llegar: this.pintarPorLlegar, pedidos: this.pintarPedidos, cajas: this.pintarCajas, faltantes: this.pintarFaltantes })[this.pestana].call(this, c);
   },
@@ -195,12 +202,12 @@ async function refrescarCompras() {
 }
 
 /* ---------------- Pago o reembolso (mercancía, flete) ---------------- */
-// o = {titulo, texto, monto ($ sugerido), boton, enviar: async (cuenta_id, monto, tasa) }
+// o = {titulo, texto, monto ($ sugerido), boton, preferir (regex de la cuenta por defecto), enviar: async (cuenta_id, monto, tasa) }
 function hojaMovimientoInversion(o) {
   return new Promise(function (resolver) {
     var listo = false;
     var cuentas = ST.cuentas.filter(function (c) { return c.activa; });
-    var zelle = cuentas.find(function (c) { return /zelle/i.test(c.nombre); }) || cuentas[0];
+    var zelle = cuentas.find(function (c) { return (o.preferir || /zelle/i).test(c.nombre); }) || cuentas[0];
     var h = abrirHoja({
       titulo: o.titulo, cerrarFuera: false,
       html: (o.texto ? '<p class="suave" style="margin-top:0">' + esc(o.texto) + '</p>' : '') + '<div class="pila">' +
@@ -687,6 +694,23 @@ async function verEnvio(id) {
 }
 
 /* ---------------- Recepción ---------------- */
+// Prenda del inventario que parece ser la misma que un artículo del pedido (para no duplicarla)
+function prendaParecida(desc) {
+  var d = ' ' + normalizar(desc).replace(/[^a-z0-9ñ ]/g, ' ').replace(/\s+/g, ' ') + ' ';
+  var mejor = null, mejorN = 0;
+  ST.productos.forEach(function (p) {
+    if (!p.activo) return;
+    var n = normalizar(p.nombre).replace(/[^a-z0-9ñ ]/g, ' ').trim();
+    if (!n) return;
+    if (' ' + n + ' ' === d) { mejor = p; mejorN = 99; return; }
+    var pal = n.split(/\s+/).filter(function (w) { return w.length > 2; });
+    if (pal.length < 2) return;
+    var todas = pal.every(function (w) { return d.indexOf(' ' + w + ' ') >= 0; });
+    if (todas && pal.length > mejorN) { mejor = p; mejorN = pal.length; }
+  });
+  return mejor;
+}
+
 async function hojaRecepcion(e) {
   await Promise.all([cargarCompras(), cargarCatalogo()]);
   e = envioPorId(e.id);
@@ -703,6 +727,7 @@ async function hojaRecepcion(e) {
   var lineas = CP.items.filter(function (i) { return compras.indexOf(i.compra_id) >= 0 && pendiente(i) > 0; }).map(function (i) {
     var prod = i.producto_id ? ST.prodPorId.get(i.producto_id) : null, parte = partido(i.compra_id);
     return { item: i, compra: compraPorId(i.compra_id), recibidas: parte ? 0 : pendiente(i), faltantes: 0, partido: parte,
+      sugerida: prod ? null : prendaParecida(i.descripcion),
       destino: prod ? { tipo: 'existente', producto: prod } : { tipo: 'nueva', nombre: i.descripcion, categoria: '', precio: '' } };
   });
   if (!lineas.length) { toast('No quedan piezas por recibir de los pedidos de esta caja.', 'error'); return; }
@@ -740,6 +765,8 @@ async function hojaRecepcion(e) {
           '<label class="campo"><span>Categoría</span><input data-k="categoria" data-i="' + i + '" list="rcCats" value="' + esc(l.destino.categoria) + '"></label></div>' +
         '<div class="fila"><label class="campo crece"><span>Precio de venta ($)</span><input data-k="precio" data-i="' + i + '" inputmode="decimal" value="' + esc(l.destino.precio) + '"></label>' +
           '<button type="button" class="btn btn-plano btn-chico" data-existente="' + i + '" style="align-self:flex-end">Ya la tengo</button></div>' +
+        (l.sugerida && l.sugerida.activo ? '<div class="aviso fila-entre" style="font-size:.88rem;flex-wrap:wrap;gap:6px"><span class="crece">¿Es la misma que <b>' + esc(l.sugerida.nombre) + '</b> (' + fmtUSD(l.sugerida.precio) + ')?</span>' +
+          '<button type="button" class="btn btn-sec btn-chico" data-usar-sug="' + i + '">Sí, sumarla ahí</button></div>' : '') +
         '<div class="ayuda">Mismo nombre en varias líneas = una sola prenda con varias tallas.</div></div>';
     return '<div class="tarjeta" style="margin-bottom:10px;padding:12px">' +
       '<div class="fila">' + imgItem(it, 'miniatura') + '<div class="crece"><div class="fuerte">' + esc(descItem(it)) + '</div>' +
@@ -764,7 +791,8 @@ async function hojaRecepcion(e) {
     else if (d.rp != null) { var a = l('rp'); if (a.recibidas + a.faltantes < pendiente(a.item)) a.recibidas++; }
     else if (d.fm != null) { if (l('fm').faltantes > 0) l('fm').faltantes--; }
     else if (d.fp != null) { var b = l('fp'); if (b.recibidas + b.faltantes < pendiente(b.item)) b.faltantes++; else if (b.recibidas > 0) { b.recibidas--; b.faltantes++; } }
-    else if (d.nueva != null) { l('nueva').destino = { tipo: 'nueva', nombre: l('nueva').item.descripcion, categoria: '', precio: '' }; }
+    else if (d.nueva != null) { l('nueva').destino = { tipo: 'nueva', nombre: l('nueva').item.descripcion, categoria: '', precio: '' }; l('nueva').sugerida = null; }
+    else if (d.usarSug != null) { l('usarSug').destino = { tipo: 'existente', producto: l('usarSug').sugerida }; }
     else if (d.existente != null) {
       var p = await buscarPrenda('¿A qué prenda se suma?');
       if (!p) return;

@@ -113,7 +113,10 @@ var ICONOS = {
   candado: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',
   reloj: '<circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/>',
   reportes: '<path d="M4 20h16"/><path d="M7 16.5v-5M12 16.5V7M17 16.5v-8"/>',
-  entregar: '<path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7z"/><path d="m4 8.5 8 4.5 8-4.5M12 13v7"/>'
+  entregar: '<path d="M4 8.5 12 4l8 4.5v7L12 20l-8-4.5v-7z"/><path d="m4 8.5 8 4.5 8-4.5M12 13v7"/>',
+  foto: '<rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m4 17 5-4.5 3.5 3 3-2.5 4.5 4"/>',
+  camion: '<path d="M3.5 7h11v9h-11z"/><path d="M14.5 10h3.5l2.5 3v3h-6"/><circle cx="7.5" cy="17.5" r="1.7"/><circle cx="17" cy="17.5" r="1.7"/>',
+  chat: '<path d="M5 5.5h14v10H10l-4 3.5v-3.5H5z"/>'
 };
 function icono(n, clase) {
   return '<svg class="ic ' + (clase || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONOS[n] || '') + '</svg>';
@@ -134,7 +137,7 @@ function errMsg(e) {
   var m = (e && (e.message || e.error_description || e.error)) || String(e || 'Error');
   if (/failed to fetch|networkerror|load failed|network request failed/i.test(m)) return 'Sin conexión. Revisa el internet y vuelve a intentar.';
   if (/jwt expired|invalid jwt|refresh token/i.test(m)) return 'Tu sesión venció. Vuelve a entrar.';
-  if (/invalid login credentials/i.test(m)) return 'Usuario o clave incorrectos.';
+  if (/invalid login credentials/i.test(m)) return 'Correo o clave incorrectos.';
   if (/row-level security|permission denied/i.test(m)) return 'No tienes permiso para hacer esto.';
   if (/duplicate key/i.test(m)) return 'Ese dato ya existe.';
   return m;
@@ -212,6 +215,19 @@ function aplicarTema(t) {
 }
 
 function esDuena() { return !!(ST.yo && ST.yo.rol === 'duena' && ST.yo.activo); }
+// Lo que puede hacer quien está conectada (igual que jab__puede en la base, que es la que manda).
+// La dueña puede todo; la vendedora, lo que la dueña le marcó. Sin marcar: aparta y hace cambios,
+// no cambia precios, y fía según la regla vieja de la tienda.
+function permisoDe(u, permiso) {
+  if (!u || !u.activo) return false;
+  if (u.rol === 'duena') return true;
+  var p = u.permisos || {};
+  if (typeof p[permiso] === 'boolean') return p[permiso];
+  if (permiso === 'apartar' || permiso === 'cambios') return true;
+  if (permiso === 'fiar') return !!(ST.cfg && ST.cfg.vendedora_fia);
+  return false;
+}
+function puede(permiso) { return permisoDe(ST.yo, permiso); }
 
 async function cargarConfig() {
   var r = await sb.from('jab_config').select('*').eq('id', 1).single();
@@ -319,6 +335,36 @@ async function subirFoto(file) {
   var r2 = await sb.storage.from('jab-fotos').upload(base + '-m.jpg', mini, opts);
   if (r2.error) throw r2.error;
   return { foto: base + '.jpg', foto_mini: base + '-m.jpg' };
+}
+
+// Foto del pago (billetes, captura del pago móvil): bucket privado, se ve con un enlace temporal
+async function subirComprobante(file) {
+  var img = await comprimirImagen(file, 1400, 0.8);
+  var ruta = 'c/' + Date.now() + '-' + Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, '');
+  if (ruta.slice(-1) === '-') ruta += '0';
+  ruta += '.jpg';
+  var r = await sb.storage.from('jab-comprobantes').upload(ruta, img, { contentType: 'image/jpeg', upsert: false });
+  if (r.error) throw r.error;
+  return ruta;
+}
+async function verComprobante(ruta, titulo) {
+  var h = abrirHoja({ titulo: titulo || 'Foto del pago', html: '<div class="cargando">Cargando foto…</div>' });
+  var r = await sb.storage.from('jab-comprobantes').createSignedUrl(ruta, 600);
+  if (r.error) { h.cuerpo.innerHTML = '<div class="aviso aviso-error">' + esc(errMsg(r.error)) + '</div>'; return; }
+  h.cuerpo.innerHTML = '<img class="foto-comprobante" src="' + esc(r.data.signedUrl) + '" alt="Foto del pago">';
+}
+// Abre la cámara o la galería y devuelve el archivo elegido (o null)
+function elegirFoto() {
+  return new Promise(function (resolver) {
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.style.display = 'none';
+    inp.onchange = function () { var f = inp.files && inp.files[0]; inp.remove(); resolver(f || null); };
+    inp.oncancel = function () { inp.remove(); resolver(null); };
+    $$('input[data-elegir-foto]').forEach(function (x) { x.remove(); });
+    inp.setAttribute('data-elegir-foto', '');
+    document.body.appendChild(inp);
+    inp.click();
+  });
 }
 
 /* ---------------- Ventanas (hojas) ---------------- */

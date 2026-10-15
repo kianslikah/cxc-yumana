@@ -208,6 +208,8 @@ button.item:hover, .item.tocable:hover { background: var(--superficie-2); }
 .prenda .precio { font-weight: 600; margin-top: 4px; }
 .prenda .disp { font-size: .8rem; color: var(--texto-3); }
 .prenda.agotada { opacity: .55; }
+.prenda { position: relative; }
+.prenda .prenda-etq { position: absolute; top: 8px; left: 8px; box-shadow: var(--sombra); }
 .carrito-barra {
   position: fixed; left: 12px; right: 12px; z-index: 25;
   bottom: calc(var(--tabbar) + var(--seguro-abajo) + 10px);
@@ -236,6 +238,12 @@ button.item:hover, .item.tocable:hover { background: var(--superficie-2); }
 .pago { border: 1px solid var(--borde); border-radius: 12px; padding: 10px; background: var(--superficie); }
 .pago + .pago { margin-top: 8px; }
 .pago .equiv { font-size: .84rem; color: var(--texto-3); margin-top: 4px; }
+.pago-foto-btn { margin-top: 4px; padding-left: 0; }
+.pago-foto { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: .9rem; }
+.pago-foto img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid var(--borde); }
+.foto-comprobante { width: 100%; max-height: 75vh; object-fit: contain; border-radius: 12px; background: var(--lila-suave); display: block; }
+label.item { cursor: pointer; }
+input[type=checkbox] { accent-color: var(--ciruela); }
 
 /* ---------- Hojas (ventanas) ---------- */
 .velo { position: fixed; inset: 0; z-index: 100; background: var(--velo); display: flex; align-items: flex-end; justify-content: center; animation: aparecer .15s ease-out; }

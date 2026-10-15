@@ -41,7 +41,7 @@ select t('B no crea producto', $q$ jab_guardar_producto('{"nombre":"Z","precio":
 select t('B venta contado M $', $q$ jab_registrar_venta('{"tipo":"contado","items":[{"variante_id":1,"cantidad":1}],"pagos":[{"metodo_id":1,"monto_usd":15}]}') $q$);
 select set_config('t.v1', (select max(id) from jab_ventas)::text, false);
 select t('stock M=2', $q$ (select stock from jab_variantes where id=1) $q$);
-select t('B cambia precio', $q$ jab_registrar_venta('{"tipo":"contado","items":[{"variante_id":1,"cantidad":1,"precio":10}],"pagos":[{"metodo_id":1,"monto_usd":10}]}') $q$, 'Solo la dueña puede cambiar');
+select t('B cambia precio', $q$ jab_registrar_venta('{"tipo":"contado","items":[{"variante_id":1,"cantidad":1,"precio":10}],"pagos":[{"metodo_id":1,"monto_usd":10}]}') $q$, 'permiso para cambiar el precio');
 select t('B cobra de menos', $q$ jab_registrar_venta('{"tipo":"contado","items":[{"variante_id":1,"cantidad":1}],"pagos":[{"metodo_id":1,"monto_usd":10}]}') $q$, 'Falta cobrar');
 select t('B cobra de más', $q$ jab_registrar_venta('{"tipo":"contado","items":[{"variante_id":1,"cantidad":1}],"pagos":[{"metodo_id":1,"monto_usd":20}]}') $q$, 'mayor que el total');
 select t('B tasa vieja', $q$ jab_registrar_venta('{"tipo":"contado","items":[{"variante_id":2,"cantidad":1}],"pagos":[{"metodo_id":3,"monto_usd":15,"monto":525,"tasa":35}]}') $q$, 'tasa del día cambió');
@@ -63,7 +63,7 @@ select t('B abono de más', $q$ jab_registrar_abono(current_setting('t.ap')::big
 select t('B abono 15', $q$ jab_registrar_abono(current_setting('t.ap')::bigint, '[{"metodo_id":6,"monto_usd":15}]') $q$);
 select t('B entrega', $q$ (select jab_entregar_apartado(current_setting('t.ap')::bigint)) $q$);
 select t('B abono a pagada', $q$ jab_registrar_abono(current_setting('t.ap')::bigint, '[{"metodo_id":1,"monto_usd":1}]') $q$, 'ya está pagada');
-select t('B fiado', $q$ jab_registrar_venta('{"tipo":"fiado","cliente_id":1,"items":[{"variante_id":1,"cantidad":1}]}') $q$, 'Solo la dueña puede vender fiado');
+select t('B fiado', $q$ jab_registrar_venta('{"tipo":"fiado","cliente_id":1,"items":[{"variante_id":1,"cantidad":1}]}') $q$, 'permiso para vender fiado');
 select t('B ajusta stock', $q$ (select jab_ajustar_stock(1, 5, 'conteo')) $q$, 'dueña');
 select t('B no ve dinero', $q$ (select count(*) from jab_movimientos_dinero) $q$);
 select t('B saldos', $q$ (select count(*) from jab_saldos_cuentas()) $q$, 'dueña');

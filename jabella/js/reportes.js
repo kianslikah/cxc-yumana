@@ -13,7 +13,7 @@ var VistaReportes = {
     cont.innerHTML = '<div id="rpRaiz">' +
       '<div class="encabezado"><h2>Reportes</h2></div>' +
       '<div class="seg" id="rpPestanas" style="margin-bottom:14px">' +
-        '<button type="button" data-p="ganancia">Ganancias</button><button type="button" data-p="quietas">Sin movimiento</button>' +
+        '<button type="button" data-p="ganancia">Ganancias</button><button type="button" data-p="comisiones">Comisiones</button><button type="button" data-p="quietas">Sin movimiento</button>' +
         '<button type="button" data-p="cierres">Cierres de caja</button></div>' +
       '<div id="rpCuerpo"></div></div>';
     var self = this;
@@ -22,7 +22,9 @@ var VistaReportes = {
       if ((b = e.target.closest('[data-p]'))) { self.pestana = b.dataset.p; self.pintar(); return; }
       if ((b = e.target.closest('[data-per]'))) { self.periodo = b.dataset.per; self.pintar(); return; }
       if ((b = e.target.closest('[data-dias]'))) { self.diasSinMov = Number(b.dataset.dias); self.pintar(); return; }
-      if ((b = e.target.closest('[data-cierre]'))) { verCierre(Number(b.dataset.cierre)); }
+      if ((b = e.target.closest('[data-cierre]'))) { verCierre(Number(b.dataset.cierre)); return; }
+      if ((b = e.target.closest('[data-pagar-com]'))) { self.pagarComision(b.dataset.pagarCom); return; }
+      if ((b = e.target.closest('[data-venta]'))) { verVenta(Number(b.dataset.venta)); }
     });
     $('#rpRaiz').addEventListener('change', function (e) {
       if (e.target.id === 'rpDesde' || e.target.id === 'rpHasta') {
@@ -54,19 +56,63 @@ var VistaReportes = {
     $$('#rpPestanas button').forEach(function (b) { b.classList.toggle('activo', b.dataset.p === self.pestana); });
     var c = $('#rpCuerpo');
     c.innerHTML = '<div class="cargando">Calculando…</div>';
-    var f = { ganancia: this.pintarGanancia, quietas: this.pintarQuietas, cierres: this.pintarCierres }[this.pestana];
+    var f = { ganancia: this.pintarGanancia, comisiones: this.pintarComisiones, quietas: this.pintarQuietas, cierres: this.pintarCierres }[this.pestana];
     f.call(this, c).catch(function (e) { c.innerHTML = '<div class="aviso aviso-error">No se pudo cargar: ' + esc(errMsg(e)) + '</div>'; });
   },
-  async pintarGanancia(c) {
+  htmlPeriodo() {
     var r = this.rango(), self = this;
     var chips = [['hoy', 'Hoy'], ['7', '7 días'], ['mes', 'Este mes'], ['pasado', 'Mes pasado'], ['otro', 'Elegir fechas']];
-    c.innerHTML =
-      '<div class="chips" style="margin-bottom:10px">' + chips.map(function (x) {
+    return '<div class="chips" style="margin-bottom:10px">' + chips.map(function (x) {
         return '<button type="button" class="chip' + (self.periodo === x[0] ? ' activo' : '') + '" data-per="' + x[0] + '">' + x[1] + '</button>';
       }).join('') + '</div>' +
       (this.periodo === 'otro' ? '<div class="campos-2" style="margin-bottom:10px"><label class="campo"><span>Desde</span><input type="date" id="rpDesde" value="' + r[0] + '" max="' + hoyCaracas() + '"></label>' +
         '<label class="campo"><span>Hasta</span><input type="date" id="rpHasta" value="' + r[1] + '" max="' + hoyCaracas() + '"></label></div>' : '') +
-      '<div class="tenue" style="margin-bottom:8px">' + (r[0] === r[1] ? fmtFechaLarga(r[0]) : 'Del ' + fmtFecha(r[0]) + ' al ' + fmtFecha(r[1])) + '</div>' +
+      '<div class="tenue" style="margin-bottom:8px">' + (r[0] === r[1] ? fmtFechaLarga(r[0]) : 'Del ' + fmtFecha(r[0]) + ' al ' + fmtFecha(r[1])) + '</div>';
+  },
+  async pintarComisiones(c) {
+    var r = this.rango();
+    c.innerHTML = this.htmlPeriodo() + '<div id="rpDatos"><div class="cargando">Calculando…</div></div>';
+    var cont = $('#rpDatos');
+    var lista = await rpc('jab_comisiones', { p_desde: r[0], p_hasta: r[1] });
+    if (!cont.isConnected) return;
+    this.comisiones = lista;
+    if (!lista.length) {
+      cont.innerHTML = '<div class="vacio"><h3>Nadie tiene comisión</h3>Ponle el % de comisión a la vendedora en Ajustes → Usuarios.</div>';
+      return;
+    }
+    cont.innerHTML = '<p class="ayuda" style="margin-top:0">Solo cuenta lo vendido de contado y cobrado completo. Apartados, fiados y ventas anuladas no suman. El pago queda como gasto "Comisiones".</p>' +
+      lista.map(function (u) {
+        var debe = redondear2(Number(u.ganada) - Number(u.pagada)), per = u.periodo;
+        return '<div class="tarjeta" style="margin-bottom:12px">' +
+          '<div class="fila-entre"><h3>' + esc(u.nombre) + (u.activo ? '' : ' <span class="etq">Inactiva</span>') + '</h3><span class="etq etq-lila">' + fmtNum(u.pct).replace(/,00$/, '') + ' %</span></div>' +
+          '<div class="tarjetas-kpi" style="margin-top:10px">' +
+            '<div class="kpi"><div class="t">Vendió de contado</div><div class="v">' + fmtUSD(per.vendido) + '</div><div class="s">' + per.ventas_n + ' venta' + (per.ventas_n === 1 ? '' : 's') + ' en el período</div></div>' +
+            '<div class="kpi"><div class="t">Comisión del período</div><div class="v">' + fmtUSD(per.comision) + '</div></div>' +
+            '<div class="kpi"><div class="t">Se le debe</div><div class="v ' + (debe > 0.004 ? 'aviso-txt' : 'ok-txt') + '">' + fmtUSD(debe) + '</div><div class="s">ganó ' + fmtUSD(u.ganada) + ' · pagado ' + fmtUSD(u.pagada) + '</div></div>' +
+          '</div>' +
+          (debe > 0.004 ? '<button type="button" class="btn btn-chico" data-pagar-com="' + u.usuario_id + '" style="margin-top:10px">' + icono('dinero', 'ic-chico') + ' Pagar comisión</button>' : '') +
+          (u.ventas.length ? '<details style="margin-top:10px"><summary class="tenue">Ver ' + (u.ventas.length === 1 ? 'la venta' : 'las ' + u.ventas.length + ' ventas') + ' del período</summary><div class="lista" style="margin-top:8px">' + u.ventas.map(function (v) {
+            return '<button type="button" class="item" data-venta="' + v.id + '"><div class="crece">#' + v.numero + '<div class="sub">' + fmtFechaHora(v.creado_en) + '</div></div>' +
+              '<div class="derecha num"><div>' + fmtUSD(v.total) + '</div><div class="sub">comisión ' + fmtUSD(v.comision) + '</div></div></button>';
+          }).join('') + '</div></details>' : '') +
+        '</div>';
+      }).join('');
+  },
+  async pagarComision(id) {
+    var u = (this.comisiones || []).find(function (x) { return x.usuario_id === id; });
+    if (!u) return;
+    var debe = redondear2(Number(u.ganada) - Number(u.pagada)), clave = nuevaClave(), self = this;
+    var ok = await hojaMovimientoInversion({
+      titulo: 'Pagar comisión a ' + u.nombre, preferir: /efectivo/i,
+      texto: 'Se le deben ' + fmtUSD(debe) + '. Puedes pagarle todo o una parte. ¿De qué cuenta sale el dinero?',
+      monto: debe, boton: 'Registrar pago',
+      enviar: function (cuenta, monto, tasa) { return rpc('jab_pagar_comision', { p_usuario: id, p_cuenta: cuenta, p_monto: monto, p_tasa: tasa, p_clave: clave }); }
+    });
+    if (ok) { toast('Pago de comisión registrado', 'ok'); self.pintar(); }
+  },
+  async pintarGanancia(c) {
+    var r = this.rango();
+    c.innerHTML = this.htmlPeriodo() +
       '<div id="rpDatos"><div class="cargando">Calculando…</div></div>';
     var cont = $('#rpDatos'), d;
     try { d = await rpc('jab_reporte', { p_desde: r[0], p_hasta: r[1] }); }

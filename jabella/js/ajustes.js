@@ -83,7 +83,8 @@ var VistaAjustes = {
           return '<button type="button" data-tema="' + x[0] + '"' + (temaActual() === x[0] ? ' class="activo"' : '') + '>' + x[1] + '</button>';
         }).join('') + '</div></div>' +
       '<div class="tarjeta"><h3>Mi cuenta</h3>' +
-        '<p style="margin:6px 0 12px">' + esc(ST.yo.nombre) + ' <span class="tenue">(' + esc(ST.yo.usuario) + ' · ' + (esDuena() ? 'dueña' : 'vendedora') + ')</span></p>' +
+        '<p style="margin:6px 0 12px">' + esc(ST.yo.nombre) + ' <span class="tenue">(' + (esDuena() ? 'dueña' : 'vendedora') + ')</span><br><span class="tenue">Entras con: ' + esc(correoDe(ST.yo)) + '</span></p>' +
+        (esDuena() ? '' : '<p class="ayuda" style="margin:-4px 0 12px">Puedes: vender de contado' + ['apartar', 'fiar', 'cambios', 'descuentos'].filter(puede).map(function (k) { return ', ' + PERMISOS[k].corto; }).join('') + '.</p>') +
         '<div class="botonera"><button type="button" class="btn btn-sec btn-chico" data-a="clave">' + icono('candado', 'ic-chico') + ' Cambiar mi clave</button>' +
         '<button type="button" class="btn btn-sec btn-chico" data-a="salir">' + icono('salir', 'ic-chico') + ' Salir</button></div></div>' +
       (esDuena() ?
@@ -91,10 +92,10 @@ var VistaAjustes = {
           '<div class="campos-2"><label class="campo"><span>Días para retirar un apartado</span><input id="ajDias" inputmode="numeric" value="' + cfg.dias_apartado + '"></label>' +
           '<label class="campo"><span>Abono mínimo para apartar (%)</span><input id="ajPct" inputmode="decimal" value="' + fmtNum(cfg.abono_minimo_pct).replace(/,00$/, '') + '"></label></div>' +
           '<label class="campo"><span>Flete por libra del courier ($)</span><input id="ajTarifa" inputmode="decimal" value="' + fmtNum(cfg.tarifa_libra) + '"></label>' +
-          '<label class="fila"><input type="checkbox" id="ajFia"' + (cfg.vendedora_fia ? ' checked' : '') + ' style="width:20px;height:20px"> La vendedora puede vender fiado</label>' +
           '<button type="button" class="btn btn-chico" data-a="reglas" style="align-self:flex-start">Guardar reglas</button></div></div>' +
         '<div class="tarjeta"><h3>Historial de la tasa</h3><div id="ajTasas" style="margin-top:8px"><div class="cargando">Cargando…</div></div></div>' +
         '<div class="tarjeta"><div class="fila-entre"><h3>Usuarios</h3><button type="button" class="btn btn-chico" data-a="nuevoUsuario">' + icono('mas', 'ic-chico') + ' Nuevo usuario</button></div>' +
+          '<p class="ayuda">Cada persona entra con su correo y su clave. Lo que puede hacer la vendedora se marca en su ficha.</p>' +
           '<div id="ajUsuarios" style="margin-top:10px"></div></div>' +
         '<div class="tarjeta"><div class="fila-entre"><h3>Cuentas de dinero</h3><button type="button" class="btn btn-sec btn-chico" data-a="nuevaCuenta">' + icono('mas', 'ic-chico') + ' Cuenta</button></div>' +
           '<p class="ayuda">Dónde está el dinero (efectivo, banco, Zelle…).</p><div id="ajCuentas"></div></div>' +
@@ -147,7 +148,7 @@ var VistaAjustes = {
     if (isNaN(pct) || pct < 0 || pct > 100) throw new Error('El porcentaje debe estar entre 0 y 100.');
     btn.disabled = true;
     try {
-      await rpc('jab_actualizar_config', { p: { dias_apartado: dias, abono_minimo_pct: pct, vendedora_fia: $('#ajFia').checked, tarifa_libra: redondear2(tarifa) } });
+      await rpc('jab_actualizar_config', { p: { dias_apartado: dias, abono_minimo_pct: pct, tarifa_libra: redondear2(tarifa) } });
       await cargarConfig();
       toast('Reglas guardadas', 'ok');
     } finally { btn.disabled = false; }
@@ -158,7 +159,7 @@ var VistaAjustes = {
     c.innerHTML = '<div class="lista">' + ST.usuarios.map(function (u) {
       return '<button type="button" class="item" data-a="usuario" data-id="' + u.id + '">' + icono('usuario') +
         '<div class="crece"><div class="titulo">' + esc(u.nombre) + (u.id === ST.yo.id ? ' <span class="tenue">(tú)</span>' : '') + '</div>' +
-        '<div class="sub">Usuario: ' + esc(u.usuario) + '</div></div>' +
+        '<div class="sub corta">' + esc(correoDe(u)) + (u.rol !== 'duena' && Number(u.comision_pct) > 0 ? ' · comisión ' + fmtNum(u.comision_pct).replace(/,00$/, '') + ' %' : '') + '</div></div>' +
         '<span class="etq ' + (u.rol === 'duena' ? 'etq-lila' : '') + '">' + (u.rol === 'duena' ? 'Dueña' : 'Vendedora') + '</span>' +
         (u.activo ? '' : '<span class="etq etq-error">Inactivo</span>') + '</button>';
     }).join('') + '</div>';
@@ -179,26 +180,48 @@ var VistaAjustes = {
   }
 };
 
+var PERMISOS = {
+  apartar: { texto: 'Puede apartar', ayuda: 'Reservar prendas con un abono.', corto: 'apartar' },
+  fiar: { texto: 'Puede vender fiado', ayuda: 'Que la clienta se lleve la prenda debiendo (respeta el límite de cada clienta).', corto: 'fiar' },
+  cambios: { texto: 'Puede hacer cambios', ayuda: 'Cambiar o devolver prendas de una venta.', corto: 'hacer cambios' },
+  descuentos: { texto: 'Puede cambiar precios', ayuda: 'Hacer descuentos o poner otro precio al vender.', corto: 'cambiar precios' }
+};
+function correoDe(u) { return u.correo || (u.usuario ? u.usuario + '@' + JAB_CONFIG.dominio : '—'); }
+var correoOk = function (c) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(c); };
+
 function hojaUsuario(u) {
   return new Promise(function (resolver) {
-    var listo = false, nuevo = !u;
+    var listo = false, nuevo = !u, creadoId = null;
+    var base = u || { rol: 'vendedora', activo: true, permisos: {}, comision_pct: 5 };
     var h = abrirHoja({
       titulo: nuevo ? 'Nuevo usuario' : u.nombre,
       cerrarFuera: false,
       html: '<div class="pila">' +
-        '<label class="campo"><span>Nombre</span><input id="usNombre" value="' + esc(u ? u.nombre : '') + '" placeholder="Ej.: María"></label>' +
-        (nuevo ? '<label class="campo"><span>Usuario para entrar</span><input id="usUsuario" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Ej.: maria"></label>' +
-          '<label class="campo"><span>Clave temporal</span><input id="usClave" autocomplete="off" placeholder="Mínimo 6 caracteres"></label>' +
-          '<div class="ayuda">Al entrar por primera vez le pedirá crear su propia clave.</div>'
-          : '<p class="tenue" style="margin:0">Usuario: ' + esc(u.usuario) + '</p>') +
-        '<label class="campo"><span>Rol</span><select id="usRol"><option value="vendedora">Vendedora (vende, no ve costos ni dinero)</option>' +
-          '<option value="duena"' + (u && u.rol === 'duena' ? ' selected' : '') + '>Dueña (ve y hace todo)</option></select></label>' +
+        '<label class="campo"><span>Nombre</span><input id="usNombre" value="' + esc(u ? u.nombre : '') + '" placeholder="Ej.: Ana"></label>' +
+        '<label class="campo"><span>Correo para entrar</span><input id="usCorreo" type="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" value="' + esc(u ? (u.correo || '') : '') + '" placeholder="Ej.: ana@gmail.com"></label>' +
+        (nuevo ? '<label class="campo"><span>Clave temporal</span><input id="usClave" autocomplete="off" placeholder="Mínimo 6 caracteres"></label>' +
+          '<div class="ayuda">Dásela en persona. Al entrar por primera vez le pedirá crear su propia clave.</div>'
+          : (u.correo ? '' : '<div class="ayuda">Hoy entra con "' + esc(u.usuario) + '". Si le pones un correo, desde ahora entra con el correo.</div>')) +
+        '<label class="campo"><span>Rol</span><select id="usRol"><option value="vendedora">Vendedora (vende; no ve costos, dinero ni reportes)</option>' +
+          '<option value="duena"' + (base.rol === 'duena' ? ' selected' : '') + '>Dueña (ve y hace todo)</option></select></label>' +
+        '<div id="usPermisos" class="tarjeta pila" style="padding:12px 14px">' +
+          '<div><h3>Qué puede hacer</h3><div class="ayuda" style="margin-top:4px">Vender de contado siempre puede.</div></div>' +
+          Object.keys(PERMISOS).map(function (k) {
+            return '<label class="fila" style="align-items:flex-start"><input type="checkbox" data-permiso="' + k + '"' + (permisoDe(Object.assign({}, base, { rol: 'vendedora', activo: true }), k) ? ' checked' : '') +
+              ' style="width:20px;height:20px;flex:none;margin-top:2px"><span>' + PERMISOS[k].texto + '<br><span class="tenue" style="font-size:.85rem">' + PERMISOS[k].ayuda + '</span></span></label>';
+          }).join('') +
+          '<label class="campo"><span>Comisión por venta de contado (%)</span><input id="usComision" inputmode="decimal" value="' + esc(fmtNum(base.comision_pct || 0).replace(/,00$/, '')) + '"></label>' +
+          '<div class="ayuda">Se gana sobre lo vendido de contado y cobrado completo. Apartados y fiados no suman. 0 = sin comisión.</div>' +
+        '</div>' +
         (nuevo ? '' : '<label class="fila"><input type="checkbox" id="usActivo"' + (u.activo ? ' checked' : '') + ' style="width:20px;height:20px"> Puede entrar al sistema</label>' +
           '<button type="button" class="btn btn-sec btn-chico" id="usClaveBtn" style="align-self:flex-start">' + icono('candado', 'ic-chico') + ' Ponerle una clave nueva</button>') +
       '</div>',
       pie: '<button type="button" class="btn btn-ancho" id="usOk">' + (nuevo ? 'Crear usuario' : 'Guardar') + '</button>',
-      alCerrar: function () { if (!listo) resolver(false); }
+      alCerrar: function () { if (!listo) resolver(creadoId != null); }
     });
+    function verPermisos() { h.$('#usPermisos').hidden = h.$('#usRol').value === 'duena'; }
+    h.$('#usRol').addEventListener('change', verPermisos);
+    verPermisos();
     var cb = h.$('#usClaveBtn');
     if (cb) cb.onclick = async function () {
       var clave = await confirmar({ titulo: 'Clave nueva para ' + u.nombre, mensaje: 'Dásela en persona. Al entrar le pedirá cambiarla.', pedir: 'Clave nueva (mínimo 6)', boton: 'Guardar clave' });
@@ -206,22 +229,46 @@ function hojaUsuario(u) {
       try { await funcionUsuarios({ accion: 'clave', id: u.id, clave: clave }); toast('Clave cambiada', 'ok'); }
       catch (e) { toast(errMsg(e), 'error'); }
     };
+    function leerPermisos() {
+      var permisos = {};
+      $$('[data-permiso]', h.el).forEach(function (x) { permisos[x.dataset.permiso] = x.checked; });
+      var pct = parseNum(h.$('#usComision').value || '0');
+      if (isNaN(pct) || pct < 0 || pct > 50) throw new Error('La comisión debe estar entre 0 y 50 %.');
+      return { permisos: permisos, comision_pct: redondear2(pct) };
+    }
     protegerBoton(h.$('#usOk'), async function () {
       var nombre = h.$('#usNombre').value.trim(), rol = h.$('#usRol').value;
+      var correo = h.$('#usCorreo').value.trim().toLowerCase();
       if (!nombre) throw new Error('Escribe el nombre.');
+      var perm = rol === 'vendedora' ? leerPermisos() : null;
       if (nuevo) {
-        var usuario = h.$('#usUsuario').value.trim().toLowerCase(), clave = h.$('#usClave').value;
-        if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) throw new Error('El usuario debe tener de 3 a 30 letras o números, sin espacios ni acentos.');
+        var clave = h.$('#usClave').value;
+        if (!correoOk(correo)) throw new Error('Escribe un correo válido (ej.: ana@gmail.com).');
         if (clave.length < 6) throw new Error('La clave debe tener al menos 6 caracteres.');
-        await funcionUsuarios({ accion: 'crear', usuario: usuario, nombre: nombre, clave: clave, rol: rol });
-        toast('Usuario creado: ' + usuario, 'ok');
+        // Si ya se creó en un intento anterior, no se vuelve a crear
+        if (creadoId == null) {
+          var r = await funcionUsuarios({ accion: 'crear', correo: correo, nombre: nombre, clave: clave, rol: rol });
+          creadoId = r.id;
+        }
+        if (perm) await rpc('jab_guardar_permisos', { p_id: creadoId, p: perm });
+        toast('Usuario creado. Entra con ' + correo, 'ok');
       } else {
         var activo = h.$('#usActivo').checked;
+        if (correo && !correoOk(correo)) throw new Error('Escribe un correo válido (ej.: ana@gmail.com).');
+        if (!correo && u.correo) throw new Error('Escribe el correo con el que entra.');
         if (u.id === ST.yo.id && (!activo || rol !== 'duena')) {
           if (!(await confirmar({ titulo: 'Cuidado', mensaje: 'Te vas a quitar permisos a ti misma. ¿Seguro?', boton: 'Sí, seguir', peligro: true }))) return;
         }
         await rpc('jab_actualizar_usuario', { p_id: u.id, p_nombre: nombre, p_rol: rol, p_activo: activo });
-        toast('Usuario actualizado', 'ok');
+        if (perm) await rpc('jab_guardar_permisos', { p_id: u.id, p: perm });
+        if (correo && correo !== (u.correo || '')) {
+          await funcionUsuarios({ accion: 'correo', id: u.id, correo: correo });
+          toast('Desde ahora entra con ' + correo, 'ok');
+        } else toast('Usuario actualizado', 'ok');
+        if (u.id === ST.yo.id) {
+          var yo = await sb.from('jab_usuarios').select('*').eq('id', ST.yo.id).single();
+          if (!yo.error) ST.yo = yo.data;
+        }
       }
       listo = true; h.cerrar(); resolver(true);
     }, nuevo ? 'Creando…' : 'Guardando…');

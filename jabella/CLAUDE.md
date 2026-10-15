@@ -38,10 +38,11 @@ Colores del logo: lila `#e6b8dd`, ciruela `#8e4f84` (acciones), fondo `#fbf7fa`.
 
 ## Usuarios y roles
 
-- Entran con **usuario** (no correo): por dentro es `usuario@jabella.app` (nunca se envían correos).
-- `duena`: todo. `vendedora`: vende, abona, entrega apartados, hace cambios (con la venta original), ve existencia; **no** ve costos, ganancias, dinero ni auditoría; no cambia precios, no anula, no fía (salvo `config.vendedora_fia`).
-- Usuarios se crean con la Edge Function `jab-usuarios` (llave de servicio solo en el servidor; solo toca usuarios que estén en `jab_usuarios`, nunca cuentas de Yumana). Acciones: `bootstrap` (primera dueña; ya usada, quedó cerrada), `crear`, `clave`. Al entrar por primera vez se obliga a cambiar la clave.
-- Usuario de Albany: `albany` (dueña), creado el 2026-10-08.
+- Entran con **correo y clave** (desde la entrega 4). Las cuentas viejas sin correo real siguen entrando con su usuario (`albany` = `albany@jabella.app`); si se escribe sin "@", la app agrega `@jabella.app`. Nunca se envían correos (se crean confirmados).
+- `duena`: todo. `vendedora`: vende de contado siempre, abona, ve existencia; **no** ve costos, ganancias, dinero, compras, reportes ni auditoría; no anula. Lo demás según **sus permisos** (`jab_usuarios.permisos`, los marca la dueña en Ajustes → Usuarios): `apartar`, `fiar`, `cambios`, `descuentos` (cambiar precio). Sin marcar: aparta y hace cambios sí, descuentos no, fiar según `config.vendedora_fia` (casilla vieja, ya no se muestra). La base manda: `jab__puede(permiso)`; el JS solo esconde botones (`puede()`/`permisoDe()` en `base.js`).
+- Comisión: `jab_usuarios.comision_pct` (0–50). Solo ventas **de contado** activas a su nombre (`jab_ventas.vendedora_id`), con el % fijo guardado en la venta (`jab_ventas.comision_pct`). Apartados (aunque se entreguen), fiados y cambios no suman. La dueña puede anotar una venta a nombre de otra ("¿Quién vendió?"). Pagar = gasto "Comisiones" con `movimientos_dinero.comision_usuario_id` (`jab_pagar_comision`, nunca más de lo que se debe; si se anula en Dinero, vuelve a deberse). La vendedora ve "Tu comisión" en Ventas (`jab_mi_comision`); la dueña, Reportes → Comisiones (`jab_comisiones`).
+- Usuarios se crean con la Edge Function `jab-usuarios` (llave de servicio solo en el servidor; `verify_jwt` apagado porque revisa la sesión por dentro; solo toca usuarios que estén en `jab_usuarios`, nunca cuentas de Yumana). Acciones: `bootstrap` (primera dueña; ya usada, quedó cerrada), `crear` (con `correo`), `clave`, `correo` (cambiar el correo de entrada, con rastro). Al entrar por primera vez se obliga a cambiar la clave.
+- Usuario de Albany: `albany` (dueña, entra con `albany@jabella.app` hasta que se le ponga su correo real), creado el 2026-10-08.
 - Si Albany olvida su clave: otra dueña se la cambia desde Ajustes; si no hay otra, Claude la puede cambiar por SQL (`auth.users.encrypted_password = crypt(..., gen_salt('bf'))` solo para su id de `jab_usuarios`) y marcar `debe_cambiar_clave = true`.
 
 ## Base de datos (ver `supabase/migrations/`; todos los nombres llevan `jab_` delante)
@@ -53,6 +54,8 @@ Colores del logo: lila `#e6b8dd`, ciruela `#8e4f84` (acciones), fondo `#fbf7fa`.
 - `ventas` (`numero` corrido sin huecos vía `contadores`; tipo contado/apartado/fiado/cambio; estado activa/cancelada/anulada), `venta_items` (cantidad negativa = devuelta en un cambio, `item_origen_id`), `venta_item_costos` (costo al momento, solo dueña), `pagos` (en $ y Bs con tasa), `movimientos_dinero` (gastos, retiros, transferencias, ajustes; `es_inversion` = mercancía/flete/reembolso, no gasto del local; `compra_id`/`envio_id`/`compra_item_id`), `auditoria`.
 - Compras (entrega 2, solo dueña): `compras` (pedido SHEIN, `total_pagado` reparte impuestos/descuentos con un factor), `compra_items` (recibidas/faltantes, `costo_real`, `reembolsado` recalculado por trigger desde los movimientos vivos, `clave` por artículo), `paquetes` (camino/casillero, `envio_id`, `clave`), `envios` (caja de reempaque: reempaque → transito → aduana → llegada → recibido; flete = mayor(peso, volumétrico) × tarifa). Al recibir: costo = precio × factor + flete/piezas de la caja; costo promedio ponderado de la prenda.
 - Reportes (entrega 3, solo dueña): `cierres` (conteo ciego de las cuentas con `cuentas.cuenta_en_cierre`), `jab_reporte(desde, hasta)` y `jab_sin_movimiento(dias)`.
+- Entrega 4: `productos.por_llegar` (prendas cargadas que todavía no están en la tienda: solo se apartan, no se venden de contado/fiado, no se entregan ni entran en cambios; la categoría "pendiente por llegar" la marca sola; `jab_marcar_llegada` la libera y le pone su categoría real), `jab_renombrar_categoria` (renombrar o unir), `clientes.limite_fiado` (lo pone solo la dueña; a la vendedora no la deja pasarlo: `jab__revisar_limite`), `pagos.comprobante` (foto del pago en el bucket **privado** `jab-comprobantes`, ruta `c/<ms>-<azar>.jpg`, se ve con enlace temporal; `jab_foto_pago` la agrega después, cambiarla solo la dueña).
+- Respaldo automático: `jab_respaldo.diario` (una fila por tabla `jab_` y por día, con todas sus filas en jsonb, más la lista de fotos de `jab-fotos` y `jab-comprobantes` y los correos de las cuentas). pg_cron `jabella-respaldo-diario` a las 2:30 a. m. de Venezuela. Ver `supabase/migrations/005_respaldo_diario.sql`. Esquema cerrado; nunca borrar filas de ahí.
 
 ## REGLAS (no romper)
 
@@ -66,12 +69,12 @@ Colores del logo: lila `#e6b8dd`, ciruela `#8e4f84` (acciones), fondo `#fbf7fa`.
 
 ## Pruebas
 
-- `supabase/pruebas/escenarios.sql` (111), `escenarios_compras.sql` (85) y `escenarios_reportes.sql` (18): escenarios de negocio para correr en orden en un Postgres local con los stubs de `supabase/pruebas/stubs.sql` (simulan `auth.uid()`, roles y storage) y las migraciones 001→003. Todo debe dar `ok` (los fallos salen con `!!!`).
+- `supabase/pruebas/escenarios.sql` (111), `escenarios_compras.sql` (85), `escenarios_reportes.sql` (32) y `escenarios_perfiles.sql` (64): escenarios de negocio para correr en orden en un Postgres local con los stubs de `supabase/pruebas/stubs.sql` (simulan `auth.uid()`, roles y storage) y las migraciones 001→004 (la 005 usa pg_cron y no se prueba en local). Todo debe dar `ok` (los fallos salen con `!!!`).
 - Antes de aplicar una migración a producción: respaldo de todo `public` (regla de Yumana) y, después, comparar la huella de cada función (`md5` del código sin comentarios ni espacios) con la base local y la huella de las funciones, tablas, políticas y triggers de Yumana (deben quedar iguales).
 - El conector de Supabase se cuelga con `DELETE` (regla de Yumana): en la base real probar dentro de un bloque `do $$ … raise exception … $$` para que todo se deshaga.
 
 ## Entregas
 
-Ver `docs/HISTORIAL.md`. Hechas: 1 (base), 2 (compras SHEIN y modo noche) y 3 (reportes y cierre de caja). Manuales para Albany (Claude Docs): rápido https://claude.ai/code/artifact/6e12073f-9ab1-4ca3-9240-bb879e13e619 y completo https://claude.ai/code/artifact/2eea04b6-d7ed-40db-b750-07f6e33f02b1 — actualizarlos cuando cambie la forma de usar algo.
+Ver `docs/HISTORIAL.md`. Hechas: 1 (base), 2 (compras SHEIN y modo noche), 3 (reportes y cierre de caja) y 4 (correo y permisos, comisión, por llegar, foto del pago, respaldo diario). Mudanza a base y dominio propios: `docs/MUDANZA.md`. Manuales para Albany (Claude Docs): rápido https://claude.ai/code/artifact/6e12073f-9ab1-4ca3-9240-bb879e13e619 y completo https://claude.ai/code/artifact/2eea04b6-d7ed-40db-b750-07f6e33f02b1 — actualizarlos cuando cambie la forma de usar algo.
 
-Ideas pendientes: tope de fiado por clienta; aviso de apartados por vencer por WhatsApp; valor de faltantes no reembolsados en Reportes; sugerir prenda existente al recibir si el nombre ya existe en el catálogo; modo sin conexión.
+Ideas pendientes: modo sin conexión; recordatorios de WhatsApp automáticos (hoy son con un toque: "Recordarle" en el apartado/fiado); cuando la vendedora tenga su propio teléfono, que la laptop de la tienda quede con su sesión y la dueña use la suya.
