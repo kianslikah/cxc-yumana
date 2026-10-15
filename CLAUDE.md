@@ -60,6 +60,8 @@ El diseño del Portal es el estándar de TODO el ecosistema. Kinan exige **idén
 
 **JABELLA Store (negocio aparte, solo alojado aquí):** la carpeta `jabella/` es el sistema de la tienda de ropa de Albany (app.mercantilyumana.com/jabella/). Usa este mismo Supabase pero **aislado con prefijo `jab_`** (tablas, funciones, bucket `jab-fotos`, Edge Function `jab-usuarios`) y sus propios usuarios. No es parte de Yumana: no mezclar datos, no tocar objetos `jab_` desde las apps de Yumana ni objetos de Yumana desde Jabella. Su contexto está en `jabella/CLAUDE.md`. Plan futuro: mudarlo a su propio proyecto.
 
+**Electro Montana (cliente del mayor, sistema TOTALMENTE aparte, desde el 2026-10-15):** Franklin y Daniel, coteros (venden a crédito en la calle). Tiene su propia cuenta y organización de Supabase (proyecto `fyylawnpgodapwdfuqau`), su propio GitHub y su propio dominio; Kinan es solo colaborador. En Claude hay dos conectores: **`Supabase`** = Yumana (`tkkiuxaamdyfbildcvtp`) y **`Electro Montana`** = el de ellos, amarrado a su proyecto. Desde este repo **nunca usar las herramientas `mcp__Electro_Montana__*`**, y desde el repo de Electro Montana nunca usar el conector `Supabase` de Yumana. Sus datos no se copian a Yumana ni al revés. Su trabajo se hace en una sesión abierta con su propio repositorio.
+
 ⚠️ **ARCHIVOS VIEJOS EN EL REPO — NO EDITARLOS NUNCA.** Quedaron versiones anteriores con nombres parecidos. Los vivos son los de la tabla de arriba. Estos están muertos:
 
 | Archivo muerto | Por qué | Reemplazado por |
