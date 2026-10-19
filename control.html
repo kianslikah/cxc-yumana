@@ -344,7 +344,8 @@ async function renderPermisos(){
         var nivel=MATRIZ[a.id][r.id];
         return '<td><select class="perm-select" data-app="'+a.id+'" data-rol="'+r.id+'" data-nivel="'+nivel+'">'+
           '<option value="completo"'+(nivel==='completo'?' selected':'')+'>Completo</option>'+
-          '<option value="consulta"'+(nivel==='consulta'?' selected':'')+'>Solo consulta</option>'+
+          // En el mayorista, 'consulta' es el MODO CAJA (pagos y pedidos sin precio, y solo para quien está en la lista de la caja)
+          '<option value="consulta"'+(nivel==='consulta'?' selected':'')+'>'+(a.id==='mayoristas'?'Modo caja':'Solo consulta')+'</option>'+
           '<option value="ninguno"'+(nivel==='ninguno'?' selected':'')+'>Sin acceso</option>'+
         '</select></td>';
       }).join('');

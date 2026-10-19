@@ -286,6 +286,12 @@ async function cargarApps(rol){
       var rv=await sb.rpc('est_puede_ver');
       if(rv.error || rv.data!==true) items=items.filter(function(it){ return it.app.id!=='estadisticas'; });
     }
+    // Mayorista en nivel 'consulta' = MODO CAJA: además del rol, la base decide quién entra (may_es_caja).
+    // Ante la duda, no se muestra.
+    if(items.some(function(it){ return it.app.id==='mayoristas' && it.nivel==='consulta'; })){
+      var rc=await sb.rpc('may_es_caja');
+      if(rc.error || rc.data!==true) items=items.filter(function(it){ return !(it.app.id==='mayoristas' && it.nivel==='consulta'); });
+    }
 
     if(items.length===0){ mostrarVacio(grid); return; }
     document.getElementById('welcomeSub').textContent='Tienes '+items.length+' herramienta'+(items.length>1?'s':'')+' disponible'+(items.length>1?'s':'')+'.';
@@ -294,7 +300,7 @@ async function cargarApps(rol){
       var a=it.app;
       var esVista=(it.nivel==='consulta');
       var badge=esVista
-        ? '<span class="app-badge badge-view">Solo consulta</span>'
+        ? '<span class="app-badge badge-view">'+(a.id==='mayoristas' ? 'Modo caja' : 'Solo consulta')+'</span>'
         : '<span class="app-badge badge-full">Acceso completo</span>';
       var destino=(a.url && a.url!=='#') ? a.url : '#';
       var clickable = destino!=='#';

@@ -19,6 +19,7 @@
   --orange:#f0a838; --blue:#4ba3e0; --purple:#a872e8;
   --shadow:0 8px 32px rgba(0,0,0,0.45); --shadow-sm:0 2px 12px rgba(0,0,0,0.3);
   --glow:0 0 0 1px rgba(201,162,76,0.15), 0 4px 24px rgba(201,162,76,0.08);
+  --gold-tint:rgba(201,162,76,0.12); --gold-tint-2:rgba(201,162,76,0.30);
 }
 [data-theme="light"]{
   --bg:#f4f2ec; --bg-grad1:#faf8f2; --bg-grad2:#eeebe2;
@@ -30,6 +31,7 @@
   --orange:#d18820; --blue:#2f7fc0; --purple:#8845c4;
   --shadow:0 8px 32px rgba(120,110,80,0.12); --shadow-sm:0 2px 12px rgba(120,110,80,0.08);
   --glow:0 0 0 1px rgba(154,125,46,0.15), 0 4px 24px rgba(154,125,46,0.06);
+  --gold-tint:rgba(154,125,46,0.10); --gold-tint-2:rgba(154,125,46,0.30);
 }
 html,body{
   background:var(--bg);
@@ -313,6 +315,111 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
 .stat-card .desc{font-size:12px; color:var(--muted); margin-bottom:12px;}
 .chart-wrap{position:relative; height:230px;}
 @media(max-width:800px){ .stats-grid{grid-template-columns:1fr;} }
+
+/* ===== MODO CAJA (cajera) y PEDIDOS DE CAJA (admin) ===== */
+.nav-badge{margin-left:auto; min-width:22px; height:22px; padding:0 7px; border-radius:11px; background:var(--gold); color:#1a1206; font-size:12px; font-weight:700; display:none; align-items:center; justify-content:center;}
+.nav-item.active .nav-badge{background:#1a1206; color:var(--gold-bright);}
+.caja-buscar{width:100%; display:flex; align-items:center; gap:12px; padding:15px 16px; background:var(--surface); border:1px solid var(--border); border-radius:12px; color:var(--muted); font-size:16px; font-family:inherit; cursor:pointer; text-align:left; margin-bottom:16px;}
+.caja-buscar:hover, .caja-buscar:focus-visible{border-color:var(--gold); outline:none;}
+.caja-buscar svg{color:var(--gold); flex-shrink:0;}
+.caja-cli{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; margin-bottom:8px; cursor:pointer; width:100%; text-align:left; font-family:inherit; color:var(--text);}
+.caja-cli:hover, .caja-cli:focus-visible{border-color:var(--gold); outline:none;}
+.caja-cli .nm{font-size:15.5px; font-weight:600; line-height:1.3;}
+.caja-cli .sb{font-size:12.5px; color:var(--muted); margin-top:3px; overflow-wrap:anywhere;}
+.caja-cli .flecha{color:var(--gold); flex-shrink:0;}
+.banner-no-vender{display:flex; gap:12px; align-items:flex-start; background:rgba(232,93,76,0.14); border:2px solid var(--red); color:var(--red-soft); border-radius:12px; padding:14px 16px; margin-bottom:14px; font-size:15px; line-height:1.4;}
+.banner-no-vender b{display:block; font-size:16px; letter-spacing:.3px;}
+.banner-no-vender svg{flex-shrink:0; margin-top:2px;}
+.caja-debe{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--gold); border-radius:12px; padding:16px 18px; margin-bottom:14px;}
+.caja-debe .l{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
+.caja-debe .v{font-family:'Fraunces',Georgia,serif; font-size:30px; font-weight:700; color:var(--gold); line-height:1.1;}
+.caja-debe.favor{border-left-color:var(--green);} .caja-debe.favor .v{color:var(--green-soft);}
+.caja-debe .al{font-size:12px; color:var(--muted);}
+.caja-acciones{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px;}
+.caja-acciones .btn{white-space:normal; line-height:1.25; min-height:48px; text-align:center;}
+.caja-acciones .btn:disabled{opacity:.45; cursor:not-allowed;}
+.caja-nota-nv{font-size:12.5px; color:var(--red-soft); margin:2px 0 8px;}
+.caja-h3{font-size:16px; margin:20px 0 10px; color:var(--gold);}
+.tabla-caja{width:100%; border-collapse:collapse; font-size:14px; background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden;}
+.tabla-caja th{font-size:10.5px; font-weight:600; letter-spacing:.6px; text-transform:uppercase; color:var(--muted); text-align:left; padding:10px 10px 8px; border-bottom:1px solid var(--border);}
+.tabla-caja td{padding:10px; border-bottom:1px solid var(--border-soft); vertical-align:top; color:var(--text);}
+.tabla-caja tr:last-child td{border-bottom:none;}
+.tabla-caja .num{text-align:right; white-space:nowrap;}
+.tabla-caja .num b{color:var(--gold);}
+.tabla-caja .vence{display:block; font-size:11.5px; color:var(--muted); margin-top:2px;}
+.tabla-caja .vence.vencida{color:var(--red-soft);}
+.tabla-caja tfoot td{font-weight:700; border-top:1px solid var(--border);}
+@media(max-width:420px){ .tabla-caja{font-size:13px;} .tabla-caja th, .tabla-caja td{padding:9px 6px;} }
+.fila-reg{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:12px 14px; margin-bottom:8px;}
+.fila-reg .izq{min-width:0; flex:1;}
+.fila-reg .t{font-weight:600; font-size:15px; line-height:1.3; overflow-wrap:anywhere;}
+.fila-reg .s{font-size:12.5px; color:var(--muted); margin-top:3px; overflow-wrap:anywhere;}
+.fila-reg .der{text-align:right; flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:8px;}
+.fila-reg .m{font-size:16px; font-weight:800; color:var(--green-soft); white-space:nowrap;}
+.fila-reg .btn{padding:7px 12px; font-size:12.5px;}
+.tag.caja{background:var(--gold-tint); color:var(--gold-bright);}
+.tag.no-dinero{background:rgba(111,111,130,0.18); color:var(--text-2);}
+.tag.pend{background:rgba(240,168,56,0.15); color:var(--orange);}
+.tag.ok{background:rgba(46,194,122,0.15); color:var(--green-soft);}
+.tag.mal{background:rgba(232,93,76,0.15); color:var(--red-soft);}
+.renglones{list-style:none; margin:8px 0 2px; padding:0; font-size:14px;}
+.renglones li{display:flex; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-soft); line-height:1.35;}
+.renglones li:last-child{border-bottom:none;}
+.renglones .c{color:var(--gold); font-weight:700; min-width:34px; text-align:right; flex-shrink:0;}
+.renglones .d{flex:1; min-width:0; overflow-wrap:anywhere;}
+.renglones small{color:var(--muted); font-size:11.5px;}
+.ped-card{padding:14px 16px;}
+.ped-card .cab{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;}
+.ped-card .cab b{font-size:15.5px;}
+.ped-card .meta{font-size:12.5px; color:var(--muted);}
+.ped-card .nota{font-size:13px; color:var(--text-2); background:var(--surface-2); border-radius:8px; padding:8px 10px; margin-top:8px; overflow-wrap:anywhere;}
+.ped-card .acc{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+.ped-card .acc .btn{flex:1 1 140px;}
+.info-box{background:var(--surface-2); border-radius:10px; padding:12px 14px; margin-bottom:16px; font-size:14px; line-height:1.45; overflow-wrap:anywhere;}
+.aviso-suave{font-size:13px; color:var(--text-2); background:var(--gold-tint); border:1px solid var(--gold-tint-2); border-radius:10px; padding:10px 12px; margin-bottom:14px; line-height:1.45;}
+.cpe-fila{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px;}
+.cpe-top{display:flex; gap:8px; align-items:stretch;}
+.cpe-desc{flex:1; min-width:0; text-align:left; padding:11px 12px; font-size:16px; font-family:inherit; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); cursor:pointer; line-height:1.3; overflow-wrap:anywhere;}
+.cpe-desc.vacio{color:var(--muted);}
+.cpe-quitar{flex-shrink:0; width:44px; background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+.cpe-bot{display:flex; gap:10px; align-items:center; margin-top:8px;}
+.cpe-bot label{font-size:12px; color:var(--muted);}
+.cpe-cant{width:90px; padding:9px 10px; font-size:16px; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text);}
+.cpe-origen{font-size:12px; color:var(--muted); flex:1; min-width:0; overflow-wrap:anywhere;}
+.pl-monto{font-family:'Fraunces',Georgia,serif; font-size:32px; font-weight:700; color:var(--green-soft); line-height:1.1;}
+.pl-saldo{margin-top:10px; font-size:15px; font-weight:600;}
+.pl-botones{display:flex; flex-direction:column; gap:8px; margin-top:18px;}
+.fs-overlay{display:none; position:fixed; inset:0; z-index:10000; background:var(--bg); flex-direction:column;}
+.fs-top{flex-shrink:0; padding:14px 16px; border-bottom:1px solid var(--border); background:var(--surface);}
+.fs-fila{display:flex; align-items:center; gap:10px;}
+.fs-input{flex:1; min-width:0; padding:13px 14px; font-size:16px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:inherit;}
+.fs-input:focus{outline:none; border-color:var(--gold);}
+.fs-cerrar{flex-shrink:0; background:transparent; border:1px solid var(--border); color:var(--text); border-radius:10px; padding:0 14px; height:46px; font-size:14px; font-family:inherit; cursor:pointer;}
+.fs-res{flex:1; overflow-y:auto; padding:8px 12px; -webkit-overflow-scrolling:touch;}
+.fs-item{display:block; width:100%; text-align:left; background:transparent; border:none; border-bottom:1px solid var(--border-soft); padding:14px 12px; cursor:pointer; font-family:inherit; color:var(--text);}
+.fs-item:hover, .fs-item:focus-visible{background:var(--gold-tint); outline:none;}
+.fs-item .nm{font-size:15px; font-weight:600; line-height:1.3;}
+.fs-item .sb{font-size:12px; color:var(--muted); margin-top:3px;}
+.fs-item .cod{font-size:12px; color:var(--gold); margin-top:3px;}
+.fs-libre{width:100%; margin-top:12px; background:var(--gold-tint); border:1px dashed var(--gold); color:var(--gold); border-radius:10px; padding:12px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer; text-align:left; overflow-wrap:anywhere;}
+.fs-vacio{text-align:center; color:var(--muted); padding:30px 16px; font-size:14px;}
+.fs-libre.discreto{background:transparent; border:1px solid var(--border); color:var(--text-2); font-weight:500;}
+.campo-ayuda{font-size:12.5px; color:var(--orange); margin-top:6px; line-height:1.4;}
+.aviso-ok{font-size:14px; color:var(--text); background:rgba(46,194,122,0.10); border:1px solid var(--green); border-radius:10px; padding:10px 12px; margin-bottom:14px; line-height:1.45;}
+.caja-pendientes{background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--orange); border-radius:12px; padding:12px 14px; margin-bottom:14px;}
+.caja-pendientes .t{font-weight:700; color:var(--orange); font-size:14.5px;}
+.caja-pendientes .s{font-size:12.5px; color:var(--muted); margin-top:2px;}
+.cp-ped{border-top:1px solid var(--border-soft); margin-top:10px; padding-top:8px;}
+.cp-ped .meta{font-size:12px; color:var(--muted);}
+.cp-ped .nota{font-size:13px; color:var(--text-2); background:var(--surface-2); border-radius:8px; padding:6px 10px; margin-top:6px; overflow-wrap:anywhere;}
+/* Montos alineados (mismas cifras del mismo ancho) */
+.tabla-caja .num, .tabla-caja .num-f, .caja-debe .v, .fila-reg .m, .pl-monto, .renglones .c{font-variant-numeric:tabular-nums;}
+.btn-link{background:none; border:none; padding:0; font:inherit; color:var(--text); text-decoration:underline; text-underline-offset:3px; cursor:pointer; text-align:left;}
+.btn-link:disabled{color:var(--muted); text-decoration:none; cursor:not-allowed;}
+.nf-cliente-btn.bloqueado{opacity:.65; cursor:not-allowed;}
+.nf-cliente-btn.bloqueado svg{display:none;}
+.nf-cliente-nota{font-size:12px; color:var(--muted); margin-top:6px;}
+.it-precio.falta{border-color:var(--red) !important;}
 </style>
 </head>
 <body>
@@ -346,27 +453,42 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
   <aside class="sidebar" id="sidebar">
     <div class="side-brand">
       <div class="side-emblem">Y</div>
-      <div class="side-title">Mercantil Yumana<small>Ventas al Mayor</small></div>
+      <div class="side-title">Mercantil Yumana<small id="sideSub">Ventas al Mayor</small></div>
     </div>
     <div class="side-live">EN VIVO</div>
     <nav class="side-nav">
-      <button class="nav-item active" data-view="panel">
+      <!-- Modo completo (admin) -->
+      <button class="nav-item nav-admin active" data-view="panel">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
         <span class="lbl">Panel</span>
       </button>
-      <button class="nav-item" data-view="clientes">
+      <button class="nav-item nav-admin" data-view="clientes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
         <span class="lbl">Clientes</span>
       </button>
-      <button class="nav-item" data-view="facturas">
+      <button class="nav-item nav-admin" data-view="facturas">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
         <span class="lbl">Facturas</span>
       </button>
-      <button class="nav-item" data-view="stats">
+      <button class="nav-item nav-admin" data-view="pedidos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><path d="M9 12h6M9 16h4"/></svg>
+        <span class="lbl">Pedidos de caja</span>
+        <span class="nav-badge" id="badgePedidos" aria-label="Pedidos que falta facturar"></span>
+      </button>
+      <button class="nav-item nav-admin" data-view="stats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
         <span class="lbl">Estadísticas</span>
       </button>
-      <button class="nav-item" data-view="papelera" id="navPapelera">
+      <!-- Modo caja (cajera de la lista may_acceso_caja): solo clientes y lo que registró -->
+      <button class="nav-item nav-caja" data-view="caja" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        <span class="lbl">Clientes</span>
+      </button>
+      <button class="nav-item nav-caja" data-view="cajareg" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span class="lbl">Lo que registré</span>
+      </button>
+      <button class="nav-item nav-admin" data-view="papelera" id="navPapelera">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>
         <span class="lbl">Papelera</span>
       </button>
@@ -386,7 +508,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
   <div class="layout-main">
   <div class="mobile-top">
     <button class="burger" id="burger">☰</button>
-    <div class="mt-title">Ventas al Mayor</div>
+    <div class="mt-title" id="mtTitle">Ventas al Mayor</div>
     <div style="width:40px;"></div>
   </div>
   <!-- ===== VISTA PANEL DE CONTROL ===== -->
@@ -451,6 +573,38 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
     <button class="btn btn-ghost" id="btnVolverClientes" style="margin-bottom:16px;">← Volver a clientes</button>
     <div id="detalleContent"></div>
   </div>
+
+  <!-- ===== ADMIN: PEDIDOS DE CAJA ===== -->
+  <div class="container view-section" id="view-pedidos" style="display:none;">
+    <div class="screen-header">
+      <div><h1>Pedidos de <em>caja</em></h1><div class="sub">Lo que anotó la caja sin precio. Ponle precio y conviértelo en factura.</div></div>
+    </div>
+    <div id="pedidosContent"></div>
+  </div>
+
+  <!-- ===== CAJA: CLIENTES ===== -->
+  <div class="container view-section" id="view-caja" style="display:none;">
+    <div class="screen-header">
+      <div><h1>Caja del <em>mayor</em></h1><div class="sub">Busca al cliente que tienes enfrente</div></div>
+    </div>
+    <button type="button" class="caja-buscar" id="cajaBuscarBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Buscar cliente por nombre, teléfono o grupo</span></button>
+    <div id="cajaLista"></div>
+  </div>
+
+  <!-- ===== CAJA: FICHA DE UN CLIENTE ===== -->
+  <div class="container view-section" id="view-cajaficha" style="display:none;">
+    <button class="btn btn-ghost" id="btnCajaVolver" style="margin-bottom:16px;">← Volver a clientes</button>
+    <div id="cajaFicha"></div>
+  </div>
+
+  <!-- ===== CAJA: LO QUE REGISTRÉ ===== -->
+  <div class="container view-section" id="view-cajareg" style="display:none;">
+    <div class="screen-header">
+      <div><h1>Lo que <em>registré</em></h1><div class="sub" id="cajaRegSub">Tus pagos y pedidos de los últimos días</div></div>
+      <button class="btn btn-ghost" id="btnCajaRegActualizar">Actualizar</button>
+    </div>
+    <div id="cajaRegistros"></div>
+  </div>
   </div>
  </div>
 </div>
@@ -509,6 +663,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
     <div class="fg">
       <label>Cliente *</label>
       <button type="button" id="nfClienteBtn" class="nf-cliente-btn vacio"><span id="nfClienteTxt">Toca para buscar el cliente</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+      <div class="nf-cliente-nota" id="nfClienteNota" style="display:none;">Cliente del pedido de caja</div>
       <select id="nfCliente" style="display:none;"></select>
     </div>
     <div class="aviso-no-vender" id="nfAvisoNoVender"></div>
@@ -582,13 +737,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
     <div class="fg"><label>Monto del abono (USD) *</label><input type="number" id="abMonto" placeholder="0.00" step="0.01" inputmode="decimal"></div>
     <div class="fg">
       <label>Método de pago</label>
-      <div class="method-grid" id="abMetodos">
-        <button type="button" class="method-opt active" data-m="Efectivo USD">Efectivo USD</button>
-        <button type="button" class="method-opt" data-m="Zelle">Zelle</button>
-        <button type="button" class="method-opt" data-m="USDT">USDT</button>
-        <button type="button" class="method-opt" data-m="Bolívares">Bolívares</button>
-        <button type="button" class="method-opt" data-m="Pago Móvil">Pago Móvil</button>
-      </div>
+      <div class="method-grid" id="abMetodos"></div><!-- se pinta desde METODOS_PAGO -->
     </div>
     <div class="fg"><label>Fecha</label><input type="date" id="abFecha"></div>
     <div class="fg"><label>Quién pagó / referencia (opcional)</label><textarea id="abNotas" rows="2" placeholder="Ej: Zelle de Gloria Molina"></textarea></div>
@@ -601,8 +750,107 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
   </div>
 </div>
 
+<!-- ===== CAJA: REGISTRAR PAGO ===== -->
+<div class="modal-overlay" id="modalCajaPago" data-no-cerrar-afuera>
+  <div class="modal">
+    <h2>Registrar <em>pago</em></h2>
+    <div class="info-box" id="cpInfo"></div>
+    <div class="fg"><label for="cpMonto">Monto del pago (USD) *</label><input type="number" id="cpMonto" placeholder="0.00" step="0.01" min="0.01" inputmode="decimal"><div class="campo-ayuda" id="cpMontoAyuda" style="display:none;">Escribe el monto en DÓLARES. Los bolívares y la tasa van en la referencia.</div></div>
+    <div class="fg">
+      <label>Método de pago</label>
+      <div class="method-grid" id="cpMetodos"></div><!-- se pinta desde METODOS_PAGO -->
+    </div>
+    <div class="fg"><label for="cpFecha">Fecha del pago</label><input type="date" id="cpFecha"><div style="font-size:12px; color:var(--muted); margin-top:6px;" id="cpFechaAyuda"></div></div>
+    <div class="fg"><label for="cpNotas">Quién pagó / referencia (opcional)</label><textarea id="cpNotas" rows="2" maxlength="500" placeholder="Ej: Zelle de Gloria Molina, ref. 1234"></textarea></div>
+    <div style="font-size:12.5px; color:var(--muted); margin-bottom:6px; line-height:1.45;">El pago se aplica solo a las facturas más viejas primero. Después de registrarlo, solo el administrador lo puede corregir.</div>
+    <div class="modal-msg" id="cpMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cpCancelar">Cancelar</button>
+      <button class="btn btn-primary" id="cpGuardar">Registrar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGO REGISTRADO (caja y admin): recibo impreso o por WhatsApp ===== -->
+<div class="modal-overlay" id="modalPagoListo">
+  <div class="modal">
+    <h2 id="plTitulo">Pago <em>registrado</em></h2>
+    <div id="plInfo"></div>
+    <div class="pl-botones">
+      <button type="button" class="btn btn-primary btn-block" id="plImprimir">Imprimir recibo</button>
+      <button type="button" class="btn btn-green btn-block" id="plWhatsapp">Enviar recibo por WhatsApp</button>
+      <button type="button" class="btn btn-ghost btn-block" id="plListo">Listo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CAJA: ANOTAR PEDIDO SIN PRECIO ===== -->
+<div class="modal-overlay" id="modalCajaPedido" data-no-cerrar-afuera>
+  <div class="modal" style="max-width:560px;">
+    <h2>Anotar <em>pedido</em></h2>
+    <div class="info-box" id="cpeInfo"></div>
+    <div class="aviso-suave">Sin precios. Kinan le pondrá los precios y lo convertirá en factura; mientras tanto no suma a la deuda.</div>
+    <label style="font-size:12px; color:var(--text-2); font-weight:500; display:block; margin-bottom:8px;">Productos *</label>
+    <div id="cpeItems"></div>
+    <button type="button" class="btn btn-ghost btn-block" id="cpeAgregar" style="border-style:dashed;">+ Agregar producto</button>
+    <div class="fg" style="margin-top:14px;"><label for="cpeNotas">Nota (opcional)</label><textarea id="cpeNotas" rows="2" maxlength="1000" placeholder="Ej: se lo lleva hoy, lo retira el chofer"></textarea></div>
+    <div class="modal-msg" id="cpeMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cpeCancelar">Cancelar</button>
+      <button class="btn btn-primary" id="cpeGuardar">Anotar pedido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CAJA: SE CORTÓ LA RED Y NO SE PUDO COMPROBAR SI SE GUARDÓ ===== -->
+<div class="modal-overlay" id="modalIncierto">
+  <div class="modal">
+    <h2 id="inTitulo">No se sabe si llegó</h2>
+    <div class="aviso-no-vender" style="display:block; margin:0 0 6px;" id="inTexto"></div>
+    <div class="pl-botones">
+      <button type="button" class="btn btn-primary btn-block" id="inIr">Abrir "Lo que registré"</button>
+      <button type="button" class="btn btn-ghost btn-block" id="inCerrar">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADMIN: DESCARTAR UN PEDIDO DE CAJA ===== -->
+<div class="modal-overlay" id="modalDescartar">
+  <div class="modal">
+    <h2>Descartar <em>pedido</em></h2>
+    <div class="info-box" id="dpInfo"></div>
+    <div class="fg"><label for="dpMotivo">Motivo (obligatorio)</label><textarea id="dpMotivo" rows="3" maxlength="500" placeholder="Ej: el cliente no se llevó la mercancía"></textarea></div>
+    <div class="modal-msg" id="dpMsg"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="dpCancelar">Cancelar</button>
+      <button class="btn btn-danger" id="dpGuardar">Descartar pedido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CAJA: BUSCADORES A PANTALLA COMPLETA (clientes y catálogo, sin montos ni precios) ===== -->
+<div class="fs-overlay" id="cajaBuscador" role="dialog" aria-label="Buscar cliente">
+  <div class="fs-top">
+    <div class="fs-fila">
+      <input type="text" class="fs-input" id="cbInput" placeholder="Nombre, teléfono o grupo" autocomplete="off" aria-label="Buscar cliente">
+      <button type="button" class="fs-cerrar" id="cbCerrar">Cerrar</button>
+    </div>
+  </div>
+  <div class="fs-res" id="cbResultados"></div>
+</div>
+<div class="fs-overlay" id="cajaBuscadorProd" role="dialog" aria-label="Buscar producto">
+  <div class="fs-top">
+    <div class="fs-fila">
+      <input type="text" class="fs-input" id="cbpInput" placeholder="Producto o código" autocomplete="off" aria-label="Buscar producto">
+      <button type="button" class="fs-cerrar" id="cbpCerrar">Cerrar</button>
+    </div>
+  </div>
+  <div class="fs-res" id="cbpResultados"></div>
+</div>
+
 <!-- ===== MODAL ENVIAR MENSAJE ===== -->
-<div class="modal-overlay" id="modalEnviar">
+<!-- z-index mayor: se abre encima de "Pago registrado" sin cerrarlo -->
+<div class="modal-overlay" id="modalEnviar" style="z-index:350;">
   <div class="modal">
     <h2>Enviar mensaje</h2>
     <div id="envGrupoInfo" style="display:none; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14px;"></div>
@@ -635,6 +883,29 @@ var ABONOS = [];
 var ITEMS = [];
 var PRECIOS_CLI = [];
 var editingClienteId = null;
+// Modo completo: usuarios (para mostrar quién registró cada abono) y pedidos anotados por la caja
+var USUARIOS = [];
+var PEDIDOS_CAJA = [];
+var PEDIDOS_CAJA_ERROR = false;
+var PEDIDO_CAJA_ID = null;      // pedido de caja que se está convirtiendo en factura (modal de factura)
+// Modo caja: todo llega de las funciones may_caja_* (nunca de las tablas)
+var CAJA_CLIENTES = null;       // [{id, nombre, telefono, whatsapp_grupo, no_vender}]
+var CAJA_ID = null;             // cliente abierto en la ficha
+var CAJA_CUENTA = null;         // resultado de may_caja_cuenta del cliente abierto
+var CAJA_REGISTROS = null;      // resultado de may_caja_mis_registros
+var CAJA_ULTIMO_PAGO = null;    // datos del pago recién registrado (recibo y WhatsApp)
+
+// Límites de la caja: espejo de las funciones may_caja_* en la base (may_caja_registrar_abono,
+// may_caja_anotar_pedido, may_caja_mis_registros). Si cambia uno, cambiar los dos.
+var CAJA_LIMITES = { DIAS_ATRAS_PAGO: 7, DIAS_REGISTROS: 7, MONTO_MAX: 100000, RENGLONES_MAX: 60, CANTIDAD_MAX: 10000, DESC_MAX: 300, LISTA: 80 };
+// Formas de pago de los botones (admin y caja). La caja acepta exactamente esta lista: espejo de la lista
+// de may_caja_registrar_abono en la base. "Descuento/devolución" no es dinero y no va en los botones.
+var METODOS_PAGO = ['Efectivo USD', 'Zelle', 'USDT', 'Bolívares', 'Pago Móvil'];
+var METODOS_EN_BOLIVARES = ['Bolívares', 'Pago Móvil'];
+var METODO_NO_DINERO = 'Descuento/devolución';
+function esDinero(metodo){ return metodo !== METODO_NO_DINERO; }
+var ESTADO_ULTIMOS_ABONOS = 10;   // estado por WhatsApp: igual que may_caja_cuenta (LIMIT 10)
+var ESTADO80_ULTIMOS_PAGOS = 5;   // estado de cuenta impreso de 80 mm
 
 // ===== UTILIDADES =====
 // Bloquea un botón mientras corre una acción async, para evitar doble-clic (duplicados).
@@ -673,12 +944,30 @@ function initials(nombre){
   return (p[0][0] + (p[1]?p[1][0]:'')).toUpperCase();
 }
 function normalizar(txt){ return (txt||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
-// Fecha de HOY en la hora de Venezuela (la del aparato). Antes se usaba toISOString(), que es la hora
-// internacional (UTC, 4 horas adelante): desde las 8 de la noche los abonos y facturas salían con fecha de mañana.
-function hoyLocal(){
-  var d = new Date();
+// Fecha 'AAAA-MM-DD' de un momento en la hora de VENEZUELA, aunque el aparato esté en otro país (Kinan viaja).
+// Antes se usaba toISOString(), que es la hora internacional (UTC, 4 horas adelante): desde las 8 de la noche
+// los abonos y facturas salían con fecha de mañana. La base usa la misma zona: now() AT TIME ZONE 'America/Caracas'.
+var ZONA_VZLA = 'America/Caracas';
+var FMT_ISO_VZLA = null;
+function isoLocal(d){
+  d = d || new Date();
+  try {
+    FMT_ISO_VZLA = FMT_ISO_VZLA || new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_VZLA, year: 'numeric', month: '2-digit', day: '2-digit' });
+    var p = {};
+    FMT_ISO_VZLA.formatToParts(d).forEach(function(x){ p[x.type] = x.value; });
+    if(p.year && p.month && p.day) return p.year + '-' + p.month + '-' + p.day;
+  } catch(e){}
+  // Aparato sin zonas horarias: la fecha del aparato
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
+function hoyLocal(){ return isoLocal(new Date()); }
+function fechaLocalDe(ts){ var d = ts ? new Date(ts) : null; return (d && !isNaN(d)) ? isoLocal(d) : null; }
+// Suma n días a 'AAAA-MM-DD'. Se calcula a las 16:00 UTC (mediodía en Venezuela), así el día nunca se corre.
+function sumarDias(iso, n){ var p = String(iso).split('-'); return isoLocal(new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n, 16))); }
+// Estado de una cuenta según lo que debe (con signo): 'favor' (< −0,01), 'aldia' (±0,01) o 'debe' (> 0,01)
+function estadoSaldo(debe){ debe = Number(debe) || 0; return debe < -0.01 ? 'favor' : (debe > 0.01 ? 'debe' : 'aldia'); }
+// Modo completo. Ojo: CURRENT_USER.rol === 'admin' no sirve para esto: lo que decide es el modo con que entró.
+function esAdmin(){ return !!CURRENT_USER && CURRENT_USER.modo === 'admin'; }
 function fmtDate(d){ if(!d) return '—'; var p = d.toString().substring(0,10).split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
 
 // ===== LOGIN (el mismo usuario del Portal) =====
@@ -709,14 +998,26 @@ async function intentarLogin(){
   }
 }
 // Revisa la cuenta en usuarios_app y el permiso del rol en portal_permisos. Si falla la conexión, lanza el error.
+// Dos maneras de entrar (2026-10-19):
+//  · Modo completo: rol admin con el mayorista en nivel 'completo'. Igual que siempre.
+//  · Modo caja: nivel 'consulta' Y la base dice que esta persona está en la lista de la caja (may_es_caja).
+//    La caja solo usa las funciones may_caja_*: no lee las tablas del mayor ni ve totales del negocio.
 async function cargarUsuario(user){
   var r = await sb.from('usuarios_app').select('id, nombre, rol, activo').eq('id', user.id).maybeSingle();
   if(r.error) throw r.error;
   if(!r.data || !r.data.activo){ avisoLogin('Tu cuenta no está activa todavía. Pídele al administrador que la active en Control.'); return; }
   var rp = await sb.from('portal_permisos').select('nivel').eq('rol', r.data.rol).eq('app_id', 'mayoristas').maybeSingle();
   if(rp.error) throw rp.error;
-  if(!rp.data || rp.data.nivel !== 'completo'){ avisoLogin('Tu usuario no tiene acceso al mayorista. El administrador lo da en Control, en Permisos.'); return; }
-  CURRENT_USER = { id: r.data.id, nombre: r.data.nombre || user.email, rol: r.data.rol };
+  var nivel = rp.data ? rp.data.nivel : null;
+  var modo = null;
+  if(r.data.rol === 'admin' && nivel === 'completo') modo = 'admin';
+  else if(nivel === 'consulta'){
+    var rc = await sb.rpc('may_es_caja');
+    if(rc.error){ avisoLogin('No se pudo confirmar tu acceso a la caja. Revisa tu internet e intenta de nuevo.'); return; }
+    if(rc.data === true) modo = 'caja'; // ante la duda, no entra
+  }
+  if(!modo){ avisoLogin('Tu usuario no tiene acceso al mayorista. El administrador lo da en Control, en Permisos.'); return; }
+  CURRENT_USER = { id: r.data.id, nombre: r.data.nombre || user.email, rol: r.data.rol, modo: modo };
   entrarApp();
 }
 
@@ -725,36 +1026,61 @@ function entrarApp(){
   document.getElementById('loginView').style.display = 'none';
   document.getElementById('appView').style.display = 'block';
   document.getElementById('userName').textContent = CURRENT_USER.nombre;
-  document.getElementById('userRol').textContent = CURRENT_USER.rol;
   document.getElementById('userAv').textContent = initials(CURRENT_USER.nombre);
+  var esCaja = CURRENT_USER.modo === 'caja';
+  document.getElementById('userRol').textContent = esCaja ? 'Caja' : CURRENT_USER.rol;
+  document.getElementById('sideSub').textContent = esCaja ? 'Caja del mayor' : 'Ventas al Mayor';
+  document.getElementById('mtTitle').textContent = esCaja ? 'Caja del mayor' : 'Ventas al Mayor';
+  document.querySelectorAll('.nav-admin').forEach(function(el){ el.style.display = esCaja ? 'none' : ''; });
+  document.querySelectorAll('.nav-caja').forEach(function(el){ el.style.display = esCaja ? '' : 'none'; });
+  if(esCaja){
+    document.getElementById('cajaRegSub').textContent = 'Tus pagos y pedidos de los últimos ' + CAJA_LIMITES.DIAS_REGISTROS + ' días';
+    // La caja NO llama a cargarDatos ni lee tablas may_*: solo las funciones may_caja_*
+    switchView('caja');
+    cajaCargarClientes();
+    return;
+  }
   // Papelera, editar, anular y eliminar: solo admin
-  document.getElementById('navPapelera').style.display = (CURRENT_USER.rol === 'admin') ? '' : 'none';
+  document.getElementById('navPapelera').style.display = esAdmin() ? '' : 'none';
   switchView('panel');
   cargarDatos();
 }
 
+// Respaldo de location.reload() al salir: vacía memoria y pantalla por si la recarga tarda o no ocurre.
+function limpiarSesion(){
+  CLIENTES = []; FACTURAS = []; ABONOS = []; ITEMS = []; PRECIOS_CLI = []; USUARIOS = []; PEDIDOS_CAJA = [];
+  PAPELERA = { cli: [], fac: [], abo: [] };
+  DATOS_CARGADOS = false; currentDetalleId = null; PEDIDO_CAJA_ID = null;
+  CAJA_CLIENTES = null; CAJA_CUENTA = null; CAJA_ID = null; CAJA_REGISTROS = null; CAJA_ULTIMO_PAGO = null;
+  ['panelContent','cliList','facList','statsContent','papContent','detalleContent','pedidosContent','cajaLista','cajaFicha','cajaRegistros']
+    .forEach(function(id){ var el = document.getElementById(id); if(el) el.innerHTML = ''; });
+  actualizarBadgePedidos();
+  ['buscadorCliente','buscadorProducto','cajaBuscador','cajaBuscadorProd'].forEach(function(id){ var el = document.getElementById(id); if(el) el.style.display = 'none'; });
+}
+
 function mostrarLogin(aviso){
   CURRENT_USER = null;
+  limpiarSesion();
   document.querySelectorAll('.modal-overlay.active').forEach(function(m){ m.classList.remove('active'); });
   document.getElementById('appView').style.display = 'none';
   document.getElementById('loginView').style.display = 'flex';
   document.getElementById('loginPass').value = '';
   avisoLogin(aviso);
 }
-// Salir cierra la sesión en todo el ecosistema (Portal incluido), igual que en las otras apps
+// Salir cierra la sesión en todo el ecosistema (Portal incluido), igual que en las otras apps, y recarga la página:
+// así no queda NADA del usuario anterior en memoria (el catálogo con costos, las cuentas) si después entra otra persona.
 async function logout(){
   mostrarLogin('');
   try { await sb.auth.signOut(); } catch(e){}
+  location.reload();
 }
 
 // ===== CARGA DE DATOS =====
-async function traerTodo(tabla, orderCol, asc){
+// Trae todo de 1000 en 1000: la API corta en 1000 filas SIN avisar. consulta(desde, hasta) arma el pedido de ese tramo.
+async function paginar(consulta){
   var todos = [], desde = 0, tam = 1000;
   while(true){
-    var q = sb.from(tabla).select('*');
-    if(orderCol) q = q.order(orderCol, {ascending: !!asc});
-    q = q.order('id', {ascending: true}); // desempate fijo: sin él, con +1000 filas la paginación puede saltar o repetir filas
-    var r = await q.range(desde, desde + tam - 1);
+    var r = await consulta(desde, desde + tam - 1);
     if(r.error) throw r.error;
     var lote = r.data || [];
     todos = todos.concat(lote);
@@ -762,6 +1088,18 @@ async function traerTodo(tabla, orderCol, asc){
     desde += tam;
   }
   return todos;
+}
+function traerTodo(tabla, orderCol, asc){
+  return paginar(function(desde, hasta){
+    var q = sb.from(tabla).select('*');
+    if(orderCol) q = q.order(orderCol, {ascending: !!asc});
+    // desempate fijo: sin él, con +1000 filas la paginación puede saltar o repetir filas
+    return q.order('id', {ascending: true}).range(desde, hasta);
+  });
+}
+// Funciones de la base que devuelven filas (may_caja_clientes): también de 1000 en 1000
+function rpcTodo(fn, args){
+  return paginar(function(desde, hasta){ return sb.rpc(fn, args || {}).range(desde, hasta); });
 }
 
 var DATOS_CARGADOS = false;
@@ -794,8 +1132,11 @@ async function cargarDatos(){
     var its = (await traerTodo('may_factura_items', null, false)).filter(esVivo);
     var pre = PRECIOS_CLI;
     try { pre = await traerTodo('may_precios_cliente', null, false); } catch(e){ console.warn('precios pactados', e); }
+    // Quién es quién (para la etiqueta "Caja: nombre" en los abonos). Si falla, solo se pierde la etiqueta.
+    var usu = USUARIOS;
+    try { var ru = await sb.from('usuarios_app').select('id, nombre, rol'); if(ru.error) throw ru.error; usu = ru.data || []; } catch(e){ console.warn('usuarios', e); }
     CLIENTES = cliT.filter(esVivo); FACTURAS = facT.filter(esVivo); ABONOS = aboT.filter(esVivo);
-    ITEMS = its; PRECIOS_CLI = pre;
+    ITEMS = its; PRECIOS_CLI = pre; USUARIOS = usu;
     PAPELERA = { cli: soloBorrados(cliT), fac: soloBorrados(facT), abo: soloBorrados(aboT) };
     DATOS_CARGADOS = true;
     await cargarCatalogo();
@@ -804,6 +1145,7 @@ async function cargarDatos(){
     renderFacturas();
     if(currentDetalleId && document.getElementById('view-detalle').style.display !== 'none') renderDetalle();
     if(document.getElementById('view-papelera').style.display !== 'none') renderPapelera();
+    await cargarPedidosCaja(); // pedidos de la caja: contador y vista (si falla, lo demás sigue)
     return true;
   } catch(e){
     mostrarErrorCarga(e);
@@ -818,11 +1160,12 @@ function saldoDe(facturas, abonos){
   var pagado = abonos.reduce(function(s,a){ return s + parseFloat(a.monto||0); }, 0);
   return { comprado: comprado, pagado: pagado, debe: comprado - pagado };
 }
+// Espejo de may_caja_cuenta / may_caja_registrar_abono en la base ("debe" de la caja): si cambia esta regla, cambiar las dos.
 function totalesCliente(clienteId){
   return saldoDe(FACTURAS.filter(function(f){ return f.cliente_id === clienteId; }),
                  ABONOS.filter(function(a){ return a.cliente_id === clienteId; }));
 }
-function textoSaldo(debe){ return debe > 0.01 ? 'Debe ' + fmt(debe) : (debe < -0.01 ? 'Tiene ' + fmt(debe) + ' a favor' : 'No debe nada'); }
+function textoSaldo(debe){ var e = estadoSaldo(debe); return e === 'debe' ? 'Debe ' + fmt(debe) : (e === 'favor' ? 'Tiene ' + fmt(debe) + ' a favor' : 'No debe nada'); }
 function saldoCliente(clienteId){ return totalesCliente(clienteId).debe; }
 
 // ===== RENDER CLIENTES =====
@@ -843,7 +1186,7 @@ function renderClientes(){
   }
   cont.innerHTML = list.map(function(c){
     var saldo = saldoCliente(c.id);
-    var aFavor = saldo < -0.01;
+    var aFavor = estadoSaldo(saldo) === 'favor';
     return '<div class="card cli-card" data-cli="' + c.id + '">' +
       '<div class="av">' + initials(c.nombre) + '</div>' +
       '<div class="info">' +
@@ -944,11 +1287,13 @@ async function cargarCatalogo(){
     if(!CATALOGO.length) toast('No se pudo cargar el catálogo de productos. Revisa tu internet.', 'e');
   }
 }
-function buscarEnCatalogo(texto){
+// Una sola regla de búsqueda del catálogo: el admin busca en CATALOGO; la caja, en el suyo (sin precios ni costos)
+function buscarEnCatalogo(texto, lista){
+  lista = lista || CATALOGO;
   if(!texto || texto.length < 2) return [];
   var q = normalizar(texto);
-  var palabras = q.split(/\s+/);
-  return CATALOGO.filter(function(p){
+  var palabras = q.split(/\s+/).filter(Boolean);
+  return lista.filter(function(p){
     var desc = normalizar(p.descripcion||'');
     var cod = normalizar(p.codigo_valery||'');
     return palabras.every(function(w){ return desc.indexOf(w)>=0 || cod.indexOf(w)>=0; });
@@ -960,6 +1305,8 @@ var BP_TARGET = null; // índice del item que se está editando
 // ===== BUSCADOR DE CLIENTES (factura) =====
 var BC_LIMITE = 80, BC_TIMER = null;
 function abrirBuscadorCliente(){
+  // La factura de un pedido de caja va al mismo cliente del pedido (la base también lo exige)
+  if(PEDIDO_CAJA_ID){ toast('El cliente viene del pedido de caja y no se puede cambiar', 'e'); return; }
   document.getElementById('buscadorCliente').style.display = 'flex';
   document.getElementById('bcInput').value = '';
   bcRender('');
@@ -982,8 +1329,8 @@ function bcRender(texto){
     return '<div class="bc-item' + (c.id === elegido ? ' sel' : '') + '" data-cid="' + c.id + '">' +
       '<div style="min-width:0;"><div style="font-size:15px; font-weight:600; color:var(--text);">' + prEsc(c.nombre) + tagNoVender(c) + '</div>' +
         (sub ? '<div style="font-size:12px; color:var(--muted); margin-top:3px;">' + sub + '</div>' : '') + '</div>' +
-      '<div style="text-align:right; flex-shrink:0;"><div style="font-size:14px; font-weight:700; color:' + (debe > 0.01 ? 'var(--gold)' : 'var(--green-soft)') + ';">' + fmt(debe) + '</div>' +
-        '<div style="font-size:10px; color:var(--muted);">' + (debe < -0.01 ? 'a favor' : 'debe') + '</div></div>' +
+      '<div style="text-align:right; flex-shrink:0;"><div style="font-size:14px; font-weight:700; color:' + (estadoSaldo(debe) === 'debe' ? 'var(--gold)' : 'var(--green-soft)') + ';">' + fmt(debe) + '</div>' +
+        '<div style="font-size:10px; color:var(--muted);">' + (estadoSaldo(debe) === 'favor' ? 'a favor' : 'debe') + '</div></div>' +
     '</div>';
   }).join('') + (lista.length > BC_LIMITE ? '<div style="text-align:center; color:var(--muted); padding:14px; font-size:13px;">Hay ' + (lista.length - BC_LIMITE) + ' clientes más: escribe para filtrar.</div>' : '');
   cont.querySelectorAll('.bc-item').forEach(function(el){
@@ -1072,7 +1419,7 @@ function renderItems(){
       '</div>' +
       '<div style="display:flex; gap:8px; align-items:center;">' +
         '<div style="flex:1;"><label style="font-size:10px; color:var(--muted); display:block; margin-bottom:2px;">Cantidad</label><input type="number" class="it-cant" data-i="' + i + '" value="' + (it.cantidad||1) + '" min="1" inputmode="numeric" style="width:100%; padding:8px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px;"></div>' +
-        '<div style="flex:1;"><label style="font-size:10px; color:var(--muted); display:block; margin-bottom:2px;">Precio c/u</label><input type="number" class="it-precio" data-i="' + i + '" value="' + (it.precio||'') + '" step="0.01" inputmode="decimal" style="width:100%; padding:8px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px;"></div>' +
+        '<div style="flex:1;"><label style="font-size:10px; color:var(--muted); display:block; margin-bottom:2px;">Precio c/u</label><input type="number" class="it-precio' + (PEDIDO_CAJA_ID && it.descripcion && !(it.precio > 0) ? ' falta' : '') + '" data-i="' + i + '" value="' + (it.precio||'') + '" step="0.01" inputmode="decimal" style="width:100%; padding:8px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px;"></div>' +
         '<div style="flex:1; text-align:right;"><label style="font-size:10px; color:var(--muted); display:block; margin-bottom:2px;">Subtotal</label><span style="font-size:15px; font-weight:700; color:var(--gold);">' + fmt((it.cantidad||1)*(it.precio||0)) + '</span></div>' +
       '</div>' +
     '</div>';
@@ -1089,7 +1436,11 @@ function renderItems(){
     el.addEventListener('input', function(){ NF_ITEMS[parseInt(this.dataset.i)].cantidad = parseFloat(this.value)||1; actualizarTotalFactura(); });
   });
   cont.querySelectorAll('.it-precio').forEach(function(el){
-    el.addEventListener('input', function(){ NF_ITEMS[parseInt(this.dataset.i)].precio = parseFloat(this.value)||0; actualizarTotalFactura(); });
+    el.addEventListener('input', function(){
+      NF_ITEMS[parseInt(this.dataset.i)].precio = parseFloat(this.value)||0;
+      this.classList.toggle('falta', !!PEDIDO_CAJA_ID && !(parseFloat(this.value) > 0));
+      actualizarTotalFactura();
+    });
   });
   actualizarTotalFactura();
 }
@@ -1106,6 +1457,7 @@ function opcionesClientes(){
 // clienteId: viene de la ficha del cliente (botón "+ Factura"); sin él, la factura arranca sin cliente
 function abrirNuevaFactura(clienteId){
   editingFacturaId = null;
+  PEDIDO_CAJA_ID = null; document.getElementById('nfPegarPedido').style.display = ''; bloquearClienteFactura(false);
   PR_TEXTO_ORIGINAL = null; PR_ORIGEN = 'manual';
   NF_ITEMS = [{producto_id:null, descripcion:'', cantidad:1, precio:0}];
   document.getElementById('modalFacturaTitle').textContent = 'Nueva factura';
@@ -1125,9 +1477,7 @@ function actualizarVencimiento(){
   var cli = CLIENTES.find(function(c){ return c.id === cliId; });
   var fecha = document.getElementById('nfFecha').value;
   if(cli && fecha){
-    var d = new Date(fecha + 'T12:00:00');
-    d.setDate(d.getDate() + (cli.plazo_dias||30));
-    document.getElementById('nfVence').value = d.toISOString().substring(0,10);
+    document.getElementById('nfVence').value = sumarDias(fecha, cli.plazo_dias || 30);
   }
   refrescarClienteFactura(); // se llama cada vez que cambia el cliente de la factura
 }
@@ -1150,6 +1500,8 @@ function abrirEditarFactura(facturaId){
   var f = FACTURAS.find(function(x){ return x.id === facturaId; });
   if(!f) return;
   editingFacturaId = facturaId;
+  PEDIDO_CAJA_ID = null; document.getElementById('nfPegarPedido').style.display = ''; bloquearClienteFactura(false);
+  PR_TEXTO_ORIGINAL = null; PR_ORIGEN = 'manual'; // nada de un pedido pegado antes se cuela en la edición
   document.getElementById('modalFacturaTitle').textContent = 'Editar factura #' + f.numero;
   var sel = document.getElementById('nfCliente');
   sel.innerHTML = opcionesClientes();
@@ -1189,9 +1541,19 @@ async function guardarFactura(){
   var msg = document.getElementById('nfMsg');
   var cliId = document.getElementById('nfCliente').value;
   if(!cliId){ msg.className='modal-msg error'; msg.textContent='Elige un cliente.'; return; }
+  var esEdicion = !!editingFacturaId;
+  var esPedidoCaja = !esEdicion && !!PEDIDO_CAJA_ID;
+  // Factura de un pedido de caja: ningún renglón se queda afuera por no tener precio (se lo llevó el cliente)
+  if(esPedidoCaja){
+    var sinPrecio = NF_ITEMS.filter(function(it){ return it.descripcion && !(it.precio > 0); });
+    if(sinPrecio.length){
+      msg.className='modal-msg error';
+      msg.textContent = 'Falta el precio de ' + sinPrecio.map(function(it){ return '"' + it.descripcion + '"'; }).join(', ') + '. Escríbelo, o quita el renglón si no se lo llevó.';
+      return;
+    }
+  }
   var items = NF_ITEMS.filter(function(it){ return it.descripcion && it.precio > 0; });
   if(items.length === 0){ msg.className='modal-msg error'; msg.textContent='Agrega al menos un producto con precio.'; return; }
-  var esEdicion = !!editingFacturaId;
   var cliSel = CLIENTES.find(function(c){ return c.id === cliId; });
   if(!esEdicion && cliSel && cliSel.no_vender &&
      !confirm(cliSel.nombre + ' está marcado como NO VENDERLE.\n\n¿Hacerle esta factura igual?')) return;
@@ -1204,8 +1566,10 @@ async function guardarFactura(){
     fecha_vencimiento: document.getElementById('nfVence').value || null,
     notas: document.getElementById('nfNotas').value.trim() || null,
     creado_por: CURRENT_USER.id,
-    origen: PR_ORIGEN,                 // 'manual' o 'pedido_rapido'
-    texto_pedido: PR_TEXTO_ORIGINAL    // el pedido tal cual se pegó (para estadísticas y auditoría)
+    // Solo en una factura nueva: 'manual' o 'pedido_rapido' (al editar, la base no toca el origen; y el de un pedido
+    // de caja lo pone may_facturar_pedido)
+    origen: esEdicion ? null : PR_ORIGEN,
+    texto_pedido: esEdicion ? null : PR_TEXTO_ORIGINAL    // el pedido tal cual se pegó (para estadísticas y auditoría)
   };
   var itemsRpc = items.map(function(it){
     return { producto_id: it.producto_id || null, descripcion: it.descripcion, cantidad: it.cantidad || 1, precio_unitario: it.precio,
@@ -1213,7 +1577,10 @@ async function guardarFactura(){
   });
   var res;
   try {
-    var r = await sb.rpc('may_guardar_factura', { p_factura: factura, p_items: itemsRpc });
+    // Pedido de caja: may_facturar_pedido crea la factura (origen 'caja') y marca el pedido como facturado, todo junto
+    var r = esPedidoCaja
+      ? await sb.rpc('may_facturar_pedido', { p_pedido_id: PEDIDO_CAJA_ID, p_factura: factura, p_items: itemsRpc })
+      : await sb.rpc('may_guardar_factura', { p_factura: factura, p_items: itemsRpc });
     if(r.error) throw r.error;
     res = r.data || {};
   } catch(e){
@@ -1223,9 +1590,10 @@ async function guardarFactura(){
   }
   // Desde aquí la factura YA está en la base: lo que sigue es pantalla y extras, y no se revierte si falla.
   var facturaId = res.factura_id || editingFacturaId;
-  editingFacturaId = null;
+  editingFacturaId = null; PEDIDO_CAJA_ID = null;
   document.getElementById('modalFactura').classList.remove('active');
   if(esEdicion) toast('Factura actualizada', 's');
+  else if(esPedidoCaja) toast('Factura #' + res.numero + ' creada con el pedido de caja', 's');
   else if(parseFloat(res.aplicado_a_esta || 0) > 0.01) toast('Factura #' + res.numero + ' creada (se aplicó saldo a favor del cliente: ' + fmt(res.aplicado_a_esta) + ')', 's');
   else toast('Factura #' + res.numero + ' creada', 's');
   await guardarPreciosPactados(cliId, items);
@@ -1248,7 +1616,7 @@ var PR_MARCAS = null;            // palabras que el catálogo escribe en MAYÚSC
 var PR_VOLVER_A_PEDIDO = false;  // true mientras se crea un cliente desde el pedido rápido
 var ULTIMO_CLIENTE_CREADO = null;
 var PR_TEXTO_ORIGINAL = null;    // texto pegado, se guarda en may_facturas.texto_pedido
-var PR_ORIGEN = 'manual';        // 'manual' | 'pedido_rapido'
+var PR_ORIGEN = 'manual';        // 'manual' | 'pedido_rapido' (el 'caja' de un pedido de caja lo pone la base, may_facturar_pedido)
 
 // PR-PURO-INICIO (parser + reconocimiento, sin DOM: se prueba aparte en Node)
 var PR_VACIAS = ['de','con','y','el','la','los','las','para','en','a','c','del','un','una'];
@@ -1738,6 +2106,7 @@ function mensajeFacturaConSaldo(facturaId){
 }
 
 // ===== RENDER FACTURAS =====
+// Lo pendiente de una factura. Espejo de "pendiente" en may_caja_cuenta (la caja) en la base.
 function saldoFactura(f){
   return parseFloat(f.monto_total||0) - parseFloat(f.monto_pagado||0);
 }
@@ -1863,12 +2232,12 @@ function renderDetalle(){
       '<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">' +
           '<button class="btn btn-ghost fac-nota" data-fid="' + f.id + '" style="padding:5px 10px; font-size:11px;">Nota PDF</button>' +
           '<button class="btn btn-ghost fac-wa" data-fid="' + f.id + '" style="padding:5px 10px; font-size:11px; border-color:var(--green); color:var(--green-soft);">WhatsApp</button>' +
-          (CURRENT_USER.rol === 'admin' ? '<button class="btn btn-ghost fac-editar" data-fid="' + f.id + '" style="padding:5px 10px; font-size:11px; border-color:var(--orange); color:var(--orange);">Editar</button><button class="btn btn-ghost fac-anular" data-fid="' + f.id + '" style="padding:5px 10px; font-size:11px; border-color:var(--red); color:var(--red-soft);">Anular</button>' : '') +
+          (esAdmin() ? '<button class="btn btn-ghost fac-editar" data-fid="' + f.id + '" style="padding:5px 10px; font-size:11px; border-color:var(--orange); color:var(--orange);">Editar</button><button class="btn btn-ghost fac-anular" data-fid="' + f.id + '" style="padding:5px 10px; font-size:11px; border-color:var(--red); color:var(--red-soft);">Anular</button>' : '') +
       '</div>' +
     '</div>';
   }
 
-  var puedeEditar = (CURRENT_USER.rol === 'admin');
+  var puedeEditar = esAdmin();
   var html =
     '<div class="detail-banner">' +
       '<div class="db-head" style="display:flex; align-items:center; gap:14px; min-width:0;">' +
@@ -1883,6 +2252,7 @@ function renderDetalle(){
         '<button class="btn btn-ghost" id="btnFacturaCli" style="border-color:var(--gold); color:var(--gold);">+ Factura</button>' +
         '<button class="btn btn-ghost" id="btnEstadoCuentaCli" style="border-color:var(--purple); color:var(--purple);">Estado cuenta PDF</button>' +
         '<button class="btn btn-ghost" id="btnEstadoWaCli" style="border-color:var(--green); color:var(--green-soft);">Estado por WhatsApp</button>' +
+        '<button class="btn btn-ghost" id="btnEstado80Cli">Imprimir estado (80 mm)</button>' +
         '<button class="btn btn-ghost" id="btnRecordarCli" style="border-color:var(--green); color:var(--green-soft);">Recordatorio</button>' +
         (puedeEditar ? '<button class="btn btn-ghost" id="btnEditarCliDet">Editar</button>' : '') +
       '</div>' +
@@ -1890,7 +2260,7 @@ function renderDetalle(){
     '<div class="kpi-row">' +
       '<div class="kpi gold"><div class="l">Total comprado</div><div class="v">' + fmt(totalComprado) + '</div></div>' +
       '<div class="kpi green"><div class="l">Total pagado</div><div class="v">' + fmt(totalPagado) + '</div></div>' +
-      (debe < -0.01
+      (estadoSaldo(debe) === 'favor'
         ? '<div class="kpi green"><div class="l">Saldo a favor</div><div class="v">' + fmt(Math.abs(debe)) + '</div></div>'
         : '<div class="kpi red"><div class="l">Debe actualmente</div><div class="v">' + fmt(debe) + '</div></div>') +
     '</div>' +
@@ -1904,11 +2274,13 @@ function renderDetalle(){
     '</details>' +
     '<details class="det-plegable"><summary>Historial de abonos (' + abonos.length + ' · ' + fmt(totalPagado) + ')</summary>' +
     (abonos.length ? abonos.map(function(a){
-      return '<div class="card" style="padding:12px 14px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">' +
-        '<div><div style="font-weight:600;">' + fmtDate(a.fecha) + '</div><div style="font-size:12px; color:var(--muted);">' + prEsc(a.metodo) + (a.notas?' · '+prEsc(a.notas):'') + '</div></div>' +
-        '<div style="display:flex; align-items:center; gap:10px;"><div style="font-size:16px; font-weight:800; color:var(--green-soft);">' + fmt(a.monto) + '</div>' +
+      var caja = etiquetaCaja(a); // 'Caja: nombre' si lo registró la caja (may_abonos.origen = 'caja')
+      return '<div class="card" style="padding:12px 14px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">' +
+        '<div style="min-width:0; flex:1 1 180px;"><div style="font-weight:600;">' + fmtDate(a.fecha) + (caja ? ' <span class="tag caja">' + prEsc(caja) + '</span>' : '') + '</div><div style="font-size:12px; color:var(--muted); overflow-wrap:anywhere;">' + prEsc(a.metodo) + (a.notas?' · '+prEsc(a.notas):'') + '</div></div>' +
+        '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;"><div style="font-size:16px; font-weight:800; color:var(--green-soft);">' + fmt(a.monto) + '</div>' +
+        (esDinero(a.metodo) ? '<button class="btn btn-ghost abono-recibo" data-aid="' + a.id + '" style="padding:4px 8px; font-size:11px;">Recibo</button>' : '') +
         '<button class="btn btn-ghost abono-wa" data-aid="' + a.id + '" style="padding:4px 8px; font-size:11px; border-color:var(--green); color:var(--green-soft);">WhatsApp</button>' +
-        (CURRENT_USER.rol === 'admin' ? '<button class="btn btn-ghost abono-anular" data-aid="' + a.id + '" style="padding:4px 8px; font-size:11px; border-color:var(--red); color:var(--red-soft);">Anular</button>' : '') + '</div>' +
+        (esAdmin() ? '<button class="btn btn-ghost abono-anular" data-aid="' + a.id + '" style="padding:4px 8px; font-size:11px; border-color:var(--red); color:var(--red-soft);">Anular</button>' : '') + '</div>' +
       '</div>';
     }).join('') : '<div style="color:var(--muted); font-size:13px; padding:10px;">Sin abonos registrados.</div>') +
     '</details>' +
@@ -1933,6 +2305,11 @@ function renderDetalle(){
   if(btnEw) btnEw.addEventListener('click', function(){ estadoCuentaWhatsApp(c.id); });
   var btnRe = document.getElementById('btnRecordarCli');
   if(btnRe) btnRe.addEventListener('click', function(){ recordatorioWhatsApp(c.id); });
+  var btnE80 = document.getElementById('btnEstado80Cli');
+  if(btnE80) btnE80.addEventListener('click', function(){ imprimirEstado80Admin(c.id); });
+  document.querySelectorAll('.abono-recibo').forEach(function(el){
+    el.addEventListener('click', function(e){ e.stopPropagation(); imprimirReciboAbonoAdmin(this.dataset.aid, false); });
+  });
   document.querySelectorAll('.fac-nota').forEach(function(el){
     el.addEventListener('click', function(){ generarNotaFactura(this.dataset.fid); });
   });
@@ -1955,7 +2332,7 @@ function renderDetalle(){
 
 // ===== REGISTRAR ABONO (reparte a facturas viejas primero) =====
 var abonoClienteId = null;
-var ABONO_METODO = 'Efectivo USD';
+var ABONO_METODO = METODOS_PAGO[0];
 function abrirAbono(clienteId){
   abonoClienteId = clienteId;
   var c = CLIENTES.find(function(x){ return x.id === clienteId; });
@@ -1965,9 +2342,9 @@ function abrirAbono(clienteId){
   document.getElementById('abFecha').value = hoyLocal();
   document.getElementById('abNotas').value = '';
   document.getElementById('abMsg').textContent = '';
-  // resetear método a Efectivo USD
-  ABONO_METODO = 'Efectivo USD';
-  document.querySelectorAll('#abMetodos .method-opt').forEach(function(b){ b.classList.toggle('active', b.dataset.m === 'Efectivo USD'); });
+  // la forma de pago vuelve a la primera (Efectivo USD)
+  ABONO_METODO = METODOS_PAGO[0];
+  marcarMetodo('abMetodos', ABONO_METODO);
   document.getElementById('modalAbono').classList.add('active');
 }
 async function guardarAbono(){
@@ -2001,26 +2378,28 @@ async function guardarAbono(){
   toast(aFavor > 0.01 ? 'Abono registrado. El cliente queda con ' + fmt(aFavor) + ' a favor' : 'Abono registrado', 's');
   await cargarDatos();
   renderDetalle();
-  // Ya no se abre la ventana de envío después de cada abono (pedido de Kinan): el recibo se manda, si se quiere,
-  // con el botón WhatsApp de ese abono en el historial, y el resumen con "Estado por WhatsApp".
+  // Ya no se abre sola la ventana de envío después de cada abono (pedido de Kinan). Queda a la vista
+  // "Pago registrado" con los botones Imprimir recibo y WhatsApp, que solo se usan si se tocan.
+  var aNuevo = res.abono_id && ABONOS.find(function(x){ return x.id === res.abono_id; });
+  if(aNuevo) mostrarPagoListoAdmin(aNuevo);
 }
 // Recibo de un abono por WhatsApp (botón del historial), con el saldo de la cuenta de hoy
 function enviarAbonoWhatsApp(abonoId){
   var a = ABONOS.find(function(x){ return x.id === abonoId; });
   var c = a && CLIENTES.find(function(x){ return x.id === a.cliente_id; });
   if(!c) return;
-  var debe = totalesCliente(c.id).debe;
-  abrirEnviar(mensajeAbono(c, a.monto, a.metodo, a.fecha, a.notas, debe < -0.01 ? -debe : 0), c.telefono || null, c.whatsapp_grupo || null);
+  abrirEnviar(textoPagoRecibido(c.nombre, a.monto, a.metodo, a.fecha, a.notas, totalesCliente(c.id).debe), c.telefono || null, c.whatsapp_grupo || null);
 }
-// Mensaje de confirmación de un abono para el grupo del cliente
-function mensajeAbono(c, monto, metodo, fecha, notas, aFavor){
-  var debe = facturasDeCliente(c.id).reduce(function(s, f){ return s + Math.max(0, saldoFactura(f)); }, 0);
+// Mensaje "Pago recibido" para el grupo del cliente (admin y caja). debe = lo que debe la cuenta CON SIGNO
+// (negativo = saldo a favor), el mismo de totalesCliente() y de may_caja_cuenta.
+function textoPagoRecibido(nombre, monto, metodo, fecha, notas, debe){
+  var e = estadoSaldo(debe);
   var msg = '*MERCANTIL YUMANA*\n';
   msg += 'Pago recibido · ' + fmtDate(fecha) + '\n';
-  msg += c.nombre + '\n\n';
+  msg += nombre + '\n\n';
   msg += 'Monto: *' + fmt(monto) + '* (' + metodo + (notas ? ' · ' + notas : '') + ')\n';
-  if(aFavor > 0.01) msg += '\nTu cuenta está al día y quedas con *' + fmt(aFavor) + '* a favor.';
-  else if(debe > 0.01) msg += '\n*Saldo pendiente: ' + fmt(debe) + '*';
+  if(e === 'favor') msg += '\nTu cuenta está al día y quedas con *' + fmt(debe) + '* a favor.';
+  else if(e === 'debe') msg += '\n*Saldo pendiente: ' + fmt(debe) + '*';
   else msg += '\nTu cuenta está al día.';
   msg += '\n\n¡Gracias!';
   return msg;
@@ -2094,7 +2473,8 @@ var PAP_PASO = 80, PAP_LIM = { cli: PAP_PASO, fac: PAP_PASO, abo: PAP_PASO };
 function fmtFechaHora(ts){
   var d = ts ? new Date(ts) : null;
   if(!d || isNaN(d)) return '—';
-  return d.toLocaleString('es-VE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  try { return d.toLocaleString('es-VE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone: ZONA_VZLA }); }
+  catch(e){ return d.toLocaleString('es-VE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }); }
 }
 // Modelo de la papelera (sin pantalla): cada cliente con lo que se fue con él, y lo anulado suelto
 function armarPapelera(p){
@@ -2387,7 +2767,7 @@ function generarEstadoCuentaCliente(clienteId, completo){
     '<div class="resumen">' +
       '<div class="rcompra"><span>' + (m.completo ? 'Total comprado' : 'Facturas de este estado') + '</span><b>' + fmt(m.facturado) + '</b></div>' +
       '<div class="rpago"><span>' + (m.completo ? 'Total pagado' : 'Abonado a ellas') + '</span><b>' + fmt(m.abonado) + '</b></div>' +
-      '<div class="rdebe">' + (debe < -0.01 ? '<span>Saldo a favor</span><b style="color:#1a7a3c;">' + fmt(Math.abs(debe)) + '</b>' : '<span>Debe</span><b>' + fmt(debe) + '</b>') + '</div>' +
+      '<div class="rdebe">' + (estadoSaldo(debe) === 'favor' ? '<span>Saldo a favor</span><b style="color:#1a7a3c;">' + fmt(Math.abs(debe)) + '</b>' : '<span>Debe</span><b>' + fmt(debe) + '</b>') + '</div>' +
     '</div>' +
     notaResumen +
     '<h2>Facturas (' + facturas.length + ')</h2>' +
@@ -2411,23 +2791,30 @@ function estadoCuentaWhatsApp(clienteId){
   var c = CLIENTES.find(function(x){ return x.id === clienteId; });
   if(!c) return;
   var m = modeloEstadoCuenta(c.id, 0); // solo las pendientes, de la más vieja a la más nueva
-  var msg = '*MERCANTIL YUMANA*\n*Estado de cuenta*\n' + c.nombre + '\nAl ' + fmtDate(hoyLocal()) + '\n';
-  if(m.facturas.length){
-    msg += '\n*Facturas pendientes (' + m.facturas.length + ')*\n';
-    m.facturas.forEach(function(f){
-      msg += '• #' + f.numero + ' · ' + fmtDate(f.fecha) + '\n   Factura: ' + fmt(f.monto_total) + ' · Pendiente: ' + fmt(saldoFactura(f)) + '\n';
+  var pendientes = m.facturas.map(function(f){ return { numero: f.numero, fecha: f.fecha, monto_total: f.monto_total, pendiente: saldoFactura(f) }; });
+  var abonos = abonosDeCliente(c.id); // más recientes primero
+  abrirEnviar(textoEstadoCuenta(c.nombre, pendientes, abonos.slice(0, ESTADO_ULTIMOS_ABONOS), abonos.length, m.debe), c.telefono || null, c.whatsapp_grupo || null);
+}
+// El texto en sí (lo usan el admin y la caja, que lo arma con may_caja_cuenta):
+// pendientes = [{numero, fecha, monto_total, pendiente}] de la más vieja a la más nueva; ultimos = los abonos más
+// recientes que se muestran (ESTADO_ULTIMOS_ABONOS); totalAbonos = cuántos tiene en total; debe = con signo.
+function textoEstadoCuenta(nombre, pendientes, ultimos, totalAbonos, debe){
+  var msg = '*MERCANTIL YUMANA*\n*Estado de cuenta*\n' + nombre + '\nAl ' + fmtDate(hoyLocal()) + '\n';
+  if(pendientes.length){
+    msg += '\n*Facturas pendientes (' + pendientes.length + ')*\n';
+    pendientes.forEach(function(f){
+      msg += '• #' + f.numero + ' · ' + fmtDate(f.fecha) + '\n   Factura: ' + fmt(f.monto_total) + ' · Pendiente: ' + fmt(f.pendiente) + '\n';
     });
   } else {
     msg += '\nNo tiene facturas pendientes.\n';
   }
-  var abonos = abonosDeCliente(c.id); // más recientes primero
-  if(abonos.length){
-    msg += '\n*Últimos abonos*' + (abonos.length > 10 ? ' (10 de ' + abonos.length + ')' : '') + '\n';
-    abonos.slice(0, 10).forEach(function(a){ msg += '• ' + fmtDate(a.fecha) + ' · ' + a.metodo + ' · ' + fmt(a.monto) + '\n'; });
+  if(totalAbonos){
+    msg += '\n*Últimos abonos*' + (totalAbonos > ultimos.length ? ' (' + ultimos.length + ' de ' + totalAbonos + ')' : '') + '\n';
+    ultimos.forEach(function(a){ msg += '• ' + fmtDate(a.fecha) + ' · ' + a.metodo + ' · ' + fmt(a.monto) + '\n'; });
   }
-  msg += m.debe < -0.01 ? '\n*Saldo a favor: ' + fmt(m.debe) + '*\n' : '\n*Total pendiente: ' + fmt(Math.max(m.debe, 0)) + '*\n';
+  msg += estadoSaldo(debe) === 'favor' ? '\n*Saldo a favor: ' + fmt(debe) + '*\n' : '\n*Total pendiente: ' + fmt(Math.max(debe, 0)) + '*\n';
   msg += '\nGracias por su confianza.';
-  abrirEnviar(msg, c.telefono || null, c.whatsapp_grupo || null);
+  return msg;
 }
 
 // ===== RECORDATORIO DE PAGO POR WHATSAPP =====
@@ -2740,7 +3127,14 @@ function exportarFacturasCSV(){
   toast('CSV exportado', 's');
 }
 
+// Vistas de la caja. En modo caja no se abre ninguna vista del administrador (ni al revés).
+var VISTAS_CAJA = ['caja', 'cajaficha', 'cajareg'];
 function switchView(view){
+  if(CURRENT_USER){
+    var vistaDeCaja = VISTAS_CAJA.indexOf(view) >= 0;
+    if(esAdmin() && vistaDeCaja) view = 'panel';
+    if(!esAdmin() && !vistaDeCaja) view = 'caja';
+  }
   document.querySelectorAll('.nav-item').forEach(function(b){ b.classList.toggle('active', b.dataset.view === view); });
   document.querySelectorAll('.view-section').forEach(function(s){ s.style.display = 'none'; });
   document.getElementById('view-' + view).style.display = 'block';
@@ -2749,6 +3143,9 @@ function switchView(view){
   if(view === 'detalle') renderDetalle();
   if(view === 'stats') renderStats();
   if(view === 'papelera') renderPapelera();
+  if(view === 'pedidos') renderPedidosCaja();
+  if(view === 'caja') cajaRenderLista();
+  if(view === 'cajareg') cajaCargarRegistros();
   // cerrar el drawer móvil al navegar
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('scrim').classList.remove('show');
@@ -2760,6 +3157,874 @@ function toggleSidebarMovil(){
   var sc = document.getElementById('scrim');
   sb2.classList.toggle('open');
   sc.classList.toggle('show', sb2.classList.contains('open'));
+}
+
+// =====================================================================
+// RECIBO DE PAGO Y ESTADO DE CUENTA EN 80 mm (impresora térmica)
+// Mismo formato que el recibo de Créditos (imprimirRecibo en Apartados_Yumana_App.html). Sirve en los dos modos.
+// =====================================================================
+var CSS_80MM = '@page { size: 80mm auto; margin: 2mm; }' +
+  '* { box-sizing: border-box; margin: 0; padding: 0; color: #000 !important; }' +
+  'body { font-family: "Courier New", monospace; font-size: 12px; width: 76mm; color: #000; padding: 2mm; font-weight: 600; background:#fff; }' +
+  '.center { text-align: center; } .right { text-align: right; } .bold { font-weight: 800; }' +
+  '.big { font-size: 15px; font-weight: 900; } .huge { font-size: 20px; font-weight: 900; }' +
+  '.divider { border-top: 2px solid #000; margin: 5px 0; } .divider-solid { border-top: 3px solid #000; margin: 6px 0; }' +
+  '.row { display: flex; justify-content: space-between; gap: 6px; padding: 2px 0; font-weight: 700; }' +
+  '.row .label { font-weight: 800; flex-shrink: 0; } .row span:last-child { text-align: right; overflow-wrap: anywhere; }' +
+  '.brand { font-size: 18px; font-weight: 900; letter-spacing: 3px; }' +
+  '.tipo-doc { background: #000; color: #fff !important; padding: 5px; margin: 4px 0; font-weight: 900; letter-spacing: 2px; font-size: 13px; }' +
+  '.tipo-doc * { color: #fff !important; }' +
+  '.firma { margin-top: 28px; } .firma-line { border-top: 2px solid #000; width: 70%; margin: 0 auto 4px; padding-top: 3px; }' +
+  'h3 { font-size: 13px; margin: 8px 0 4px; font-weight: 900; letter-spacing: 1px; color: #000; }' +
+  '.txt { font-size: 11px; font-weight: 600; overflow-wrap: anywhere; }' +
+  '.al-dia { padding: 8px; border: 3px solid #000; margin: 5px 0; font-size: 13px; font-weight: 900; text-align: center; }' +
+  'table.ec { width: 100%; border-collapse: collapse; font-size: 11px; }' +
+  'table.ec th { text-align: left; font-weight: 900; border-bottom: 2px solid #000; padding: 2px 1px; }' +
+  'table.ec td { padding: 3px 1px; border-bottom: 1px dashed #000; font-weight: 700; vertical-align: top; }' +
+  'table.ec .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }' +
+  '@media print { body { width: 76mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; } * { color: #000 !important; } .tipo-doc, .tipo-doc * { color: #fff !important; background: #000 !important; } }';
+
+function encabezado80(titulo){
+  return '<div class="center brand">MERCANTIL YUMANA</div>' +
+    '<div class="center" style="font-size:10px;letter-spacing:2px;font-weight:700;">SOCOPÓ - BARINAS</div>' +
+    '<div class="center" style="font-size:10px;letter-spacing:1px;font-weight:700;">VENTAS AL MAYOR</div>' +
+    '<div class="center" style="font-size:10px;margin-top:3px;font-weight:700;">RIF: V-25.650.7389</div>' +
+    '<div class="center" style="font-size:10px;font-weight:700;">Tel: 0412-6087906</div>' +
+    '<div class="divider-solid"></div>' +
+    '<div class="center tipo-doc">' + titulo + '</div>';
+}
+function pie80(texto){
+  return '<div class="divider"></div>' +
+    '<div class="center" style="font-size:10px;margin-top:8px;font-weight:700;">' + texto + '</div>' +
+    '<div class="center" style="font-size:10px;font-weight:600;">Mercantil Yumana © ' + new Date().getFullYear() + '</div>' +
+    '<div style="height: 20mm;"></div>';
+}
+function bloqueCliente80(c){
+  return '<h3>CLIENTE</h3>' +
+    '<div style="font-weight:700;font-size:12px;overflow-wrap:anywhere;">' + prEsc(c.nombre) + '</div>' +
+    (c.rif_cedula ? '<div class="txt">RIF/CI: ' + prEsc(c.rif_cedula) + '</div>' : '') +
+    (c.telefono ? '<div class="txt">Tel: ' + prEsc(c.telefono) + '</div>' : '');
+}
+function fechaCorta(d){ if(!d) return '—'; var p = String(d).substring(0, 10).split('-'); return p[2] + '/' + p[1] + '/' + p[0].substring(2); }
+// Número corto del recibo: los primeros 8 caracteres del id del abono (igual que en Créditos)
+function numeroRecibo(abonoId){ return String(abonoId || '').replace(/-/g, '').substring(0, 8).toUpperCase() || 'S/N'; }
+// Saldo al pie de un recibo o de un estado. tituloDebe: lo que dice cuando debe; sufijoFavor: lo que sigue a "SALDO A FAVOR".
+function bloqueSaldo80(debe, tituloDebe, sufijoFavor){
+  var e = estadoSaldo(debe);
+  if(e === 'favor') return '<div class="bold">SALDO A FAVOR' + (sufijoFavor || '') + '</div><div class="right huge">' + fmt(debe) + '</div>';
+  return '<div class="bold">' + tituloDebe + '</div><div class="right huge">' + fmt(Math.max(Number(debe) || 0, 0)) + '</div>' +
+    (e === 'aldia' ? '<div class="al-dia">CUENTA AL DÍA</div>' : '');
+}
+function documento80(titulo, cuerpo){
+  return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + prEsc(titulo) + '</title><style>' + CSS_80MM + '</style></head><body>' + cuerpo + '</body></html>';
+}
+// d = { abono_id, fecha, creado_en, cliente:{nombre, rif_cedula, telefono}, monto, metodo, notas, debe, alFecha, registradoPor }
+// alFecha: null = recién registrado (el saldo es el que quedó con este pago); 'AAAA-MM-DD' = reimpresión ("Saldo al ...")
+function htmlRecibo80(d){
+  var reg = d.creado_en ? new Date(d.creado_en) : null;
+  var debe = Number(d.debe) || 0;
+  return documento80('Recibo ' + numeroRecibo(d.abono_id),
+    encabezado80('RECIBO DE PAGO') +
+    '<div class="center" style="font-size:12px;font-weight:800;">Recibo #' + numeroRecibo(d.abono_id) + '</div>' +
+    '<div class="divider"></div>' +
+    '<div class="row"><span class="label">Fecha del pago:</span><span>' + fmtDate(d.fecha) + '</span></div>' +
+    (reg && !isNaN(reg) ? '<div class="row"><span class="label">Registrado:</span><span>' + fmtFechaHora(reg) + '</span></div>' : '') +
+    '<div class="divider"></div>' +
+    bloqueCliente80(d.cliente) +
+    '<div class="divider"></div>' +
+    '<h3>PAGO RECIBIDO</h3>' +
+    '<div class="row"><span class="label">Método:</span><span class="bold">' + prEsc(d.metodo) + '</span></div>' +
+    (d.notas ? '<div class="txt" style="margin-top:2px;">Ref: ' + prEsc(d.notas) + '</div>' : '') +
+    '<div class="center" style="margin-top:6px;font-size:11px;font-weight:800;letter-spacing:1px;">MONTO</div>' +
+    '<div class="center huge" style="font-size:24px;">' + fmt(d.monto) + '</div>' +
+    '<div class="divider-solid"></div>' +
+    (d.alFecha ? bloqueSaldo80(debe, 'SALDO AL ' + fmtDate(d.alFecha), ' AL ' + fmtDate(d.alFecha)) : bloqueSaldo80(debe, 'SALDO PENDIENTE', '')) +
+    '<div class="divider-solid"></div>' +
+    (d.registradoPor ? '<div class="center" style="font-size:11px;margin:5px 0;font-weight:700;">Registrado por: ' + prEsc(d.registradoPor) + '</div>' : '') +
+    '<div class="firma"><div class="firma-line"></div><div class="center" style="font-size:10px;font-weight:700;">Firma del cliente</div></div>' +
+    pie80('Gracias por su pago'));
+}
+// d = { cliente:{nombre, rif_cedula, telefono}, facturas:[{numero, fecha, monto_total, pendiente}], debe, pagos:[{fecha, metodo, monto}] }
+function htmlEstado80(d){
+  var filas = d.facturas.map(function(f){
+    return '<tr><td>#' + f.numero + '</td><td>' + fechaCorta(f.fecha) + '</td><td class="n">' + fmt(f.monto_total) + '</td><td class="n">' + fmt(f.pendiente) + '</td></tr>';
+  }).join('');
+  var pagos = (d.pagos || []).slice(0, ESTADO80_ULTIMOS_PAGOS);
+  var filasPagos = pagos.map(function(a){
+    return '<tr><td>' + fechaCorta(a.fecha) + '</td><td>' + prEsc(a.metodo) + (esDinero(a.metodo) ? '' : ' (no es dinero)') + '</td><td class="n">' + fmt(a.monto) + '</td></tr>';
+  }).join('');
+  return documento80('Estado de cuenta - ' + d.cliente.nombre,
+    encabezado80('ESTADO DE CUENTA') +
+    '<div class="row"><span class="label">Fecha:</span><span>' + fmtFechaHora(new Date()) + '</span></div>' +
+    '<div class="divider"></div>' +
+    bloqueCliente80(d.cliente) +
+    '<div class="divider"></div>' +
+    '<h3>FACTURAS PENDIENTES (' + d.facturas.length + ')</h3>' +
+    (d.facturas.length
+      ? '<table class="ec"><thead><tr><th>#</th><th>Fecha</th><th class="n">Factura</th><th class="n">Pend.</th></tr></thead><tbody>' + filas + '</tbody></table>'
+      : '<div class="txt">No tiene facturas pendientes.</div>') +
+    (pagos.length
+      ? '<h3>ÚLTIMOS PAGOS (' + pagos.length + ')</h3><table class="ec"><thead><tr><th>Fecha</th><th>Forma de pago</th><th class="n">Monto</th></tr></thead><tbody>' + filasPagos + '</tbody></table>'
+      : '') +
+    '<div class="divider-solid"></div>' +
+    bloqueSaldo80(Number(d.debe) || 0, 'TOTAL PENDIENTE', '') +
+    '<div class="divider-solid"></div>' +
+    pie80('Documento informativo. Gracias por su confianza.'));
+}
+// La ventana se abre en el mismo toque (si se abre después de esperar a la base, Safari la bloquea) y se llena después
+function abrirVentanaImpresion(){
+  var win = window.open('', '_blank', 'width=400,height=700');
+  if(!win){ toast('Permite ventanas emergentes para imprimir', 'e'); return null; }
+  try { win.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Preparando</title></head><body style="font-family:sans-serif;padding:24px;">Preparando...</body></html>'); } catch(e){}
+  return win;
+}
+function imprimirEnVentana(win, html){
+  if(!win) return;
+  win.document.open(); win.document.write(html); win.document.close();
+  setTimeout(function(){ try { win.focus(); win.print(); } catch(e){} }, 500);
+}
+function cerrarVentana(win){ try { if(win) win.close(); } catch(e){} }
+
+// ===== "Pago registrado" (los dos modos): Imprimir recibo / WhatsApp / Listo =====
+// info = { titulo, nombre, monto, metodo, fecha, debe (null = no se sabe todavía) }
+var PL_ACCIONES = null;
+function mostrarPagoListo(info, acciones){
+  var saldo = '';
+  if(info.debe != null){
+    var e = estadoSaldo(info.debe);
+    saldo = e === 'favor' ? 'Queda con <b style="color:var(--green-soft);">' + fmt(info.debe) + '</b> a favor'
+      : (e === 'debe' ? 'Ahora debe <b style="color:var(--gold);">' + fmt(info.debe) + '</b>' : 'Su cuenta está al día');
+  }
+  document.getElementById('plTitulo').innerHTML = info.titulo || 'Pago <em>registrado</em>';
+  document.getElementById('plInfo').innerHTML = '<div class="info-box" style="margin-bottom:0;">' +
+    '<div class="pl-monto">' + fmt(info.monto) + '</div>' +
+    '<div style="margin-top:6px; font-weight:600;">' + prEsc(info.nombre) + '</div>' +
+    '<div style="font-size:13px; color:var(--muted);">' + prEsc(info.metodo) + ' · ' + fmtDate(info.fecha) + '</div>' +
+    (saldo ? '<div class="pl-saldo">' + saldo + '</div>' : '') + '</div>';
+  // Un "Descuento/devolución" no es dinero: no lleva recibo de pago
+  document.getElementById('plImprimir').style.display = esDinero(info.metodo) ? '' : 'none';
+  PL_ACCIONES = acciones;
+  document.getElementById('modalPagoListo').classList.add('active');
+}
+
+// ===== ADMIN: quién registró, recibos y estado 80 mm =====
+function usuarioPorId(id){ return id ? USUARIOS.find(function(u){ return u.id === id; }) || null : null; }
+// Etiqueta de un abono registrado en la caja (may_abonos.origen = 'caja', lo pone may_caja_registrar_abono)
+function etiquetaCaja(a){
+  if(!a || a.origen !== 'caja') return null;
+  var u = usuarioPorId(a.registrado_por);
+  return 'Caja' + (u ? ': ' + u.nombre : '');
+}
+function datosClienteRecibo(c){ return { nombre: c.nombre, rif_cedula: c.rif_cedula, telefono: c.telefono }; }
+// recienRegistrado: true = el saldo es el que quedó con este pago; false = reimpresión ("Saldo al <hoy>")
+function imprimirReciboAbonoAdmin(abonoId, recienRegistrado){
+  var a = ABONOS.find(function(x){ return x.id === abonoId; });
+  var c = a && CLIENTES.find(function(x){ return x.id === a.cliente_id; });
+  if(!c || !esDinero(a.metodo)) return;
+  var u = usuarioPorId(a.registrado_por);
+  var win = abrirVentanaImpresion();
+  if(!win) return;
+  imprimirEnVentana(win, htmlRecibo80({
+    abono_id: a.id, fecha: a.fecha, creado_en: a.creado_en, cliente: datosClienteRecibo(c),
+    monto: a.monto, metodo: a.metodo, notas: a.notas, debe: totalesCliente(c.id).debe,
+    alFecha: recienRegistrado ? null : hoyLocal(), registradoPor: u ? u.nombre : null
+  }));
+}
+function imprimirEstado80Admin(clienteId){
+  var c = CLIENTES.find(function(x){ return x.id === clienteId; });
+  if(!c) return;
+  var m = modeloEstadoCuenta(c.id, 0); // solo las pendientes, de la más vieja a la más nueva
+  var win = abrirVentanaImpresion();
+  if(!win) return;
+  imprimirEnVentana(win, htmlEstado80({
+    cliente: datosClienteRecibo(c), debe: m.debe, pagos: abonosDeCliente(c.id).slice(0, ESTADO80_ULTIMOS_PAGOS),
+    facturas: m.facturas.map(function(f){ return { numero: f.numero, fecha: f.fecha, monto_total: f.monto_total, pendiente: saldoFactura(f) }; })
+  }));
+}
+function mostrarPagoListoAdmin(a){
+  var c = CLIENTES.find(function(x){ return x.id === a.cliente_id; });
+  if(!c) return;
+  mostrarPagoListo({ nombre: c.nombre, monto: a.monto, metodo: a.metodo, fecha: a.fecha, debe: totalesCliente(c.id).debe }, {
+    imprimir: function(){ imprimirReciboAbonoAdmin(a.id, true); },
+    whatsapp: function(){ enviarAbonoWhatsApp(a.id); }
+  });
+}
+
+// ===== PEDIDOS DE CAJA (palabras iguales en la caja y en el admin) =====
+var ESTADOS_PEDIDO = { pendiente: ['pend', 'Falta facturar'], facturado: ['ok', 'Facturado'], descartado: ['mal', 'Descartado'] };
+function tagEstadoPedido(estado){ var e = ESTADOS_PEDIDO[estado] || ['pend', estado]; return '<span class="tag ' + e[0] + '">' + e[1] + '</span>'; }
+function fmtCant(n){ var x = Number(n) || 0; return String(Math.round(x * 100) / 100); }
+function listaRenglones(items){
+  return '<ul class="renglones">' + (items || []).map(function(it){
+    return '<li><span class="c">' + fmtCant(it.cantidad) + ' ×</span><span class="d">' + prEsc(it.descripcion) +
+      (it.producto_id == null ? ' <small>(texto libre)</small>' : '') + '</span></li>';
+  }).join('') + '</ul>';
+}
+
+// ----- Admin -----
+function pedidosPendientes(){
+  return PEDIDOS_CAJA.filter(function(p){ return p.estado === 'pendiente' && !p.deleted_at; })
+    .sort(function(a, b){ return a.creado_en < b.creado_en ? -1 : (a.creado_en > b.creado_en ? 1 : 0); });
+}
+function actualizarBadgePedidos(){
+  var b = document.getElementById('badgePedidos');
+  if(!b) return;
+  var n = esAdmin() ? pedidosPendientes().length : 0;
+  b.textContent = n ? String(n) : '';
+  b.style.display = n ? 'inline-flex' : 'none';
+}
+// Trae los pedidos de la caja. Si falla, el resto del mayorista sigue funcionando y la vista avisa.
+async function cargarPedidosCaja(){
+  try { PEDIDOS_CAJA = (await traerTodo('may_pedidos_caja', 'creado_en', true)).filter(esVivo); PEDIDOS_CAJA_ERROR = false; }
+  catch(e){ PEDIDOS_CAJA_ERROR = true; console.warn('pedidos de caja', e); }
+  actualizarBadgePedidos();
+  if(document.getElementById('view-pedidos').style.display !== 'none') renderPedidosCaja();
+}
+function renderPedidosCaja(){
+  var cont = document.getElementById('pedidosContent');
+  if(!cont) return;
+  if(!DATOS_CARGADOS){ cont.innerHTML = '<div class="empty-state"><h3>Cargando...</h3><p>Trayendo los pedidos de la caja</p></div>'; return; }
+  var html = '';
+  if(PEDIDOS_CAJA_ERROR) html += '<div class="aviso-no-vender" style="display:block; margin:0 0 14px;">No se pudieron cargar los pedidos de caja: lo que ves puede estar desactualizado. <button class="btn btn-ghost" id="pedReintentar" style="margin-top:8px;">Reintentar</button></div>';
+  var pend = pedidosPendientes();
+  html += '<h3 class="caja-h3" style="margin-top:0;">' + ESTADOS_PEDIDO.pendiente[1] + ' (' + pend.length + ')</h3>';
+  if(!pend.length) html += '<div class="card" style="color:var(--muted); font-size:14px;">No hay pedidos de caja que falte facturar.</div>';
+  html += pend.map(function(p){
+    var c = CLIENTES.find(function(x){ return x.id === p.cliente_id; });
+    var u = usuarioPorId(p.registrado_por);
+    var n = (p.items || []).length;
+    return '<div class="card ped-card">' +
+      '<div class="cab"><div style="min-width:0;"><b>' + (c ? prEsc(c.nombre) : 'Cliente en la papelera') + '</b>' + tagNoVender(c) +
+        '<div class="meta">' + fmtFechaHora(p.creado_en) + ' · Anotó: ' + (u ? prEsc(u.nombre) : '—') + ' · ' + n + ' producto' + (n === 1 ? '' : 's') + '</div></div>' +
+        tagEstadoPedido(p.estado) + '</div>' +
+      listaRenglones(p.items) +
+      (p.notas ? '<div class="nota">' + prEsc(p.notas) + '</div>' : '') +
+      '<div class="acc"><button class="btn btn-primary ped-facturar" data-pid="' + p.id + '"' + (c ? '' : ' disabled title="Restaura primero al cliente"') + '>Facturar</button>' +
+        '<button class="btn btn-danger ped-descartar" data-pid="' + p.id + '">Descartar</button></div>' +
+    '</div>';
+  }).join('');
+  // Pagos que registró la caja (origen 'caja') en los últimos días, para revisarlos
+  var desde = Date.now() - CAJA_LIMITES.DIAS_REGISTROS * 86400000;
+  var pagos = ABONOS.filter(function(a){ return a.origen === 'caja' && a.creado_en && new Date(a.creado_en).getTime() >= desde; })
+    .sort(function(a, b){ return a.creado_en < b.creado_en ? 1 : (a.creado_en > b.creado_en ? -1 : 0); });
+  html += '<h3 class="caja-h3">Pagos registrados por la caja (últimos ' + CAJA_LIMITES.DIAS_REGISTROS + ' días) · ' + pagos.length + '</h3>';
+  if(!pagos.length) html += '<div class="card" style="color:var(--muted); font-size:14px;">La caja no registró pagos en los últimos ' + CAJA_LIMITES.DIAS_REGISTROS + ' días.</div>';
+  html += pagos.map(function(a){
+    var c = CLIENTES.find(function(x){ return x.id === a.cliente_id; });
+    var u = usuarioPorId(a.registrado_por);
+    return '<div class="card fila-reg"><div class="izq">' +
+      '<div class="t"><button type="button" class="btn-link ped-cli" data-cid="' + a.cliente_id + '"' + (c ? '' : ' disabled title="El cliente está en la papelera"') + '>' + (c ? prEsc(c.nombre) : 'Cliente en la papelera') + '</button></div>' +
+      '<div class="s">Pago del ' + fmtDate(a.fecha) + ' · ' + prEsc(a.metodo) + ' · por ' + (u ? prEsc(u.nombre) : '—') + '</div>' +
+      '<div class="s">Registrado el ' + fmtFechaHora(a.creado_en) + (a.notas ? ' · ' + prEsc(a.notas) : '') + '</div></div>' +
+      '<div class="der"><div class="m">' + fmt(a.monto) + '</div>' + (c ? '<button class="btn btn-ghost ped-recibo" data-aid="' + a.id + '">Recibo</button>' : '') + '</div></div>';
+  }).join('');
+  cont.innerHTML = html;
+  var rb = document.getElementById('pedReintentar');
+  if(rb) rb.addEventListener('click', function(){ cargarPedidosCaja(); });
+  cont.querySelectorAll('.ped-facturar').forEach(function(b){ b.addEventListener('click', function(){ facturarPedidoCaja(this.dataset.pid); }); });
+  cont.querySelectorAll('.ped-descartar').forEach(function(b){ b.addEventListener('click', function(){ abrirDescartar(this.dataset.pid); }); });
+  cont.querySelectorAll('.ped-recibo').forEach(function(b){ b.addEventListener('click', function(){ imprimirReciboAbonoAdmin(this.dataset.aid, false); }); });
+  cont.querySelectorAll('.ped-cli').forEach(function(b){ b.addEventListener('click', function(){ abrirDetalleCliente(this.dataset.cid); }); });
+}
+// Bloquea (o suelta) el cliente del modal de factura: la factura de un pedido de caja va al cliente del pedido
+function bloquearClienteFactura(bloquear){
+  var btn = document.getElementById('nfClienteBtn');
+  btn.disabled = !!bloquear;
+  btn.classList.toggle('bloqueado', !!bloquear);
+  document.getElementById('nfClienteNota').style.display = bloquear ? '' : 'none';
+}
+// Abre la factura de siempre con el cliente y los renglones del pedido, en su orden. Precio sugerido: el pactado
+// con el cliente y, si no hay, el del catálogo. Al guardar va por may_facturar_pedido (ver guardarFactura), que pone
+// el origen 'caja' en la base.
+function facturarPedidoCaja(pedidoId){
+  var p = PEDIDOS_CAJA.find(function(x){ return x.id === pedidoId; });
+  if(!p || p.estado !== 'pendiente') return;
+  var c = CLIENTES.find(function(x){ return x.id === p.cliente_id; });
+  if(!c){ toast('El cliente de este pedido está en la papelera. Restáuralo o descarta el pedido.', 'e'); return; }
+  abrirNuevaFactura(c.id);
+  PEDIDO_CAJA_ID = p.id;
+  bloquearClienteFactura(true);
+  document.getElementById('nfPegarPedido').style.display = 'none';
+  document.getElementById('modalFacturaTitle').textContent = 'Facturar pedido de caja';
+  // La fecha de la factura es la del pedido en hora de Venezuela (el día que se llevó la mercancía): de ahí corre el plazo
+  var fechaPed = fechaLocalDe(p.creado_en);
+  if(fechaPed){ document.getElementById('nfFecha').value = fechaPed; actualizarVencimiento(); }
+  // Solo la nota que escribió la caja: quién y cuándo ya quedan en el pedido, y la Nota de Entrega la ve el cliente
+  document.getElementById('nfNotas').value = p.notas || '';
+  NF_ITEMS = (p.items || []).map(function(it){
+    var pid = it.producto_id != null ? Number(it.producto_id) : null;
+    var prod = pid != null ? CATALOGO.find(function(x){ return Number(x.id) === pid; }) : null;
+    var precio = 0;
+    if(pid != null){
+      var pact = precioPactadoPara(c.id, pid);
+      if(pact != null) precio = pact;
+      else if(prod && parseFloat(prod.precio_usd) > 0) precio = parseFloat(prod.precio_usd);
+    }
+    return { producto_id: pid, descripcion: it.descripcion, cantidad: Number(it.cantidad) || 1, precio: precio,
+             costo_unitario: (prod && prod.costo_usd != null) ? parseFloat(prod.costo_usd) : null };
+  });
+  if(!NF_ITEMS.length) NF_ITEMS = [{producto_id:null, descripcion:'', cantidad:1, precio:0}];
+  renderItems();
+}
+var DESCARTAR_ID = null;
+function abrirDescartar(pedidoId){
+  var p = PEDIDOS_CAJA.find(function(x){ return x.id === pedidoId; });
+  if(!p || p.estado !== 'pendiente') return;
+  var c = CLIENTES.find(function(x){ return x.id === p.cliente_id; });
+  DESCARTAR_ID = p.id;
+  document.getElementById('dpInfo').innerHTML = '<b>' + (c ? prEsc(c.nombre) : '—') + '</b><br><span style="color:var(--muted); font-size:13px;">' + fmtFechaHora(p.creado_en) + ' · ' + (p.items || []).length + ' producto(s)</span>' + listaRenglones(p.items);
+  document.getElementById('dpMotivo').value = '';
+  var m = document.getElementById('dpMsg'); m.className = 'modal-msg'; m.textContent = '';
+  document.getElementById('modalDescartar').classList.add('active');
+}
+async function confirmarDescartar(){
+  var msg = document.getElementById('dpMsg');
+  var motivo = document.getElementById('dpMotivo').value.trim();
+  if(!motivo){ msg.className = 'modal-msg error'; msg.textContent = 'Escribe el motivo.'; return; }
+  var r = await llamarBase('may_descartar_pedido', { p_pedido_id: DESCARTAR_ID, p_motivo: motivo });
+  if(!r.ok){
+    msg.className = 'modal-msg error';
+    msg.textContent = r.red ? 'Se cortó la conexión: no se sabe si se descartó. Toca Reintentar en Pedidos de caja para ver cómo quedó.' : 'No se descartó el pedido: ' + r.mensaje;
+    if(r.red) cargarPedidosCaja();
+    return;
+  }
+  document.getElementById('modalDescartar').classList.remove('active');
+  toast('Pedido descartado', 's');
+  await cargarPedidosCaja();
+}
+
+// =====================================================================
+// LLAMADAS A LA BASE: separar "se cortó la red" de "la base dijo que no"
+// =====================================================================
+// Error de red: no llegó respuesta, así que NO se sabe si se guardó. La base, cuando responde con un error, siempre
+// trae un código (P0001, 42501, PGRST...). supabase-js devuelve code vacío cuando falla el fetch.
+function esErrorDeRed(e){ return !e || !e.code; }
+// El mensaje de la base ya viene en español (RAISE). Los pocos técnicos se traducen.
+function mensajeErrorBase(e){
+  var m = String((e && e.message) || '');
+  if(e && e.code === '42501' && /permission denied/i.test(m)) return 'No tienes permiso para hacer esto. Cierra sesión y vuelve a entrar.';
+  if(e && /^PGRST3/.test(e.code || '')) return 'Tu sesión venció. Cierra sesión y vuelve a entrar.';
+  if(e && /^PGRST/.test(e.code || '')) return 'La base no respondió como se esperaba. Intenta de nuevo en un momento.';
+  return m.replace(/^[A-Za-z]*Error:\s*/, '');
+}
+// Llama a una función de la base. Devuelve { ok, data } o { ok:false, red, mensaje }.
+async function llamarBase(fn, args){
+  try {
+    var r = await sb.rpc(fn, args || {});
+    if(r.error) return { ok: false, red: esErrorDeRed(r.error), mensaje: mensajeErrorBase(r.error) };
+    return { ok: true, data: r.data };
+  } catch(e){ return { ok: false, red: true, mensaje: '' }; }
+}
+
+// =====================================================================
+// MODO CAJA (cajera de la lista may_acceso_caja)
+// Solo usa las funciones may_caja_* de la base: nunca lee las tablas del mayor ni muestra totales del negocio.
+// Ve UN cliente a la vez, registra pagos (no los edita ni anula) y anota pedidos sin precio.
+// =====================================================================
+var CAJA_LIM_LISTA = CAJA_LIMITES.LISTA, CB_TIMER = null, CBP_TIMER = null;
+var CP_METODO = METODOS_PAGO[0];
+var CPE_ITEMS = [], CPE_TARGET = null;
+var CAJA_CATALOGO = null, CAJA_CATALOGO_ERROR = false;
+var CAJA_AVISO = '';
+var ICONO_ALERTA = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
+var ICONO_FLECHA = '<svg class="flecha" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+
+function cajaCargando(cont, texto){ cont.innerHTML = '<div class="empty-state"><h3>' + texto + '</h3></div>'; }
+function cajaError(cont, texto, reintentar){
+  cont.innerHTML = '<div class="empty-state"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><h3>' + texto + '</h3><p>Revisa tu internet y vuelve a intentar.</p><button class="btn btn-primary" style="margin-top:14px;">Reintentar</button></div>';
+  cont.querySelector('button').addEventListener('click', function(){ reintentar(); });
+}
+// "No se sabe si llegó" (se cortó la red y no se pudo comprobar): antes de repetir, revisar "Lo que registré"
+function cajaMostrarIncierto(que){
+  document.getElementById('inTitulo').textContent = 'No se sabe si el ' + que + ' llegó';
+  document.getElementById('inTexto').textContent = 'Se cortó la conexión mientras se guardaba. No se sabe si el ' + que + ' llegó. Antes de repetirlo, abre "Lo que registré".';
+  document.getElementById('modalIncierto').classList.add('active');
+}
+
+// ----- Clientes (sin montos) -----
+async function cajaCargarClientes(){
+  var cont = document.getElementById('cajaLista');
+  CAJA_CLIENTES = null;
+  cajaCargando(cont, 'Cargando clientes...');
+  try { CAJA_CLIENTES = await rpcTodo('may_caja_clientes'); }
+  catch(e){ console.error('may_caja_clientes', e); cajaError(cont, 'No se pudieron cargar los clientes', cajaCargarClientes); return; }
+  cajaRenderLista();
+}
+function cajaFiltrar(texto){
+  var palabras = normalizar(texto).trim().split(/\s+/).filter(Boolean);
+  return (CAJA_CLIENTES || []).filter(function(c){
+    var txt = normalizar([c.nombre, c.telefono, c.whatsapp_grupo].filter(Boolean).join(' '));
+    return palabras.every(function(w){ return txt.indexOf(w) >= 0; });
+  });
+}
+function cajaSubCliente(c){
+  return [c.telefono, c.whatsapp_grupo ? 'Grupo: ' + c.whatsapp_grupo : ''].filter(Boolean).map(prEsc).join(' · ');
+}
+function cajaRenderLista(){
+  var cont = document.getElementById('cajaLista');
+  if(!CAJA_CLIENTES) return; // cargando o con error: ya hay un aviso en pantalla
+  if(!CAJA_CLIENTES.length){ cont.innerHTML = '<div class="empty-state"><h3>No hay clientes activos</h3><p>El administrador los agrega en el mayorista.</p></div>'; return; }
+  var lista = CAJA_CLIENTES.slice(0, CAJA_LIM_LISTA);
+  cont.innerHTML = '<div class="section-count">' + CAJA_CLIENTES.length + ' cliente' + (CAJA_CLIENTES.length === 1 ? '' : 's') + '</div>' +
+    lista.map(function(c){
+      var sub = cajaSubCliente(c);
+      return '<button type="button" class="card caja-cli" data-cid="' + c.id + '"><div style="min-width:0;"><div class="nm">' + prEsc(c.nombre) + tagNoVender(c) + '</div>' +
+        (sub ? '<div class="sb">' + sub + '</div>' : '') + '</div>' + ICONO_FLECHA + '</button>';
+    }).join('') +
+    (CAJA_CLIENTES.length > CAJA_LIM_LISTA ? '<button type="button" class="btn btn-ghost btn-block" id="cajaMas">Mostrar más</button>' : '');
+  cont.querySelectorAll('.caja-cli').forEach(function(el){ el.addEventListener('click', function(){ cajaAbrirFicha(this.dataset.cid); }); });
+  var mas = document.getElementById('cajaMas');
+  if(mas) mas.addEventListener('click', function(){ CAJA_LIM_LISTA += CAJA_LIMITES.LISTA; cajaRenderLista(); });
+}
+function cajaAbrirBuscador(){
+  document.getElementById('cajaBuscador').style.display = 'flex';
+  document.getElementById('cbInput').value = '';
+  cajaBuscadorRender('');
+  setTimeout(function(){ document.getElementById('cbInput').focus(); }, 100);
+}
+function cajaCerrarBuscador(){ document.getElementById('cajaBuscador').style.display = 'none'; }
+function cajaBuscadorRender(texto){
+  var cont = document.getElementById('cbResultados');
+  if(!CAJA_CLIENTES){ cont.innerHTML = '<div class="fs-vacio">Los clientes todavía se están cargando. Cierra y vuelve a intentar en un momento.</div>'; return; }
+  var lista = cajaFiltrar(texto);
+  if(!lista.length){ cont.innerHTML = '<div class="fs-vacio">Ningún cliente coincide. Prueba con otra palabra.</div>'; return; }
+  cont.innerHTML = lista.slice(0, CAJA_LIMITES.LISTA).map(function(c){
+    var sub = cajaSubCliente(c);
+    return '<button type="button" class="fs-item" data-cid="' + c.id + '"><div class="nm">' + prEsc(c.nombre) + tagNoVender(c) + '</div>' + (sub ? '<div class="sb">' + sub + '</div>' : '') + '</button>';
+  }).join('') + (lista.length > CAJA_LIMITES.LISTA ? '<div class="fs-vacio">Hay ' + (lista.length - CAJA_LIMITES.LISTA) + ' clientes más: escribe para filtrar.</div>' : '');
+  cont.querySelectorAll('.fs-item').forEach(function(el){
+    el.addEventListener('click', function(){ cajaCerrarBuscador(); cajaAbrirFicha(this.dataset.cid); });
+  });
+}
+
+// ----- Ficha de un cliente -----
+async function cajaAbrirFicha(id){
+  CAJA_ID = id; CAJA_CUENTA = null; CAJA_AVISO = '';
+  switchView('cajaficha');
+  await cajaCargarCuenta();
+}
+// Trae (o vuelve a traer) la cuenta del cliente abierto. Devuelve true si llegó.
+async function cajaCargarCuenta(){
+  var cont = document.getElementById('cajaFicha');
+  var id = CAJA_ID;
+  if(!id) return false;
+  if(!CAJA_CUENTA || CAJA_CUENTA.cliente.id !== id) cajaCargando(cont, 'Cargando la cuenta...');
+  var r = await llamarBase('may_caja_cuenta', { p_cliente_id: id });
+  if(CAJA_ID !== id) return false; // mientras tanto se abrió otro cliente
+  if(!r.ok){
+    if(CAJA_CUENTA && CAJA_CUENTA.cliente.id === id) toast('No se pudo actualizar la cuenta. Lo que ves puede estar desactualizado.', 'e');
+    else cajaError(cont, r.red ? 'No se pudo cargar la cuenta' : r.mensaje, cajaCargarCuenta);
+    return false;
+  }
+  CAJA_CUENTA = r.data;
+  cajaRenderFicha();
+  return true;
+}
+// La cuenta FRESCA de un cliente (para imprimir o mandar el estado): nunca la que quedó en memoria
+async function cajaCuentaFresca(clienteId){
+  var r = await llamarBase('may_caja_cuenta', { p_cliente_id: clienteId });
+  if(!r.ok) return null;
+  if(CAJA_ID === clienteId){ CAJA_CUENTA = r.data; cajaRenderFicha(); }
+  return r.data;
+}
+function cajaRenderFicha(){
+  var k = CAJA_CUENTA;
+  if(!k) return;
+  var c = k.cliente, debe = Number(k.debe) || 0, nv = !!c.no_vender, hoy = hoyLocal(), e = estadoSaldo(debe);
+  var html = '';
+  if(CAJA_AVISO) html += '<div class="aviso-ok" role="status">' + prEsc(CAJA_AVISO) + '</div>';
+  if(nv) html += '<div class="banner-no-vender" role="alert">' + ICONO_ALERTA + '<div><b>NO VENDERLE</b>Este cliente tiene la marca No venderle: no le anotes pedidos y consulta con Kinan. Los pagos sí se pueden registrar.</div></div>';
+  var datos = [c.rif_cedula, c.telefono, c.whatsapp_grupo ? 'Grupo: ' + c.whatsapp_grupo : ''].filter(Boolean).map(prEsc).join(' · ');
+  html += '<div class="detail-banner"><div class="db-head" style="display:flex; align-items:center; gap:14px; min-width:0;">' +
+      '<div class="av-big">' + prEsc(initials(c.nombre)) + '</div>' +
+      '<div style="min-width:0;"><h2 style="overflow-wrap:anywhere;">' + prEsc(c.nombre) + '</h2>' + (datos ? '<p style="overflow-wrap:anywhere;">' + datos + '</p>' : '') + '</div>' +
+    '</div></div>';
+  html += '<div class="caja-debe' + (e === 'favor' ? ' favor' : '') + '"><div><div class="l">' + (e === 'favor' ? 'Saldo a favor' : 'Debe') + '</div>' +
+    '<div class="v">' + fmt(e === 'favor' ? debe : Math.max(debe, 0)) + '</div></div><div class="al">Al ' + fmtDate(k.al || hoy) + '</div></div>';
+  // Pedidos anotados que faltan facturar: a la vista ANTES de "Anotar pedido", para no anotar dos veces lo mismo
+  var peds = k.pedidos_pendientes || [];
+  if(peds.length){
+    html += '<div class="caja-pendientes"><div class="t">' + ESTADOS_PEDIDO.pendiente[1] + ': ' + peds.length + ' pedido' + (peds.length === 1 ? '' : 's') + ' de este cliente</div>' +
+      '<div class="s">Revisa que no sea lo mismo antes de anotar otro.</div>' +
+      peds.map(function(p){
+        return '<div class="cp-ped"><div class="meta">Anotado el ' + fmtFechaHora(p.creado_en) + '</div>' + listaRenglones(p.items) +
+          (p.notas ? '<div class="nota">' + prEsc(p.notas) + '</div>' : '') + '</div>';
+      }).join('') + '</div>';
+  }
+  html += '<div class="caja-acciones">' +
+      '<button type="button" class="btn btn-primary" id="cajaBtnPago">Registrar pago</button>' +
+      '<button type="button" class="btn btn-ghost" id="cajaBtnPedido" style="border-color:var(--gold); color:var(--gold);"' + (nv ? ' disabled aria-disabled="true"' : '') + '>Anotar pedido</button>' +
+      '<button type="button" class="btn btn-ghost" id="cajaBtnWa" style="border-color:var(--green); color:var(--green-soft);">Estado por WhatsApp</button>' +
+      '<button type="button" class="btn btn-ghost" id="cajaBtnImp">Imprimir estado de cuenta</button>' +
+    '</div>';
+  if(nv) html += '<div class="caja-nota-nv">Anotar pedido está bloqueado por la marca No venderle.</div>';
+  var fs = k.facturas || [];
+  html += '<h3 class="caja-h3">Facturas pendientes (' + fs.length + ')</h3>';
+  html += fs.length
+    ? '<table class="tabla-caja"><thead><tr><th>#</th><th>Fecha</th><th class="num">Factura</th><th class="num">Pendiente</th></tr></thead><tbody>' +
+      fs.map(function(f){
+        var venc = f.vence && f.vence < hoy;
+        return '<tr><td class="num-f">' + f.numero + '</td><td>' + fmtDate(f.fecha) +
+          (f.vence ? '<span class="vence' + (venc ? ' vencida' : '') + '">' + (venc ? 'Vencida el ' : 'Vence el ') + fmtDate(f.vence) + '</span>' : '') + '</td>' +
+          '<td class="num">' + fmt(f.monto_total) + '</td><td class="num"><b>' + fmt(f.pendiente) + '</b></td></tr>';
+      }).join('') + '</tbody></table>'
+    : '<div class="card" style="color:var(--muted); font-size:14px;">No tiene facturas pendientes.</div>';
+  var ab = k.abonos || [];
+  html += '<h3 class="caja-h3">Últimos pagos' + (k.abonos_total > ab.length ? ' (' + ab.length + ' de ' + k.abonos_total + ')' : '') + '</h3>';
+  html += ab.length
+    ? ab.map(function(a){
+        return '<div class="card fila-reg"><div class="izq"><div class="t">' + fmtDate(a.fecha) + '</div><div class="s">' + prEsc(a.metodo) +
+          (esDinero(a.metodo) ? '' : ' <span class="tag no-dinero">No es dinero</span>') + '</div></div><div class="der"><div class="m">' + fmt(a.monto) + '</div></div></div>';
+      }).join('')
+    : '<div class="card" style="color:var(--muted); font-size:14px;">Sin pagos registrados.</div>';
+  document.getElementById('cajaFicha').innerHTML = html;
+  document.getElementById('cajaBtnPago').addEventListener('click', cajaAbrirPago);
+  document.getElementById('cajaBtnPedido').addEventListener('click', cajaAbrirPedido);
+  document.getElementById('cajaBtnWa').addEventListener('click', function(){ conCandado(this, 'Preparando...', cajaEstadoWhatsApp); });
+  document.getElementById('cajaBtnImp').addEventListener('click', cajaImprimirEstado);
+}
+// Estado de cuenta por WhatsApp e impreso: siempre con la cuenta fresca de la base
+async function cajaEstadoWhatsApp(){
+  if(!CAJA_ID) return;
+  var k = await cajaCuentaFresca(CAJA_ID);
+  if(!k){ toast('No se pudo traer la cuenta del cliente. Revisa tu internet e intenta de nuevo.', 'e'); return; }
+  abrirEnviar(textoEstadoCuenta(k.cliente.nombre, k.facturas || [], k.abonos || [], k.abonos_total || 0, Number(k.debe) || 0),
+    k.cliente.telefono || null, k.cliente.whatsapp_grupo || null);
+}
+async function cajaImprimirEstado(){
+  if(!CAJA_ID) return;
+  var win = abrirVentanaImpresion(); // en el mismo toque, para que Safari no la bloquee
+  if(!win) return;
+  var k = await cajaCuentaFresca(CAJA_ID);
+  if(!k){ cerrarVentana(win); toast('No se pudo traer la cuenta del cliente. Revisa tu internet e intenta de nuevo.', 'e'); return; }
+  imprimirEnVentana(win, htmlEstado80({ cliente: k.cliente, facturas: k.facturas || [], debe: Number(k.debe) || 0, pagos: k.abonos || [] }));
+}
+
+// ----- Registrar pago -----
+// Botones de forma de pago (admin y caja) desde METODOS_PAGO
+function pintarMetodos(contId, activo, alElegir){
+  var cont = document.getElementById(contId);
+  cont.innerHTML = METODOS_PAGO.map(function(m){
+    return '<button type="button" class="method-opt' + (m === activo ? ' active' : '') + '" data-m="' + prEsc(m) + '">' + prEsc(m) + '</button>';
+  }).join('');
+  cont.querySelectorAll('.method-opt').forEach(function(b){
+    b.addEventListener('click', function(){
+      cont.querySelectorAll('.method-opt').forEach(function(x){ x.classList.remove('active'); });
+      this.classList.add('active');
+      alElegir(this.dataset.m);
+    });
+  });
+}
+function marcarMetodo(contId, metodo){
+  document.querySelectorAll('#' + contId + ' .method-opt').forEach(function(b){ b.classList.toggle('active', b.dataset.m === metodo); });
+}
+// En bolívares: el monto va en DÓLARES y los bolívares con la tasa en la referencia
+function cajaAyudaMetodo(){
+  var bs = METODOS_EN_BOLIVARES.indexOf(CP_METODO) >= 0;
+  document.getElementById('cpMontoAyuda').style.display = bs ? '' : 'none';
+  document.getElementById('cpNotas').placeholder = bs ? 'Ej: Pago Móvil de 18.250 Bs a tasa 182,50, ref. 0045123' : 'Ej: Zelle de Gloria Molina, ref. 1234';
+}
+function cajaAbrirPago(){
+  var k = CAJA_CUENTA;
+  if(!k) return;
+  CAJA_AVISO = ''; // el aviso de "Pedido anotado" ya se vio
+  var c = k.cliente, debe = Number(k.debe) || 0;
+  document.getElementById('cpInfo').innerHTML = '<b>' + prEsc(c.nombre) + '</b><br>' +
+    (estadoSaldo(debe) === 'favor' ? 'Tiene <b style="color:var(--green-soft);">' + fmt(debe) + '</b> a favor' : 'Debe actualmente: <b style="color:var(--gold);">' + fmt(Math.max(debe, 0)) + '</b>');
+  var hoy = hoyLocal(), min = sumarDias(hoy, -CAJA_LIMITES.DIAS_ATRAS_PAGO);
+  var f = document.getElementById('cpFecha');
+  f.min = min; f.max = hoy; f.value = hoy;
+  document.getElementById('cpFechaAyuda').textContent = 'Puede ser de hoy o de hasta ' + CAJA_LIMITES.DIAS_ATRAS_PAGO + ' días atrás (desde el ' + fmtDate(min) + ').';
+  document.getElementById('cpMonto').value = '';
+  document.getElementById('cpMonto').max = CAJA_LIMITES.MONTO_MAX;
+  document.getElementById('cpNotas').value = '';
+  var m = document.getElementById('cpMsg'); m.className = 'modal-msg'; m.textContent = '';
+  CP_METODO = METODOS_PAGO[0];
+  marcarMetodo('cpMetodos', CP_METODO);
+  cajaAyudaMetodo();
+  document.getElementById('modalCajaPago').classList.add('active');
+}
+async function cajaGuardarPago(){
+  var msg = document.getElementById('cpMsg');
+  function aviso(t, esError){ msg.className = 'modal-msg' + (esError ? ' error' : ''); msg.textContent = t; }
+  var k = CAJA_CUENTA;
+  if(!k) return;
+  var c = k.cliente;
+  var monto = parseFloat(document.getElementById('cpMonto').value);
+  if(!(monto > 0)) return aviso('Escribe el monto del pago.', true);
+  monto = Math.round(monto * 100) / 100;
+  var montoMaxTxt = CAJA_LIMITES.MONTO_MAX.toLocaleString('es-VE');
+  if(monto <= 0 || monto > CAJA_LIMITES.MONTO_MAX) return aviso('El monto tiene que ser mayor que 0 y hasta ' + montoMaxTxt + '.', true);
+  var hoy = hoyLocal(), min = sumarDias(hoy, -CAJA_LIMITES.DIAS_ATRAS_PAGO);
+  var fecha = document.getElementById('cpFecha').value;
+  if(!fecha || fecha > hoy || fecha < min) return aviso('La fecha tiene que estar entre el ' + fmtDate(min) + ' y hoy.', true);
+  var notas = document.getElementById('cpNotas').value.trim();
+  var metodo = CP_METODO;
+  if(!confirm('¿Registrar pago de ' + fmt(monto) + ' de ' + c.nombre + ' por ' + metodo + '?' + (fecha !== hoy ? '\n\nFecha del pago: ' + fmtDate(fecha) : ''))) return;
+  // Más de lo que debe: segunda confirmación (queda saldo a favor)
+  var debe = Number(k.debe) || 0;
+  if(monto > debe + 0.01 &&
+     !confirm('Este cliente solo debe ' + fmt(Math.max(debe, 0)) + '. Si registras ' + fmt(monto) + ' quedará con ' + fmt(monto - debe) + ' a favor. ¿Seguro?')) return;
+  aviso('');
+  // La base valida todo de nuevo (cliente activo, monto, método, fecha, repetido) y lo aplica a lo más viejo primero
+  var r = await llamarBase('may_caja_registrar_abono', { p_cliente_id: c.id, p_monto: monto, p_metodo: metodo, p_fecha: fecha, p_notas: notas || null });
+  var base = { cliente_id: c.id, cliente: datosClienteRecibo(c), telefono: c.telefono, grupo: c.whatsapp_grupo,
+               monto: monto, metodo: metodo, fecha: fecha, notas: notas || null, alFecha: null, registradoPor: CURRENT_USER.nombre };
+  if(r.ok){
+    document.getElementById('modalCajaPago').classList.remove('active');
+    cajaPagoListo(Object.assign(base, { abono_id: r.data.abono_id, creado_en: new Date().toISOString(), debe: Number(r.data.debe_cliente) }), null);
+    return;
+  }
+  if(!r.red) return aviso('No se registró el pago: ' + r.mensaje, true);
+  // Se cortó la red: el pago pudo haber entrado. Antes de dejarla repetirlo, se revisa solo.
+  aviso('Se cortó la conexión. Revisando si el pago llegó...');
+  var hallado = await cajaBuscarPagoRecien(c.id, monto, metodo);
+  document.getElementById('modalCajaPago').classList.remove('active');
+  if(!hallado){ cajaMostrarIncierto('pago'); return; }
+  var fresca = await cajaCuentaFresca(c.id);
+  cajaPagoListo(Object.assign(base, { abono_id: hallado.abono_id, creado_en: hallado.creado_en, fecha: hallado.fecha, notas: hallado.notas,
+    debe: fresca ? Number(fresca.debe) : null }), 'El pago <em>SÍ quedó registrado</em>');
+}
+// Después de una falla de red: busca en "Lo que registré" un pago de ese cliente, con ese monto y esa forma de pago,
+// de los últimos 10 minutos. Devuelve el pago o null (si no aparece o tampoco se pudo revisar).
+async function cajaBuscarPagoRecien(clienteId, monto, metodo){
+  var r = await llamarBase('may_caja_mis_registros', {});
+  if(!r.ok) return null;
+  CAJA_REGISTROS = r.data;
+  var desde = Date.now() - 10 * 60000;
+  return ((r.data && r.data.pagos) || []).find(function(p){
+    return p.cliente_id === clienteId && !p.anulado && Math.abs(Number(p.monto) - monto) < 0.005 && p.metodo === metodo &&
+      new Date(p.creado_en).getTime() >= desde;
+  }) || null; // vienen del más nuevo al más viejo
+}
+function cajaPagoListo(d, titulo){
+  CAJA_ULTIMO_PAGO = d;
+  mostrarPagoListo({ titulo: titulo, nombre: d.cliente.nombre, monto: d.monto, metodo: d.metodo, fecha: d.fecha, debe: d.debe },
+    { imprimir: function(){ cajaImprimirReciboDe(CAJA_ULTIMO_PAGO); }, whatsapp: cajaWhatsappUltimoPago });
+  cajaCargarCuenta(); // la ficha de atrás queda con el "Debe" nuevo
+}
+// Recibo de un pago de la caja. Si no se sabe el saldo (reimpresión o después de un corte), se trae fresco: "Saldo al <hoy>".
+async function cajaImprimirReciboDe(d){
+  if(!d || !esDinero(d.metodo)) return;
+  var win = abrirVentanaImpresion(); // en el mismo toque, para que Safari no la bloquee
+  if(!win) return;
+  var datos = d;
+  if(d.debe == null){
+    var k = await cajaCuentaFresca(d.cliente_id);
+    if(!k){ cerrarVentana(win); toast('No se pudo traer el saldo del cliente. Revisa tu internet e intenta de nuevo.', 'e'); return; }
+    datos = Object.assign({}, d, { debe: Number(k.debe) || 0, alFecha: hoyLocal(), cliente: datosClienteRecibo(k.cliente) });
+  }
+  imprimirEnVentana(win, htmlRecibo80(datos));
+}
+async function cajaWhatsappUltimoPago(){
+  var d = CAJA_ULTIMO_PAGO;
+  if(!d) return;
+  var debe = d.debe;
+  if(debe == null){
+    var k = await cajaCuentaFresca(d.cliente_id);
+    if(!k){ toast('No se pudo traer el saldo del cliente. Revisa tu internet e intenta de nuevo.', 'e'); return; }
+    debe = Number(k.debe) || 0;
+  }
+  abrirEnviar(textoPagoRecibido(d.cliente.nombre, d.monto, d.metodo, d.fecha, d.notas, debe), d.telefono || null, d.grupo || null);
+}
+
+// ----- Anotar pedido sin precio -----
+async function cajaCargarCatalogo(){
+  CAJA_CATALOGO_ERROR = false;
+  try {
+    // Solo código y descripción: la caja no ve precios ni costos
+    CAJA_CATALOGO = await paginar(function(desde, hasta){
+      return sb.from('inv_productos').select('id, codigo_valery, descripcion').eq('activo', true)
+        .order('descripcion', { ascending: true }).order('id', { ascending: true }).range(desde, hasta);
+    });
+  } catch(e){ console.error('catálogo', e); CAJA_CATALOGO_ERROR = true; }
+  if(document.getElementById('cajaBuscadorProd').style.display === 'flex') cajaBpRender(document.getElementById('cbpInput').value);
+}
+function cajaAbrirPedido(){
+  var k = CAJA_CUENTA;
+  if(!k) return;
+  if(k.cliente.no_vender){ toast('Este cliente tiene la marca No venderle: consulta con Kinan', 'e'); return; }
+  CAJA_AVISO = '';
+  var peds = (k.pedidos_pendientes || []).length;
+  document.getElementById('cpeInfo').innerHTML = 'Pedido para <b>' + prEsc(k.cliente.nombre) + '</b>' +
+    (peds ? '<div style="color:var(--orange); font-size:13px; margin-top:6px;">Ya tiene ' + peds + ' pedido' + (peds === 1 ? '' : 's') + ' que falta facturar. Revisa que no sea lo mismo.</div>' : '');
+  CPE_ITEMS = [{ producto_id: null, descripcion: '', codigo: '', cantidad: 1 }];
+  document.getElementById('cpeNotas').value = '';
+  var m = document.getElementById('cpeMsg'); m.className = 'modal-msg'; m.textContent = '';
+  cajaRenderRenglones();
+  document.getElementById('modalCajaPedido').classList.add('active');
+  if(!CAJA_CATALOGO) cajaCargarCatalogo();
+}
+function cajaRenderRenglones(){
+  var cont = document.getElementById('cpeItems');
+  cont.innerHTML = CPE_ITEMS.map(function(it, i){
+    var origen = it.descripcion ? (it.producto_id != null ? 'Del catálogo' + (it.codigo ? ' · ' + prEsc(it.codigo) : '') : 'Texto libre') : '';
+    return '<div class="cpe-fila"><div class="cpe-top">' +
+        '<button type="button" class="cpe-desc' + (it.descripcion ? '' : ' vacio') + '" data-i="' + i + '">' + (it.descripcion ? prEsc(it.descripcion) : 'Toca para buscar el producto') + '</button>' +
+        '<button type="button" class="cpe-quitar" data-i="' + i + '" aria-label="Quitar este producto"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
+      '</div><div class="cpe-bot"><label for="cpeCant' + i + '">Cantidad</label>' +
+        '<input type="number" class="cpe-cant" id="cpeCant' + i + '" data-i="' + i + '" value="' + prEsc(it.cantidad) + '" min="1" max="' + CAJA_LIMITES.CANTIDAD_MAX + '" step="1" inputmode="decimal">' +
+        '<span class="cpe-origen">' + origen + '</span></div></div>';
+  }).join('');
+  cont.querySelectorAll('.cpe-desc').forEach(function(b){ b.addEventListener('click', function(){ cajaAbrirBuscadorProd(parseInt(this.dataset.i, 10)); }); });
+  cont.querySelectorAll('.cpe-quitar').forEach(function(b){
+    b.addEventListener('click', function(){
+      CPE_ITEMS.splice(parseInt(this.dataset.i, 10), 1);
+      if(!CPE_ITEMS.length) CPE_ITEMS.push({ producto_id: null, descripcion: '', codigo: '', cantidad: 1 });
+      cajaRenderRenglones();
+    });
+  });
+  cont.querySelectorAll('.cpe-cant').forEach(function(inp){
+    inp.addEventListener('input', function(){ CPE_ITEMS[parseInt(this.dataset.i, 10)].cantidad = this.value; });
+  });
+}
+function cajaAbrirBuscadorProd(i){
+  CPE_TARGET = i;
+  document.getElementById('cajaBuscadorProd').style.display = 'flex';
+  document.getElementById('cbpInput').value = '';
+  cajaBpRender('');
+  setTimeout(function(){ document.getElementById('cbpInput').focus(); }, 100);
+}
+function cajaCerrarBuscadorProd(){ document.getElementById('cajaBuscadorProd').style.display = 'none'; CPE_TARGET = null; }
+// Resultados del catálogo y, DEBAJO, "No está en la lista: anotar "X" así" (destacado solo si no hay coincidencias)
+function cajaBpRender(texto){
+  var cont = document.getElementById('cbpResultados');
+  var t = (texto || '').trim();
+  if(t.length < 2){ cont.innerHTML = '<div class="fs-vacio">Escribe al menos 2 letras del producto o su código.</div>'; return; }
+  var hits = [], html = '';
+  if(!CAJA_CATALOGO){
+    html = CAJA_CATALOGO_ERROR
+      ? '<div class="fs-vacio" style="color:var(--red-soft);">No se pudo cargar el catálogo. No es que el producto no exista: revisa tu internet, o anótalo como está escrito con el botón de abajo.<br><button type="button" class="btn btn-primary" id="cbpReintentar" style="margin-top:12px;">Reintentar</button></div>'
+      : '<div class="fs-vacio">Cargando el catálogo...</div>';
+  } else {
+    hits = buscarEnCatalogo(t, CAJA_CATALOGO);
+    html = hits.length
+      ? hits.map(function(p){
+          return '<button type="button" class="fs-item" data-pid="' + p.id + '"><div class="nm">' + prEsc(p.descripcion) + '</div>' + (p.codigo_valery ? '<div class="cod">' + prEsc(p.codigo_valery) + '</div>' : '') + '</button>';
+        }).join('')
+      : '<div class="fs-vacio">No está en el catálogo.</div>';
+  }
+  html += '<button type="button" class="fs-libre' + (hits.length ? ' discreto' : '') + '" id="cbpLibre">No está en la lista: anotar "' + prEsc(t.substring(0, CAJA_LIMITES.DESC_MAX)) + '" así</button>';
+  cont.innerHTML = html;
+  cont.querySelectorAll('.fs-item').forEach(function(el){ el.addEventListener('click', function(){ cajaBpElegir(Number(this.dataset.pid)); }); });
+  document.getElementById('cbpLibre').addEventListener('click', cajaBpLibre);
+  var rb = document.getElementById('cbpReintentar');
+  if(rb) rb.addEventListener('click', function(){ this.disabled = true; this.textContent = 'Cargando...'; cajaCargarCatalogo(); });
+}
+function cajaBpElegir(pid){
+  var p = (CAJA_CATALOGO || []).find(function(x){ return Number(x.id) === pid; });
+  if(!p || CPE_TARGET === null || !CPE_ITEMS[CPE_TARGET]) return;
+  var it = CPE_ITEMS[CPE_TARGET];
+  it.producto_id = Number(p.id); it.descripcion = p.descripcion; it.codigo = p.codigo_valery || '';
+  cajaCerrarBuscadorProd();
+  cajaRenderRenglones();
+}
+function cajaBpLibre(){
+  var t = document.getElementById('cbpInput').value.trim();
+  if(t.length < 2 || CPE_TARGET === null || !CPE_ITEMS[CPE_TARGET]) return;
+  var it = CPE_ITEMS[CPE_TARGET];
+  it.producto_id = null; it.descripcion = t.substring(0, CAJA_LIMITES.DESC_MAX); it.codigo = '';
+  cajaCerrarBuscadorProd();
+  cajaRenderRenglones();
+}
+// Enter elige el primero (producto o, si no hay, el texto libre); Escape cierra
+function cajaTeclaBuscador(e, inputId, render, resultadosId, cerrar){
+  if(e.key === 'Escape'){ e.preventDefault(); cerrar(); return; }
+  if(e.key !== 'Enter') return;
+  e.preventDefault();
+  render(document.getElementById(inputId).value);
+  var primero = document.querySelector('#' + resultadosId + ' .fs-item') || document.querySelector('#' + resultadosId + ' .fs-libre');
+  if(primero) primero.click();
+}
+async function cajaGuardarPedido(){
+  var msg = document.getElementById('cpeMsg');
+  function aviso(t, esError){ msg.className = 'modal-msg' + (esError ? ' error' : ''); msg.textContent = t; }
+  var k = CAJA_CUENTA;
+  if(!k) return;
+  var c = k.cliente;
+  var renglones = CPE_ITEMS.filter(function(it){ return it.descripcion; });
+  if(!renglones.length) return aviso('Agrega al menos un producto.', true);
+  if(renglones.length > CAJA_LIMITES.RENGLONES_MAX) return aviso('Máximo ' + CAJA_LIMITES.RENGLONES_MAX + ' productos por pedido.', true);
+  if(renglones.some(function(it){ var n = Number(it.cantidad); return !(n > 0) || n > CAJA_LIMITES.CANTIDAD_MAX; }))
+    return aviso('Revisa las cantidades: tienen que ser mayores que 0 y hasta ' + CAJA_LIMITES.CANTIDAD_MAX.toLocaleString('es-VE') + '.', true);
+  var notas = document.getElementById('cpeNotas').value.trim();
+  var resumen = renglones.map(function(it){ return '• ' + fmtCant(it.cantidad) + ' × ' + it.descripcion; }).join('\n');
+  if(!confirm('¿Anotar este pedido para ' + c.nombre + '?\n\n' + resumen + '\n\nVa sin precios: Kinan los pone después.')) return;
+  aviso('');
+  var items = renglones.map(function(it){ return { producto_id: it.producto_id, descripcion: String(it.descripcion).trim(), cantidad: Number(it.cantidad) }; });
+  var r = await llamarBase('may_caja_anotar_pedido', { p_cliente_id: c.id, p_items: items, p_notas: notas || null });
+  if(r.ok){
+    document.getElementById('modalCajaPedido').classList.remove('active');
+    cajaPedidoListo('Pedido anotado. Kinan le pondrá los precios y lo convertirá en factura.');
+    return;
+  }
+  if(!r.red) return aviso('No se anotó el pedido: ' + r.mensaje, true);
+  // Se cortó la red: el pedido pudo haber entrado. Se revisa solo antes de dejarla repetirlo.
+  aviso('Se cortó la conexión. Revisando si el pedido llegó...');
+  var hallado = await cajaBuscarPedidoRecien(c.id, items);
+  document.getElementById('modalCajaPedido').classList.remove('active');
+  if(hallado) cajaPedidoListo('El pedido SÍ quedó anotado. Kinan le pondrá los precios y lo convertirá en factura.');
+  else cajaMostrarIncierto('pedido');
+}
+// Después de una falla de red: busca en "Lo que registré" un pedido de ese cliente con los mismos renglones (10 minutos)
+async function cajaBuscarPedidoRecien(clienteId, items){
+  var r = await llamarBase('may_caja_mis_registros', {});
+  if(!r.ok) return null;
+  CAJA_REGISTROS = r.data;
+  function clave(lista){ return JSON.stringify((lista || []).map(function(it){ return [String(it.descripcion).trim(), Number(it.cantidad)]; })); }
+  var buscada = clave(items), desde = Date.now() - 10 * 60000;
+  return ((r.data && r.data.pedidos) || []).find(function(p){
+    return p.cliente_id === clienteId && new Date(p.creado_en).getTime() >= desde && clave(p.items) === buscada;
+  }) || null;
+}
+function cajaPedidoListo(texto){
+  CAJA_AVISO = texto;
+  toast('Pedido anotado', 's');
+  cajaRenderFicha();
+  cajaCargarCuenta(); // trae el pedido nuevo a "Falta facturar"
+}
+
+// ----- Lo que registré (últimos días) -----
+async function cajaCargarRegistros(){
+  var cont = document.getElementById('cajaRegistros');
+  cajaCargando(cont, 'Cargando lo que registraste...');
+  var r = await llamarBase('may_caja_mis_registros', {});
+  if(!r.ok){ cajaError(cont, r.red ? 'No se pudo cargar lo que registraste' : r.mensaje, cajaCargarRegistros); return; }
+  CAJA_REGISTROS = r.data || { pagos: [], pedidos: [] };
+  cajaRenderRegistros();
+}
+function cajaRenderRegistros(){
+  var d = CAJA_REGISTROS || { pagos: [], pedidos: [] };
+  var pagos = d.pagos || [], pedidos = d.pedidos || [];
+  var html = '<h3 class="caja-h3" style="margin-top:0;">Pagos (' + pagos.length + ')</h3>';
+  html += pagos.length ? pagos.map(function(p){
+    return '<div class="card fila-reg"><div class="izq">' +
+        '<div class="t">' + prEsc(p.cliente) + '</div>' +
+        '<div class="s">Pago del ' + fmtDate(p.fecha) + ' · ' + prEsc(p.metodo) + '</div>' +
+        '<div class="s">Registrado el ' + fmtFechaHora(p.creado_en) + (p.notas ? ' · ' + prEsc(p.notas) : '') + '</div></div>' +
+      '<div class="der"><div class="m"' + (p.anulado ? ' style="text-decoration:line-through; color:var(--muted);"' : '') + '>' + fmt(p.monto) + '</div>' +
+        (p.anulado ? '<span class="tag mal">Anulado por el administrador</span>' : '<button type="button" class="btn btn-ghost reg-recibo" data-aid="' + p.abono_id + '">Imprimir recibo</button>') +
+      '</div></div>';
+  }).join('') : '<div class="card" style="color:var(--muted); font-size:14px;">No registraste pagos en los últimos ' + CAJA_LIMITES.DIAS_REGISTROS + ' días.</div>';
+  html += '<h3 class="caja-h3">Pedidos (' + pedidos.length + ')</h3>';
+  html += pedidos.length ? pedidos.map(function(p){
+    return '<div class="card ped-card"><div class="cab"><div style="min-width:0;"><b>' + prEsc(p.cliente) + '</b><div class="meta">' + fmtFechaHora(p.creado_en) + '</div></div>' +
+        tagEstadoPedido(p.estado) + '</div>' +
+      listaRenglones(p.items) +
+      (p.notas ? '<div class="nota">' + prEsc(p.notas) + '</div>' : '') +
+      (p.estado === 'descartado' && p.motivo_descarte ? '<div class="nota" style="color:var(--red-soft);">Motivo: ' + prEsc(p.motivo_descarte) + '</div>' : '') +
+    '</div>';
+  }).join('') : '<div class="card" style="color:var(--muted); font-size:14px;">No anotaste pedidos en los últimos ' + CAJA_LIMITES.DIAS_REGISTROS + ' días.</div>';
+  var cont = document.getElementById('cajaRegistros');
+  cont.innerHTML = html;
+  cont.querySelectorAll('.reg-recibo').forEach(function(b){ b.addEventListener('click', function(){ cajaReimprimirRecibo(this.dataset.aid); }); });
+}
+// Reimpresión: el saldo es el de hoy ("Saldo al <fecha de impresión>"), traído fresco de la base
+function cajaReimprimirRecibo(abonoId){
+  var p = ((CAJA_REGISTROS && CAJA_REGISTROS.pagos) || []).find(function(x){ return x.abono_id === abonoId; });
+  if(!p || p.anulado) return;
+  cajaImprimirReciboDe({ abono_id: p.abono_id, fecha: p.fecha, creado_en: p.creado_en, cliente_id: p.cliente_id, cliente: { nombre: p.cliente },
+    monto: p.monto, metodo: p.metodo, notas: p.notas, debe: null, registradoPor: CURRENT_USER.nombre });
 }
 
 // ===== TEMA =====
@@ -2846,17 +4111,58 @@ document.querySelectorAll('#facFiltros .method-opt').forEach(function(btn){
 });
 document.getElementById('btnVolverClientes').addEventListener('click', function(){ switchView('clientes'); });
 document.getElementById('abCancelar').addEventListener('click', function(){ document.getElementById('modalAbono').classList.remove('active'); });
-document.querySelectorAll('#abMetodos .method-opt').forEach(function(btn){
-  btn.addEventListener('click', function(){
-    document.querySelectorAll('#abMetodos .method-opt').forEach(function(b){ b.classList.remove('active'); });
-    this.classList.add('active');
-    ABONO_METODO = this.dataset.m;
-  });
-});
+pintarMetodos('abMetodos', ABONO_METODO, function(m){ ABONO_METODO = m; });
 protegerBoton('abGuardar', guardarAbono);
 document.getElementById('ncCancelar').addEventListener('click', function(){ document.getElementById('modalCliente').classList.remove('active'); prAlVolverDeCliente(); });
 protegerBoton('ncGuardar', guardarCliente);
+// "Pago registrado" (los dos modos)
+document.getElementById('plImprimir').addEventListener('click', function(){ if(PL_ACCIONES) PL_ACCIONES.imprimir(); });
+document.getElementById('plWhatsapp').addEventListener('click', function(){ if(PL_ACCIONES) PL_ACCIONES.whatsapp(); });
+document.getElementById('plListo').addEventListener('click', function(){ document.getElementById('modalPagoListo').classList.remove('active'); });
+// Admin: descartar pedido de caja
+document.getElementById('dpCancelar').addEventListener('click', function(){ document.getElementById('modalDescartar').classList.remove('active'); });
+protegerBoton('dpGuardar', confirmarDescartar);
+// Modo caja
+document.getElementById('cajaBuscarBtn').addEventListener('click', cajaAbrirBuscador);
+document.getElementById('cbCerrar').addEventListener('click', cajaCerrarBuscador);
+document.getElementById('cbInput').addEventListener('input', function(){
+  var v = this.value; clearTimeout(CB_TIMER); CB_TIMER = setTimeout(function(){ cajaBuscadorRender(v); }, 150);
+});
+document.getElementById('cbInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') clearTimeout(CB_TIMER);
+  cajaTeclaBuscador(e, 'cbInput', cajaBuscadorRender, 'cbResultados', cajaCerrarBuscador);
+});
+document.getElementById('btnCajaVolver').addEventListener('click', function(){ switchView('caja'); });
+document.getElementById('btnCajaRegActualizar').addEventListener('click', cajaCargarRegistros);
+pintarMetodos('cpMetodos', CP_METODO, function(m){ CP_METODO = m; cajaAyudaMetodo(); });
+document.getElementById('cpCancelar').addEventListener('click', function(){ document.getElementById('modalCajaPago').classList.remove('active'); });
+protegerBoton('cpGuardar', cajaGuardarPago);
+document.getElementById('cpeAgregar').addEventListener('click', function(){
+  if(CPE_ITEMS.length >= CAJA_LIMITES.RENGLONES_MAX){ toast('Máximo ' + CAJA_LIMITES.RENGLONES_MAX + ' productos por pedido', 'e'); return; }
+  CPE_ITEMS.push({ producto_id: null, descripcion: '', codigo: '', cantidad: 1 });
+  cajaRenderRenglones();
+});
+document.getElementById('cpeCancelar').addEventListener('click', function(){ document.getElementById('modalCajaPedido').classList.remove('active'); });
+protegerBoton('cpeGuardar', cajaGuardarPedido);
+document.getElementById('cbpCerrar').addEventListener('click', cajaCerrarBuscadorProd);
+document.getElementById('cbpInput').addEventListener('input', function(){
+  var v = this.value; clearTimeout(CBP_TIMER); CBP_TIMER = setTimeout(function(){ cajaBpRender(v); }, 150);
+});
+document.getElementById('cbpInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') clearTimeout(CBP_TIMER);
+  cajaTeclaBuscador(e, 'cbpInput', cajaBpRender, 'cbpResultados', cajaCerrarBuscadorProd);
+});
+// Escape cierra el buscador de la caja que esté abierto, aunque el cursor no esté en el campo (en la PC)
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  if(document.getElementById('cajaBuscadorProd').style.display === 'flex') cajaCerrarBuscadorProd();
+  else if(document.getElementById('cajaBuscador').style.display === 'flex') cajaCerrarBuscador();
+});
+document.getElementById('inIr').addEventListener('click', function(){ document.getElementById('modalIncierto').classList.remove('active'); switchView('cajareg'); });
+document.getElementById('inCerrar').addEventListener('click', function(){ document.getElementById('modalIncierto').classList.remove('active'); });
 document.querySelectorAll('.modal-overlay').forEach(function(ov){
+  // Pago y pedido de la caja: no se cierran con un toque afuera (se perdería lo escrito a mitad)
+  if(ov.hasAttribute('data-no-cerrar-afuera')) return;
   ov.addEventListener('click', function(e){ if(e.target === ov) ov.classList.remove('active'); });
 });
 
@@ -2866,9 +4172,15 @@ try { var th = localStorage.getItem('may_theme'); if(th){ document.documentEleme
 initSearchClear();
 
 // Si la sesión se cierra en otra pestaña (o vence y no se pudo renovar), volver al login en vez de fallar al guardar
+// y recargar la página para que no quede nada en memoria (el aviso se muestra después de recargar)
 sb.auth.onAuthStateChange(function(evento){
-  if(evento === 'SIGNED_OUT' && CURRENT_USER) mostrarLogin('Tu sesión se cerró. Vuelve a entrar.');
+  if(evento === 'SIGNED_OUT' && CURRENT_USER){
+    mostrarLogin('Tu sesión se cerró. Vuelve a entrar.');
+    try { sessionStorage.setItem('may_aviso', 'Tu sesión se cerró. Vuelve a entrar.'); } catch(e){}
+    location.reload();
+  }
 });
+try { var avisoGuardado = sessionStorage.getItem('may_aviso'); if(avisoGuardado){ sessionStorage.removeItem('may_aviso'); avisoLogin(avisoGuardado); } } catch(e){}
 // Entrada directa si ya hay sesión del Portal en este aparato
 (async function(){
   try { localStorage.removeItem('may_user'); } catch(e){} // restos del login viejo

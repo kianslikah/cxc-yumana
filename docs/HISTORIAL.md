@@ -226,3 +226,22 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
 - **Mayorista, monto original en el estado por WhatsApp (2026-10-14, `?v=20261014b`):** a pedido de Kinan, cada factura pendiente del estado por WhatsApp muestra ahora el monto original y lo que queda pendiente ("• #159 · 11/08/2026 / Factura: $13,481.00 · Pendiente: $4,314.00").
   - El recordatorio de pago también dice "debe X de Y" en cada factura vencida.
   - El PDF del estado de cuenta ya traía, por factura, el total, lo pagado y lo pendiente.
+- **Mayorista, modo caja y recibos de 80 mm (2026-10-19, `?v=20261019`):** Kinan se va de viaje 4 días y quiere que la caja pueda atender a los clientes del mayor sin ver los números del negocio.
+  - **Quién:** solo Lixney (tabla `may_acceso_caja`, cerrada a la API). Para darle el modo caja a otra persona se agrega su fila desde el conector. El Portal le muestra la tarjeta del mayorista como "Modo caja" (`portal_permisos` cajera/mayoristas = 'consulta') solo si `may_es_caja()` da verdadero. Jennyfer no la ve.
+  - **Lo que hace la caja:**
+    - Busca un cliente y ve SU cuenta (`may_caja_cuenta`): lo que debe, sus facturas pendientes con el monto original y lo pendiente, sus últimos pagos y sus pedidos que faltan facturar.
+    - Registra pagos (`may_caja_registrar_abono`): fecha de hoy a 7 días atrás, métodos sin "Descuento/devolución", hasta $100.000, y anti-repetido de mismo cliente, monto, método y persona en 3 minutos. Los pagos quedan con `may_abonos.origen = 'caja'`.
+    - Anota pedidos SIN precio (`may_caja_anotar_pedido`, tabla `may_pedidos_caja`); no tocan la deuda. A un cliente con "No venderle" no le puede anotar pedidos.
+    - Manda el estado por WhatsApp, imprime el recibo y el estado de cuenta de 80 mm, y ve "Lo que registré" de los últimos 7 días (`may_caja_mis_registros`).
+    - Si se cae el internet al guardar, la app revisa sola si el pago o el pedido entró antes de dejarla repetirlo.
+  - **Lo que hace Kinan:**
+    - En "Pedidos de caja" factura cada pedido poniendo los precios (`may_facturar_pedido`: atómico, no se puede facturar dos veces, origen 'caja', fecha del pedido en hora de Caracas) o lo descarta con un motivo (`may_descartar_pedido`).
+    - Revisa los pagos de la caja de los últimos 7 días. En el historial de cada cliente esos pagos llevan la etiqueta "Caja: nombre".
+    - Recibo de 80 mm en cada abono (menos en los descuentos) y estado de cuenta de 80 mm en la ficha.
+  - **Seguridad en la base** (migraciones `modo_caja_*` y `modo_caja_v2_origen_y_pedidos_pendientes`):
+    - Política restrictiva `solo_admin` en `may_clientes`, `may_facturas`, `may_factura_items`, `may_abonos` y `may_precios_cliente`.
+    - `may_exigir_personal()` exige admin desde la app. La única excepción es la marca de transacción `yumana.caja`, que pone solo `may_caja_registrar_abono` justo antes de llamar a `may_registrar_abono`, y además exige `may_es_caja()`. La marca no se puede poner desde el navegador: PostgREST solo expone `public` y `set_config` está en `pg_catalog`.
+    - Probado simulando cada usuario: Lixney solo puede usar las funciones de caja (0 filas en las tablas `may_*`); Jennyfer y anon quedan fuera de todo; Kinan y Fayssal siguen igual.
+  - **Control:** se agregó la política `admin_escribe_portal_permisos`. Antes el editor de permisos de Control no podía guardar, porque la tabla solo tenía política de lectura.
+  - **Revisiones:** thermos de bugs y dinero (sin bloqueantes; se corrigió el caso de red caída que podía duplicar un pago), thermos de calidad (helpers sin duplicar y espejo JS↔SQL documentado) y anti-slop (textos, avisos de bolívares y de pago mayor que la deuda, pedidos pendientes en la ficha). Lo que quedó para después está en el pendiente 17 de `CLAUDE.md`.
+  - **Para deshacer:** quitar a Lixney de `may_acceso_caja` apaga el modo caja al instante. Las funciones y políticas de antes están en `respaldo_20261019.funciones_antes_modo_caja` y `politicas_antes_modo_caja`.
