@@ -259,3 +259,12 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - Total de Harrison: compró $1.210 y pagó $960, debe $250.
   - **Sin resolver:** el cliente dice que debe $180, una diferencia de $70. En la base no hay ningún pago suyo cargado a otro cliente. El pago de $70 del 30/09 se cargó el 05/10, junto con la venta del aire ULTRAMAX (#782), y el sistema lo aplicó al #423 por ser lo más viejo. Falta que el cliente diga qué pago no aparece.
   - Nota: el "Descuento del aire" ($20) quedó con forma de pago "Efectivo USD", así que cuenta como cobrado aunque no es dinero. Créditos no tiene una forma de pago "Descuento".
+- **Créditos, historial de pagos detallado en los PDF de estado de cuenta (2026-10-23, `?v=20261023`):** a pedido de Kinan.
+  - **El botón "PDF" de un crédito o de un apartado no abría nada.** `generarEstadoCuenta` armaba el documento pero nunca abría la ventana: le faltaba `window.open` y `document.write`, y así estaba desde que se subió el archivo. Ya abre. Esto arregla también el PDF que se genera al compartir por WhatsApp.
+  - **Tabla nueva "Historial de pagos" en los dos PDF** (el de un crédito y el "Estado de cuenta PDF" del cliente con todos sus créditos):
+    - Cada compra (sin intereses), cada interés y cada pago en orden de fecha, con el saldo que quedaba después de cada uno.
+    - Cada pago muestra la forma, la referencia, el titular, la cuenta y la nota, y quién lo cobró.
+    - Un pago a la cuenta repartido sale en UNA línea con su reparto; en el PDF de un solo crédito dice de cuánto fue el pago completo.
+    - El saldo final es exactamente `monto_total − pagado`. Si algún crédito cancelado quedó pagado de más, el PDF del cliente lo avisa.
+  - Funciones nuevas en `Apartados_Yumana_App.html`: `movimientosPdf`, `tablaMovimientosPdf`, `detallePagoPdf`, `etiquetaCuentaPdf`, `fmtSaldoPdf`, `escPdf` y `CSS_MOVS_PDF`.
+  - Probado con las funciones reales y los datos de HARRISON HERNANDEZ: 8 pagos, cargos $1.210, pagos $960, saldo $250, igual que "Debe actualmente".

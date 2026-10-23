@@ -7429,6 +7429,122 @@ function enviarWhatsAppHistorialAbonos(tipo, obj) {
 // =================================================================
 // ESTADO DE CUENTA EN PDF (HD para WhatsApp)
 // =================================================================
+// ===== HISTORIAL DETALLADO DE PAGOS PARA LOS PDF DE ESTADO DE CUENTA (2026-10-23) =====
+// Lo pidió Kinan: el cliente tiene que poder comparar pago por pago. Se arma con lo que ya está en memoria
+// (ABONOS sin borrados, INTERESES, CREDITOS_ALL, APARTADOS_ALL). monto_total YA incluye los intereses: la compra
+// se muestra sin ellos (monto_total − intereses) y cada interés va como su propio cargo, así el saldo final
+// de la tabla es exactamente monto_total − pagado.
+function escPdf(t) {
+  return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+// Saldo con signo: negativo = pagado de más (fmt() siempre muestra el valor absoluto)
+function fmtSaldoPdf(n) {
+  n = redondear2(n);
+  return n < -0.005 ? fmt(n) + ' a favor' : fmt(n);
+}
+function etiquetaCuentaPdf(a) {
+  if (a.credito_id) {
+    var c = CREDITOS_ALL.find(function(x){ return x.id === a.credito_id; });
+    return 'crédito #' + (c ? c.numero : '?');
+  }
+  if (a.apartado_id) {
+    var p = APARTADOS_ALL.find(function(x){ return x.id === a.apartado_id; });
+    return 'apartado #' + (p ? p.numero : '?');
+  }
+  return '';
+}
+// Referencia, titular, cuenta destino y la nota del pago (sin el texto automático del "pago a la cuenta",
+// porque el reparto se muestra aparte)
+function detallePagoPdf(a) {
+  var partes = [];
+  var nota = (a.notas || '').replace(/^Pago a la cuenta de \$[0-9.,]+ — parte aplicada al (crédito|apartado) #\d+\s*(— )?/, '').trim();
+  if (/^Abono inicial al crear/i.test(nota)) nota = 'Inicial al crear la cuenta';
+  if (a.referencia) partes.push('Ref: ' + a.referencia);
+  if (a.titular_pago) partes.push('Titular: ' + a.titular_pago);
+  if (a.cuenta_destino) partes.push('Cuenta: ' + a.cuenta_destino);
+  if (nota && nota !== a.referencia) partes.push(nota);
+  return partes;
+}
+// Movimientos en orden de fecha: compra (sin intereses), intereses y pagos, con el saldo después de cada uno.
+// cuentas = [{tipo: 'credito'|'apartado', obj}]. Un "pago a la cuenta" (mismo grupo_pago) sale en UNA fila con
+// su reparto; si parte de ese pago fue a cuentas que no están en la lista, se dice cuánto fue el pago completo.
+function movimientosPdf(cuentas) {
+  var movs = [], vistos = {}, ids = {};
+  cuentas.forEach(function(k){ ids[k.obj.id] = true; });
+  cuentas.forEach(function(k){
+    var o = k.obj, esCr = (k.tipo === 'credito');
+    var etiqueta = (esCr ? 'crédito #' : 'apartado #') + o.numero;
+    var ints = INTERESES.filter(function(i){
+      return (esCr ? i.credito_id : i.apartado_id) === o.id && parseFloat(i.monto_interes || 0) > 0;
+    });
+    var sumInt = ints.reduce(function(s, i){ return s + parseFloat(i.monto_interes || 0); }, 0);
+    movs.push({ fecha: o.fecha_inicio || '', orden: 0, creado: o.created_at || '', clase: 'compra',
+      concepto: (esCr ? 'Crédito #' : 'Apartado #') + o.numero, detalle: getProductosArray(k.tipo, o).join(' · '),
+      cargo: redondear2(parseFloat(o.monto_total || 0) - sumInt), pago: 0 });
+    ints.forEach(function(i){
+      movs.push({ fecha: i.fecha || '', orden: 1, creado: i.created_at || '', clase: 'interes',
+        concepto: 'Interés 10% del ' + etiqueta, detalle: 'Mes cumplido', cargo: redondear2(i.monto_interes), pago: 0 });
+    });
+  });
+  ABONOS.forEach(function(a){
+    if (!ids[a.credito_id || a.apartado_id]) return;
+    var clave = a.grupo_pago || a.id;
+    if (vistos[clave]) return;
+    vistos[clave] = true;
+    var todas = a.grupo_pago ? ABONOS.filter(function(x){ return x.grupo_pago === a.grupo_pago; }) : [a];
+    var aqui = todas.filter(function(x){ return ids[x.credito_id || x.apartado_id]; });
+    var totalAqui = aqui.reduce(function(s, x){ return s + parseFloat(x.monto || 0); }, 0);
+    var totalTodo = todas.reduce(function(s, x){ return s + parseFloat(x.monto || 0); }, 0);
+    var det = [];
+    var reparto = todas.map(function(x){ return etiquetaCuentaPdf(x) + ' ' + fmt(x.monto); }).join(' · ');
+    if (todas.length === 1) det.push('Aplicado al ' + etiquetaCuentaPdf(a));
+    else if (aqui.length === todas.length) det.push('Pago a la cuenta repartido: ' + reparto);
+    else det.push('Parte de un pago a la cuenta de ' + fmt(totalTodo) + ' (' + reparto + ')');
+    det = det.concat(detallePagoPdf(a));
+    var quien = getUserName(a.registrado_por);
+    if (quien) det.push('Cobrado por ' + quien);
+    movs.push({ fecha: a.fecha || '', orden: 2, creado: a.created_at || '', clase: 'pago',
+      concepto: 'Pago ' + (a.metodo || ''), detalle: det.join(' · '), cargo: 0, pago: redondear2(totalAqui) });
+  });
+  movs.sort(function(x, y){
+    if (x.fecha !== y.fecha) return x.fecha < y.fecha ? -1 : 1;
+    if (x.orden !== y.orden) return x.orden - y.orden;
+    return String(x.creado) < String(y.creado) ? -1 : (String(x.creado) > String(y.creado) ? 1 : 0);
+  });
+  var saldo = 0;
+  movs.forEach(function(m){ saldo = redondear2(saldo + m.cargo - m.pago); m.saldo = saldo; });
+  return movs;
+}
+var CSS_MOVS_PDF =
+  'table.movs td.n, table.movs th.n { text-align:right; white-space:nowrap; }' +
+  'table.movs td { font-variant-numeric: tabular-nums; vertical-align: top; }' +
+  'table.movs td small { display:block; color:#666; font-size:11px; margin-top:2px; }' +
+  'table.movs td.pago { color:#2e7d32; }' +
+  'table.movs tr.mov-compra td { background:#f3eef8; }' +
+  'table.movs tr.mov-interes td { color:#b35c00; }' +
+  'table.movs tr.tot td { border-top:2px solid #999; background:#fff; }' +
+  '.nota-movs { font-size:12px; color:#666; margin:0 0 8px; }';
+function tablaMovimientosPdf(movs) {
+  if (!movs.length) return '<p class="nota-movs">Sin movimientos.</p>';
+  var totCargo = 0, totPago = 0, nPagos = 0;
+  var filas = movs.map(function(m){
+    totCargo += m.cargo; totPago += m.pago; if (m.clase === 'pago') nPagos++;
+    return '<tr class="mov-' + m.clase + '">' +
+      '<td style="white-space:nowrap;">' + fmtDate(m.fecha) + '</td>' +
+      '<td><b>' + escPdf(m.concepto) + '</b>' + (m.detalle ? '<small>' + escPdf(m.detalle) + '</small>' : '') + '</td>' +
+      '<td class="n">' + (m.cargo ? fmt(m.cargo) : '') + '</td>' +
+      '<td class="n pago">' + (m.pago ? fmt(m.pago) : '') + '</td>' +
+      '<td class="n"><b>' + fmtSaldoPdf(m.saldo) + '</b></td>' +
+    '</tr>';
+  }).join('');
+  return '<table class="movs"><thead><tr><th>Fecha</th><th>Movimiento</th><th class="n">Cargo</th><th class="n">Pago</th><th class="n">Saldo</th></tr></thead><tbody>' +
+    filas +
+    '<tr class="tot"><td></td><td><b>Totales (' + nPagos + ' pago' + (nPagos === 1 ? '' : 's') + ')</b></td>' +
+      '<td class="n"><b>' + fmt(totCargo) + '</b></td><td class="n pago"><b>' + fmt(totPago) + '</b></td>' +
+      '<td class="n"><b>' + fmtSaldoPdf(totCargo - totPago) + '</b></td></tr>' +
+    '</tbody></table>';
+}
+
 function generarEstadoCuenta(tipo, obj) {
   var cli = CLIENTES.find(function(c){return c.id === obj.cliente_id;});
   if (!cli) return toast('No se encontró el cliente', 'e');
@@ -7455,18 +7571,6 @@ function generarEstadoCuenta(tipo, obj) {
   var prodsHtml = prods.map(function(p){
     return '<div class="prod-line">▪ ' + p + '</div>';
   }).join('');
-
-  var abonosHtml = abos.length === 0 ?
-    '<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">Aún no hay pagos registrados</td></tr>' :
-    abos.map(function(ab, i){
-      return '<tr>' +
-        '<td>' + (i+1) + '</td>' +
-        '<td>' + fmtDate(ab.fecha) + '</td>' +
-        '<td>' + ab.metodo + (ab.referencia ? '<br><small>Ref: ' + ab.referencia + '</small>' : '') + '</td>' +
-        '<td style="font-size:11px;">' + (getUserName(ab.registrado_por) || '—') + '</td>' +
-        '<td style="text-align:right;font-weight:700;">' + fmt(ab.monto) + '</td>' +
-      '</tr>';
-    }).join('');
 
   var html =
     '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
@@ -7505,6 +7609,7 @@ function generarEstadoCuenta(tipo, obj) {
     'td { padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }' +
     'tr:nth-child(even) { background: #f9f9fb; }' +
     '.footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; font-size: 11px; color: #999; }' +
+    CSS_MOVS_PDF +
     '@media print { body { padding: 20px; } }' +
     '</style></head><body>' +
 
@@ -7555,11 +7660,9 @@ function generarEstadoCuenta(tipo, obj) {
     '<div class="progress-label">' + pct.toFixed(0) + '% completado</div>' +
 
     '<div class="prods-box" style="margin-top:25px;">' +
-      '<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4"/></svg> Historial de Pagos (' + abos.length + ')</h3>' +
-      '<table>' +
-        '<thead><tr><th>#</th><th>Fecha</th><th>Método</th><th>Cobrado por</th><th style="text-align:right;">Monto</th></tr></thead>' +
-        '<tbody>' + abonosHtml + '</tbody>' +
-      '</table>' +
+      '<h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4"/></svg> Historial de pagos (' + abos.length + ')</h3>' +
+      '<p class="nota-movs">La compra, los intereses y cada pago en orden de fecha, con lo que quedaba debiendo después de cada uno.</p>' +
+      tablaMovimientosPdf(movimientosPdf([{ tipo: tipo, obj: obj }])) +
     '</div>' +
 
     (tipo === 'credito' && obj.direccion_entrega ?
@@ -7588,6 +7691,12 @@ function generarEstadoCuenta(tipo, obj) {
 
     '</body></html>';
 
+  // Faltaba abrir la ventana: el botón "PDF" de un crédito o apartado no mostraba nada (2026-10-23)
+  var win = window.open('', '_blank');
+  if (!win) return toast('Permite ventanas emergentes para generar el PDF', 'e');
+  win.document.write(html);
+  win.document.close();
+
   // Auto-trigger print después de cargar
   setTimeout(function(){
     win.focus();
@@ -7607,7 +7716,7 @@ function generarHistorialCliente(clienteId) {
   if (creditosCli.length === 0) return toast('Este cliente no tiene créditos', 'e');
 
   var activos = [], pagados = [];
-  var totalComprado = 0, totalPagado = 0, totalPendiente = 0;
+  var totalComprado = 0, totalPagado = 0, totalPendiente = 0, pagadoDeMas = 0;
 
   creditosCli.forEach(function(cr){
     var abos = ABONOS.filter(function(a){ return a.credito_id === cr.id; });
@@ -7619,7 +7728,7 @@ function generarHistorialCliente(clienteId) {
     var registro = {cr: cr, total: total, pagado: pagado, saldo: saldo, interes: interes, prods: prods, fecha: cr.fecha_inicio};
     totalComprado += total;
     totalPagado += pagado;
-    if (cr.estado === 'completado' || saldo <= 0.01) { pagados.push(registro); }
+    if (cr.estado === 'completado' || saldo <= 0.01) { pagados.push(registro); if (saldo < -0.01) pagadoDeMas += -saldo; }
     else { activos.push(registro); totalPendiente += saldo; }
   });
 
@@ -7674,6 +7783,7 @@ function generarHistorialCliente(clienteId) {
     'td { padding:9px; border-bottom:1px solid #eee; font-size:13px; vertical-align:top; }' +
     'tr:nth-child(even) { background:#f9f9fb; }' +
     '.footer { margin-top:26px; padding-top:14px; border-top:1px solid #ddd; text-align:center; font-size:11px; color:#999; }' +
+    CSS_MOVS_PDF +
     '@media print { body { padding:20px; } }' +
     '</style></head><body>' +
     '<div class="header"><div class="brand">MERCANTIL YUMANA</div><div class="brand-sub">SOCOPÓ · ESTADO BARINAS</div></div>' +
@@ -7688,6 +7798,12 @@ function generarHistorialCliente(clienteId) {
     '<table><thead><tr><th>Crédito</th><th>Fecha</th><th>Productos</th><th style="text-align:right;">Total</th><th style="text-align:right;">Pagado</th><th style="text-align:right;">Debe</th></tr></thead><tbody>' + htmlActivos + '</tbody></table>' +
     '<div class="sec-title">Historial de cuentas ya pagadas</div>' +
     '<table><thead><tr><th>Crédito</th><th>Fecha</th><th>Productos</th><th style="text-align:right;">Total</th><th style="text-align:right;">Pagado</th><th style="text-align:right;">Estado</th></tr></thead><tbody>' + htmlPagados + '</tbody></table>' +
+    '<div class="sec-title">Historial de pagos y movimientos</div>' +
+    '<p class="nota-movs">Cada compra, interés y pago de todos sus créditos en orden de fecha, con lo que quedaba debiendo después de cada uno. Un pago repartido entre varios créditos sale en una sola línea.</p>' +
+    tablaMovimientosPdf(movimientosPdf(creditosCli.map(function(cr){ return { tipo: 'credito', obj: cr }; }))) +
+    (pagadoDeMas > 0.01
+      ? '<p class="nota-movs" style="margin-top:8px;">El saldo final incluye ' + fmt(pagadoDeMas) + ' pagados de más en créditos ya cancelados.</p>'
+      : '') +
     '<div class="footer">Mercantil Yumana · Documento informativo generado el ' + new Date().toLocaleDateString('es-VE') + ' a las ' + new Date().toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'}) + '</div>' +
     '</body></html>';
 
