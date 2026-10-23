@@ -245,3 +245,17 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - **Control:** se agregó la política `admin_escribe_portal_permisos`. Antes el editor de permisos de Control no podía guardar, porque la tabla solo tenía política de lectura.
   - **Revisiones:** thermos de bugs y dinero (sin bloqueantes; se corrigió el caso de red caída que podía duplicar un pago), thermos de calidad (helpers sin duplicar y espejo JS↔SQL documentado) y anti-slop (textos, avisos de bolívares y de pago mayor que la deuda, pedidos pendientes en la ficha). Lo que quedó para después está en el pendiente 17 de `CLAUDE.md`.
   - **Para deshacer:** quitar a Lixney de `may_acceso_caja` apaga el modo caja al instante. Las funciones y políticas de antes están en `respaldo_20261019.funciones_antes_modo_caja` y `politicas_antes_modo_caja`.
+- **Créditos, cuenta de HARRISON HERNANDEZ corregida (2026-10-23, con el "dale" de Kinan):** el crédito #423 quedó pagado de más ($714 de $710) y al #782 le faltaban esos $4.
+  - Qué pasó el 23/10:
+    - Fayssal le había aplicado al #423 un interés de $4 el 12/10.
+    - Se registraron $20 en efectivo (Fayssal) y $20 de "Descuento del aire" (Kinan); Kinan confirmó que son dos cosas distintas.
+    - Se registró el Zelle de $210 del 20/10 como pago a la cuenta: $4 al #423, $100 al #597 y $106 al #782.
+    - Dos minutos después Kinan borró el interés de $4 como "aplicado por error", y el #423 volvió a $710 con $714 pagados.
+  - Arreglo (después del respaldo `respaldo_20261023`):
+    - La parte del Zelle en el #782 pasó de $106 a $110.
+    - La parte de $4 del #423 se anuló con borrado suave.
+    - Los triggers recalcularon: #423 queda en $710/$710, completado, y #782 en $110/$360, debe $250.
+    - Quedó el rastro en `historial_auditoria`.
+  - Total de Harrison: compró $1.210 y pagó $960, debe $250.
+  - **Sin resolver:** el cliente dice que debe $180, una diferencia de $70. En la base no hay ningún pago suyo cargado a otro cliente. El pago de $70 del 30/09 se cargó el 05/10, junto con la venta del aire ULTRAMAX (#782), y el sistema lo aplicó al #423 por ser lo más viejo. Falta que el cliente diga qué pago no aparece.
+  - Nota: el "Descuento del aire" ($20) quedó con forma de pago "Efectivo USD", así que cuenta como cobrado aunque no es dinero. Créditos no tiene una forma de pago "Descuento".
