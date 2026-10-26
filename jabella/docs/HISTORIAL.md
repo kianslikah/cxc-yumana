@@ -52,3 +52,11 @@
 - Tarjeta "Caja de hoy" en Ventas → Por día (sin abrir / abierta / cerrada y lo entregado).
 - WhatsApp de Albany en Ajustes → Reglas. Con eso, la vendedora tiene que avisarle cada venta (prendas, total, cómo pagó, quién vendió), la apertura y el cierre (lo contado, lo que deja, lo que entrega y las ventas del día). La hoja del aviso no se cierra hasta tocar Enviar o Copiar.
 - Pendiente de Albany: poner su número en Ajustes. Antes de la primera apertura: el sistema cree que en "Efectivo $" hay $40 (tres ventas en efectivo del 12 al 14 de octubre); si ese dinero ya no está en la caja, moverlo en Dinero a "Efectivo guardado $".
+
+## Entrega 6 — 2026-10-26: cuenta de fiado por clienta
+
+- Respaldo previo: `respaldo_20261026` (63 tablas, 17.016 filas, igual al original). Migración `jabella_10_cuenta_fiado` (= `007`). Las 73 funciones `jab_` iguales a las probadas; 44 RPC para `authenticated`, 0 para `anon`; huellas de Yumana iguales antes y después. Pruebas: 111 + 85 + 32 + 64 + 48 + 33 en local y 19 en la interfaz simulada. Probado con la cuenta real de Dra Rosa Hurtado dentro de un bloque que se deshace: $50 pagarían la #19 ($40) y dejarían la #22 en $25.
+- Ventas → Fiados: una fila por clienta (cuántas cuentas, desde cuándo, cuánto debe en total). Al tocarla, su cuenta: deuda total, cada compra fiada con sus prendas, total, abonado, abonos y lo que debe; sus apartados pendientes aparte.
+- "Enviar estado de cuenta": WhatsApp a la clienta con todas sus compras fiadas, prendas, abonos y el total que debe.
+- "Abonar a la cuenta": el abono se aplica a la cuenta más vieja y el resto a la siguiente, con vista previa del reparto. Después sale el recibo con el reparto ("Compra #19: $40 → pagada · Compra #22: $10 → queda $25 · Total que debe ahora") para enviárselo a la clienta, y si abona la vendedora, el aviso obligatorio a Albany.
+- En el detalle de una venta fiada: "Cuenta de <clienta>" y "Abonar solo a esta". En la ficha de la clienta: "Cuenta de fiado (N)".

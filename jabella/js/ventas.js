@@ -45,6 +45,8 @@ var VistaVentas = {
       self.pestana = b.dataset.p; self.pintar();
     });
     $('#vtCuerpo').addEventListener('click', function (e) {
+      var cc = e.target.closest('[data-cuenta-cli]');
+      if (cc) { hojaCuentaCliente(Number(cc.dataset.cuentaCli)); return; }
       var b = e.target.closest('[data-venta]'); if (b) verVenta(Number(b.dataset.venta));
     });
     this.pintar();
@@ -119,21 +121,29 @@ var VistaVentas = {
   async pintarFiados(c) {
     var lista = (await traerTodo('jab_ventas', '*', function (q) { return q.eq('tipo', 'fiado').eq('estado', 'activa'); }))
       .filter(function (v) { return saldoVenta(v) > 0.004; });
-    lista.sort(function (a, b) { return a.id - b.id; });
+    // Una fila por clienta: cada fiado es su propia cuenta, pero se cobra junto
+    var grupos = new Map();
+    lista.sort(function (a, b) { return a.creado_en < b.creado_en ? -1 : a.creado_en > b.creado_en ? 1 : a.id - b.id; }).forEach(function (v) {
+      var k = v.cliente_id || 0;
+      if (!grupos.has(k)) grupos.set(k, { cliente_id: v.cliente_id, ventas: [], debe: 0 });
+      var g = grupos.get(k); g.ventas.push(v); g.debe = redondear2(g.debe + saldoVenta(v));
+    });
+    var filas = Array.from(grupos.values());
     var hoy = hoyCaracas();
     var porCobrar = lista.reduce(function (s, v) { return s + saldoVenta(v); }, 0);
     c.innerHTML =
       '<div class="tarjetas-kpi">' +
-        '<div class="kpi"><div class="t">Fiados pendientes</div><div class="v">' + lista.length + '</div></div>' +
+        '<div class="kpi"><div class="t">Clientas que deben</div><div class="v">' + filas.length + '</div><div class="s">' + lista.length + ' cuenta' + (lista.length === 1 ? '' : 's') + '</div></div>' +
         '<div class="kpi"><div class="t">Por cobrar</div><div class="v">' + fmtUSD(porCobrar) + '</div></div>' +
       '</div>' +
-      (lista.length ? '<div class="lista" style="margin-top:12px">' + lista.map(function (v) {
-        var cli = ST.cliPorId.get(v.cliente_id), d = diasEntre(fechaCaracas(v.creado_en), hoy);
-        return '<button type="button" class="item" data-venta="' + v.id + '"><div class="crece">' +
-          '<div class="titulo corta">' + esc(cli ? cli.nombre : 'Sin clienta') + ' <span class="tenue">#' + v.numero + '</span></div>' +
-          '<div class="sub' + (d > 30 ? ' error-txt' : d > 15 ? ' aviso-txt' : '') + '">' + (d === 0 ? 'Desde hoy' : 'Hace ' + d + ' día' + (d === 1 ? '' : 's')) + '</div></div>' +
-          '<div class="derecha num"><div class="fuerte">Debe ' + fmtUSD(saldoVenta(v)) + '</div><div class="sub">de ' + fmtUSD(v.total) + '</div></div></button>';
-      }).join('') + '</div>' : '<div class="vacio"><h3>Nadie debe</h3>Los fiados con saldo pendiente aparecen aquí, del más viejo al más nuevo.</div>');
+      (filas.length ? '<div class="lista" style="margin-top:12px">' + filas.map(function (g) {
+        var cli = ST.cliPorId.get(g.cliente_id), d = diasEntre(fechaCaracas(g.ventas[0].creado_en), hoy), n = g.ventas.length;
+        return '<button type="button" class="item" ' + (g.cliente_id ? 'data-cuenta-cli="' + g.cliente_id + '"' : 'data-venta="' + g.ventas[0].id + '"') + '><div class="crece">' +
+          '<div class="titulo corta">' + esc(cli ? cli.nombre : 'Sin clienta') + '</div>' +
+          '<div class="sub' + (d > 30 ? ' error-txt' : d > 15 ? ' aviso-txt' : '') + '">' + n + ' cuenta' + (n === 1 ? '' : 's') + ' · ' +
+            (d === 0 ? 'desde hoy' : 'desde hace ' + d + ' día' + (d === 1 ? '' : 's')) + '</div></div>' +
+          '<div class="derecha num"><div class="fuerte">Debe ' + fmtUSD(g.debe) + '</div>' + (n > 1 ? '<div class="sub">' + g.ventas.map(function (v) { return '#' + v.numero; }).join(' · ') + '</div>' : '<div class="sub">#' + g.ventas[0].numero + '</div>') + '</div></button>';
+      }).join('') + '</div>' : '<div class="vacio"><h3>Nadie debe</h3>Las clientas con fiado pendiente aparecen aquí, de la deuda más vieja a la más nueva.</div>');
   }
 };
 
@@ -223,7 +233,8 @@ async function verVenta(id, opts) {
   h.el.querySelector('.hoja-cab h2').textContent = (v.tipo === 'cambio' ? 'Cambio' : 'Venta') + ' #' + v.numero;
 
   var acciones = [];
-  if (activa && (v.tipo === 'apartado' || v.tipo === 'fiado') && s > 0.004) acciones.push('<button type="button" class="btn" data-acc="abonar">Registrar abono</button>');
+  if (activa && v.tipo === 'fiado' && cli) acciones.push('<button type="button" class="btn" data-acc="cuenta">' + icono('dinero', 'ic-chico') + ' Cuenta de ' + esc(cli.nombre.split(' ')[0]) + '</button>');
+  if (activa && (v.tipo === 'apartado' || v.tipo === 'fiado') && s > 0.004) acciones.push('<button type="button" class="btn' + (v.tipo === 'fiado' && cli ? ' btn-sec' : '') + '" data-acc="abonar">' + (v.tipo === 'fiado' && cli ? 'Abonar solo a esta' : 'Registrar abono') + '</button>');
   if (esApartadoPend) acciones.push('<button type="button" class="btn btn-sec" data-acc="entregar">' + icono('entregar', 'ic-chico') + ' Entregar</button>');
   if (activa && v.entregada && puede('cambios')) acciones.push('<button type="button" class="btn btn-sec" data-acc="cambio">' + icono('cambio', 'ic-chico') + ' Cambio</button>');
   acciones.push('<button type="button" class="btn btn-sec" data-acc="recibo">' + icono('enviar', 'ic-chico') + ' Enviar recibo</button>');
@@ -331,6 +342,7 @@ async function verVenta(id, opts) {
   async function accion(acc) {
     try {
       if (acc === 'cliente') { verCliente(v.cliente_id); return; }
+      if (acc === 'cuenta') { h.cerrar(); hojaCuentaCliente(v.cliente_id); return; }
       if (acc === 'recibo') { compartirTexto(textoRecibo(d), cli && cli.telefono); return; }
       if (acc === 'recordar') {
         if (!cli.telefono) toast('La clienta no tiene teléfono: se copia el mensaje para que lo envíes.');

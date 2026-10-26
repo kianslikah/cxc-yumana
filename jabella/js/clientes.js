@@ -192,6 +192,7 @@ async function verCliente(id) {
     var aFavor = redondear2(movs.reduce(function (s, m) { return s + Number(m.monto); }, 0));
     var debe = redondear2(ventas.filter(function (v) { return v.estado === 'activa' && (v.tipo === 'apartado' || v.tipo === 'fiado'); })
       .reduce(function (s, v) { return s + Math.max(0, v.total - v.pagado); }, 0));
+    var fiadosDebe = ventas.filter(function (v) { return v.estado === 'activa' && v.tipo === 'fiado' && v.total - v.pagado > 0.004; }).length;
     var compras = redondear2(ventas.filter(function (v) { return v.estado === 'activa'; }).reduce(function (s, v) { return s + Number(v.total); }, 0));
 
     var html =
@@ -206,6 +207,7 @@ async function verCliente(id) {
         (c.notas ? '<div style="margin-top:10px"><div class="tenue">Notas</div>' + esc(c.notas) + '</div>' : '') +
         (c.limite_fiado != null ? '<div style="margin-top:10px"><div class="tenue">Límite de fiado</div>' + fmtUSD(c.limite_fiado) + '</div>' : '') +
         '<div class="botonera" style="margin-top:12px">' +
+          (fiadosDebe ? '<button type="button" class="btn btn-chico" id="cliCuenta">' + icono('dinero', 'ic-chico') + ' Cuenta de fiado (' + fiadosDebe + ')</button>' : '') +
           (c.telefono ? '<button type="button" class="btn btn-sec btn-chico" id="cliWa">' + icono('enviar', 'ic-chico') + ' WhatsApp</button>' : '') +
           '<button type="button" class="btn btn-sec btn-chico" id="cliEditar">' + icono('editar', 'ic-chico') + ' Editar</button>' +
           (esDuena() ? '<button type="button" class="btn btn-peligro btn-chico" id="cliBorrar">' + icono('basura', 'ic-chico') + ' Borrar</button>' : '') +
@@ -219,6 +221,8 @@ async function verCliente(id) {
       }).join('') + '</div>' : '');
     h.cuerpo.innerHTML = html;
 
+    var cc = h.$('#cliCuenta');
+    if (cc) cc.onclick = function () { h.cerrar(); hojaCuentaCliente(id); };
     var wa = h.$('#cliWa');
     if (wa) wa.onclick = function () {
       compartirTexto('Hola ' + c.nombre.split(' ')[0] + ', te escribimos de JABELLA Store.' +
