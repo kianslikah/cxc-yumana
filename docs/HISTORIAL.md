@@ -279,3 +279,7 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - #193, del 17/09: saldo de $1.306 (910 + 896 − abono de 500). No se sabe la fecha de esas compras y se puso la de la entrega.
     - #194, del 17/09: lo entregado ese día, $1.117. Los productos suman $1.113; Kinan reconoció el error de suma y decidió dejar la cuenta en $1.117, así que va un renglón de ajuste de $4.
   - Al primer intento, el conector de Supabase pidió una confirmación que nadie respondió y se cortó. No quedó nada a medias, porque cada carga es un solo bloque `DO` con verificación del total. Al segundo intento entraron los tres sin problema.
+- **DANIEL Y FRAN — SOCOPÓ, factura nueva (2026-10-26): #195**, por $3.826, con 18 renglones en el orden de la nota "FRAN Y DANIEL" de Kinan. Es lo que se llevaron en el transcurso de la semana. Vence el 25/12.
+  - La Cocina Mabe 6H con gratinador no tenía precio en la nota; Kinan la dejó en $590. El resto suma $3.236.
+  - Antes se revisó que nada de la lista estuviera cargado: la factura anterior, la #187 del 19/10, es otra entrega.
+  - La cuenta de Socopó pasa de deber $34.380,18 a $38.206,18.
