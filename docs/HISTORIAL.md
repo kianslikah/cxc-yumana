@@ -268,3 +268,14 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - El saldo final es exactamente `monto_total − pagado`. Si algún crédito cancelado quedó pagado de más, el PDF del cliente lo avisa.
   - Funciones nuevas en `Apartados_Yumana_App.html`: `movimientosPdf`, `tablaMovimientosPdf`, `detallePagoPdf`, `etiquetaCuentaPdf`, `fmtSaldoPdf`, `escPdf` y `CSS_MOVS_PDF`.
   - Probado con las funciones reales y los datos de HARRISON HERNANDEZ: 8 pagos, cargos $1.210, pagos $960, saldo $250, igual que "Debe actualmente".
+- **Clientes nuevos del mayor (2026-10-26): MARY SOLANO, DEIVER SOLANO y SUSU ALBOUNAY.** Kinan pidió guardar solo la deuda final de cada uno y facturar en el sistema lo nuevo que se lleven. Cada cliente lleva un renglón de "Saldo pendiente" y aparte lo entregado últimamente, con sus productos. Todo va con `origen='carga_inicial'` y sin abonos, porque ya están descontados del saldo.
+  - **MARY SOLANO:** V-17204680, tel. 04264725535, cotera de Socopó y Pedraza (en Valery: Ciudad Bolivia, Pedraza), grupo "Pagos MARY", plazo máximo 60. Es la mamá de Deiver. **Debe $14.683,65.**
+    - #189, del 15/10: saldo de $13.068,65 según el grupo (12.306,65 + 762). Los $12.306,65 vienen de las notas Valery 0000031351 ($14.544) y 0000031370 ($1.560) del 15/10, menos lo abonado. Los $762 son la lista del grupo: UPS, ventiladores e hidrojet.
+    - #190, del 26/10: lo entregado esta semana, $1.615 (9 renglones, 8 enlazados; el dispensador MABE no está en el catálogo).
+  - **DEIVER SOLANO** (Kinan lo llama "Deiber"): V-28247621, tel. 04245841878, cotero de Socopó y Pedraza, grupo "Deiber pagos (Mercantil Yumana)", plazo máximo 60. El "+100$" fijado en el grupo se refiere al pago por Zelle; no es un abono. **Debe $6.853,22.**
+    - #191, del 15/10: saldo de $6.263,22 = deuda anterior $2.894 − $2.314 (del efectivo de $3.250 que entregó Mary) + nota Valery 0000031369 del 15/10 ($5.838) − abonos de $36,38, $10,40 y $108.
+    - #192, del 26/10: lo entregado, $590 (congelador Mystic 200L $220, aire Frigilux 12mil 220v $220 y congelador Mystic 100L $150; se anotó en $160 y Kinan lo bajó $10).
+  - **SUSU ALBOUNAY:** Santa Bárbara de Barinas, tel. 04147519260, sin grupo (chat directo "Susu Albonay MAYOR"), plazo 30. **Debe $2.423.**
+    - #193, del 17/09: saldo de $1.306 (910 + 896 − abono de 500). No se sabe la fecha de esas compras y se puso la de la entrega.
+    - #194, del 17/09: lo entregado ese día, $1.117. Los productos suman $1.113; Kinan reconoció el error de suma y decidió dejar la cuenta en $1.117, así que va un renglón de ajuste de $4.
+  - Al primer intento, el conector de Supabase pidió una confirmación que nadie respondió y se cortó. No quedó nada a medias, porque cada carga es un solo bloque `DO` con verificación del total. Al segundo intento entraron los tres sin problema.
