@@ -288,3 +288,7 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - El recibo impreso y el WhatsApp de cada pago siguen en **Historial de abonos**, en los botones "Recibo" y "WhatsApp" de cada pago.
   - La caja (Lixney) sigue viendo "Pago registrado", porque imprime el recibo en el mostrador.
   - Se quitó `mostrarPagoListoAdmin`. Probado simulando un abono: no hay ventana ni errores.
+- **Adriana Mora, factura nueva (2026-10-27): #196**, del viernes 23/10, por **$5.247**. Viene del "pedido ADRIANA" de Notas que pasó Kinan: 37 renglones y 60 piezas, en el orden de la nota. 19 renglones quedaron enlazados al catálogo. Vence el 22/12.
+  - Se revisaron todas las multiplicaciones de la nota y cuadran.
+  - Antes se comprobó que no estaba cargada: la factura anterior es la #177 del 14/10.
+  - Adriana pasa de deber $27.863,85 a $33.110,85.
