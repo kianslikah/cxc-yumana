@@ -2086,27 +2086,84 @@ async function confirmarTransito(abonoId, facId){
 // todas sus partes en cascada y el saldo a favor que dejó o usó. Las devoluciones y los abonos viejos sin
 // operación se siguen eliminando de a uno.
 function seDeshaceCompleto(a){ return !!(a && a.operacion_id && a.metodo!=='Devolución'); }
+// Lee FRESCO de la base todo lo que tocó un pago (sus partes, el proveedor y el movimiento de saldo a favor que
+// guardó prov_registrar_abono / prov_aplicar_saldo_favor con id "<proveedor>__<operacion>_h"). Lanza un error con la razón.
+async function planDeshacerPago(op){
+  var rp=await sb.from('prov_abonos').select('*').eq('operacion_id',op);
+  if(rp.error) throw rp.error;
+  var partes=rp.data||[];
+  if(!partes.length) throw new Error('ese pago ya no existe (puede que ya se haya deshecho)');
+  if(partes.some(function(p){ return p.metodo==='Devolución'; })) throw new Error('es una devolución: se corrige desde la devolución');
+  var rf=await sb.from('prov_facturas').select('id,num,proveedor_id').in('id',partes.map(function(p){ return p.factura_id; }));
+  if(rf.error) throw rf.error;
+  var numDe={}, provIds=[];
+  (rf.data||[]).forEach(function(f){ numDe[f.id]=f.num||'(s/n)'; if(provIds.indexOf(f.proveedor_id)<0) provIds.push(f.proveedor_id); });
+  if(provIds.length!==1) throw new Error('el pago toca facturas de varios proveedores');
+  var provId=provIds[0];
+  var rv=await sb.from('prov_proveedores').select('id,proveedor,credito_a_favor').eq('id',provId).single();
+  if(rv.error) throw rv.error;
+  var rh=await sb.from('prov_historial_creditos').select('*').eq('id',provId+'__'+op+'_h').maybeSingle();
+  if(rh.error) throw rh.error;
+  var hist=rh.data||null;
+  var total=r2(partes.reduce(function(s,p){ return s+Number(p.monto||0); },0));
+  var antes=r2(rv.data.credito_a_favor||0), generado=0, devuelto=0, despues=antes;
+  if(hist&&hist.tipo==='generado'){
+    generado=r2(hist.monto);
+    if(antes<generado-0.01) throw new Error('dejó '+fmtUSD(generado)+' de saldo a favor y al proveedor solo le quedan '+fmtUSD(antes)+': una parte ya se usó. Deshaz primero ese "Saldo a favor"');
+    despues=Math.max(r2(antes-generado),0);
+  } else if(hist&&hist.tipo==='aplicado'){
+    devuelto=total; despues=r2(antes+devuelto); // el saldo a favor que este pago usó vuelve al proveedor
+  }
+  // La factura del pago primero y después las de la cascada
+  partes.sort(function(x,y){ return (x.cascada_origen_fac?1:0)-(y.cascada_origen_fac?1:0) || (x.id<y.id?-1:1); });
+  return { op:op, provId:provId, proveedor:rv.data.proveedor, creditoLeido:rv.data.credito_a_favor, partes:partes, hist:hist,
+    nums:partes.map(function(p){ return { num:numDe[p.factura_id]||'(s/n)', monto:p.monto }; }),
+    total:total, totalPago:r2(total+generado), generado:generado, devuelto:devuelto, antes:antes, despues:despues,
+    fecha:partes[0].fecha, metodo:partes[0].metodo };
+}
 async function deshacerPago(a){
-  var res;
-  try{
-    // Primero el resumen desde la base (no cambia nada), para que la confirmación diga exactamente qué se deshace
-    var rv=await sb.rpc('prov_deshacer_pago',{ p_operacion_id:a.operacion_id, p_aplicar:false });
-    if(rv.error) throw rv.error;
-    res=rv.data||{};
-  }catch(e){ toast('No se puede deshacer este pago: '+(e.message||e),'error'); return; }
-  var partes=res.partes||[];
+  var plan;
+  try{ plan=await planDeshacerPago(a.operacion_id); }
+  catch(e){ toast('No se puede deshacer este pago: '+(e.message||e),'error'); return; }
   var aviso='¿Deshacer este pago COMPLETO?\n\n'+
-    'Pago de '+fmtUSD(res.total_pago)+' a '+res.proveedor+' ('+res.metodo+', '+fmtFecha(res.fecha)+').\n';
-  if(partes.length>1) aviso+='Se repartió en '+partes.length+' facturas: '+partes.map(function(p){ return p.num+' ('+fmtUSD(p.monto)+')'; }).join(', ')+'.\n';
-  else if(partes.length===1) aviso+='Factura '+partes[0].num+'.\n';
-  if(Number(res.credito_generado)>0) aviso+='Dejó '+fmtUSD(res.credito_generado)+' de saldo a favor: se quita.\n';
-  if(Number(res.credito_devuelto)>0) aviso+='Usó '+fmtUSD(res.credito_devuelto)+' de saldo a favor: se le devuelve al proveedor.\n';
+    'Pago de '+fmtUSD(plan.totalPago)+' a '+plan.proveedor+' ('+plan.metodo+', '+fmtFecha(plan.fecha)+').\n';
+  if(plan.nums.length>1) aviso+='Se repartió en '+plan.nums.length+' facturas: '+plan.nums.map(function(p){ return p.num+' ('+fmtUSD(p.monto)+')'; }).join(', ')+'.\n';
+  else aviso+='Factura '+plan.nums[0].num+'.\n';
+  if(plan.generado>0) aviso+='Dejó '+fmtUSD(plan.generado)+' de saldo a favor: se quita.\n';
+  if(plan.devuelto>0) aviso+='Usó '+fmtUSD(plan.devuelto)+' de saldo a favor: se le devuelve al proveedor.\n';
   aviso+='\nEsas facturas vuelven a deber lo que este pago les abonó. Queda copia en la auditoría.';
   if(!confirm(aviso)) return;
+  // Cuatro pasos en este orden: rastro → partes del pago → movimiento de saldo a favor → saldo a favor.
+  // Si uno falla a mitad, se dice exactamente cuál, para terminarlo a mano (sin repetir lo que ya se hizo).
+  var paso='guardar el rastro en la auditoría', hecho=false;
   try{
-    var ra=await sb.rpc('prov_deshacer_pago',{ p_operacion_id:a.operacion_id, p_aplicar:true, p_usuario:(currentUserApp&&currentUserApp.nombre)||null });
+    var ra=await sb.from('prov_auditoria').insert({ fecha:new Date().toISOString(), usuario:(currentUserApp&&currentUserApp.nombre)||'app', accion:'deshacer_pago',
+      detalle:'Deshizo el pago '+plan.op+' a '+plan.proveedor+' del '+plan.fecha+' ('+plan.metodo+'): $'+plan.total+' en '+plan.partes.length+' parte(s)'+
+        (plan.generado>0?' + $'+plan.generado+' que había quedado a favor':'')+'. Saldo a favor antes $'+plan.antes+', después $'+plan.despues+
+        '. Copia: '+JSON.stringify({ abonos:plan.partes, historial:plan.hist }) });
     if(ra.error) throw ra.error;
-  }catch(e){ toast('No se deshizo el pago ('+(e.message||e)+'). Nada cambió.','error'); return; }
+    paso='quitar las partes del pago';
+    var rd=await sb.from('prov_abonos').delete().eq('operacion_id',plan.op); // el trigger recalcula el abonado de cada factura
+    if(rd.error) throw rd.error;
+    hecho=true; // desde aquí, un fallo deja el pago a medias
+    if(plan.hist){
+      paso='quitar el movimiento del saldo a favor';
+      var rh=await sb.from('prov_historial_creditos').delete().eq('id',plan.hist.id);
+      if(rh.error) throw rh.error;
+    }
+    if(plan.despues!==plan.antes){
+      paso='ajustar el saldo a favor';
+      // Solo si nadie lo cambió desde que se leyó
+      var ru=await sb.from('prov_proveedores').update({ credito_a_favor:plan.despues }).eq('id',plan.provId).eq('credito_a_favor',plan.creditoLeido).select('id');
+      if(ru.error) throw ru.error;
+      if(!(ru.data||[]).length) throw new Error('el saldo a favor cambió mientras tanto');
+    }
+  }catch(e){
+    if(!hecho){ toast('No se deshizo el pago ('+(e.message||e)+'). Nada cambió.','error'); return; }
+    alert('El pago quedó deshecho A MEDIAS.\n\nFalló el paso "'+paso+'" ('+(e.message||e)+').\n\nNo lo vuelvas a intentar: avísale a Claude con este mensaje para terminarlo.');
+    await refrescarProveedor(PROV_ACTUAL); irDetalle(PROV_ACTUAL);
+    return;
+  }
   toast('Pago deshecho. Las facturas vuelven a deber.');
   await refrescarProveedor(PROV_ACTUAL);
   irDetalle(PROV_ACTUAL);

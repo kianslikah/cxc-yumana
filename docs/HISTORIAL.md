@@ -292,3 +292,14 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - Se revisaron todas las multiplicaciones de la nota y cuadran.
   - Antes se comprobó que no estaba cargada: la factura anterior es la #177 del 14/10.
   - Adriana pasa de deber $27.863,85 a $33.110,85.
+- **Proveedores, "Deshacer pago" y aviso de pago demasiado grande (2026-10-27, `Proveedores_yumana.html?v=50`).**
+  - **Qué pasó:** Kinan iba a pagar $1.971,99 en USDT a la factura 06344 de MYSTIC y escribió $1.971.099 (operación `op_1793129614_483a3d`). El sistema hizo lo de siempre con el sobrante: pagó la 06344, dio por pagadas otras 6 facturas de MYSTIC (06760, 06761, 06970, 07036, 07035 y 07180, que suman $36.533,37) y dejó $1.932.593,64 a favor. El botón "Eliminar" solo borraba una parte a la vez y no devolvía el saldo a favor, así que no había forma de arreglarlo desde la app.
+  - **Botón "Deshacer pago":** reemplaza a "Eliminar" en los pagos que tienen operación. Deshace el pago completo: todas sus partes, el movimiento del historial de saldo a favor y el saldo a favor que dejó o que usó.
+    - Lee todo fresco de la base y muestra en la confirmación el pago, las facturas y el saldo a favor que se quita o se devuelve.
+    - Guarda una copia completa en `prov_auditoria` (`accion = 'deshacer_pago'`).
+    - El saldo a favor solo se ajusta si nadie lo cambió desde que se leyó.
+    - Las devoluciones y los abonos viejos sin operación se siguen eliminando de a uno.
+    - Se hace desde el navegador en 4 pasos. Si uno falla a mitad, avisa "A MEDIAS" y dice cuál paso faltó. La versión de una sola transacción (`prov_deshacer_pago`) quedó escrita en `docs/sql/prov_deshacer_pago.sql`, pero no se pudo crear porque el conector pide un permiso que desde el iPad no aparece (pendiente 18).
+  - **Aviso antes de guardar un pago más grande que todo lo que se le debe al proveedor** (deuda leída fresca): "le debes $X; este pago dejaría $Y a favor. ¿El monto está bien escrito?". Con este aviso, el error de MYSTIC no habría pasado.
+  - **Pruebas:** con un cliente falso y los datos del pago de MYSTIC: deshacer completo; falla a mitad, que da el aviso "A MEDIAS"; falla al principio, que no cambia nada; y aviso con $1.971.099. No hubo errores.
+  - **Respaldo previo:** `respaldo_20261027` (63 tablas, 17.447 filas, conteos verificados).
