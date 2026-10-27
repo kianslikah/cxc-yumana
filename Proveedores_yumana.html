@@ -1689,6 +1689,22 @@ function actualizarCalc(){
     }
   } else { box.style.display='none'; }
 }
+// Lo que se le debe HOY a un proveedor, leído fresco de la base (null si no se pudo leer: no se bloquea el pago)
+async function deudaFrescaProveedor(provId){
+  try{
+    var total=0, desde=0, tam=1000;
+    while(true){
+      var r=await conTimeout(sb.from('prov_facturas').select('monto,abonado').eq('proveedor_id',provId)
+        .order('id',{ascending:true}).range(desde,desde+tam-1), 12000);
+      if(r.error) throw r.error;
+      var lote=r.data||[];
+      lote.forEach(function(f){ var s=r2((f.monto||0)-(f.abonado||0)); if(s>0.01) total+=s; });
+      if(lote.length<tam) break;
+      desde+=tam;
+    }
+    return r2(total);
+  }catch(e){ return null; }
+}
 async function confirmarAbono(){
   if(!ABONO_FAC) return;
   var monto=parseFloat(document.getElementById('aMonto').value);
@@ -1714,6 +1730,17 @@ async function confirmarAbono(){
   var btn=document.getElementById('aConfirm'); btn.disabled=true; btn.innerHTML='<span class="loader"></span>';
   var listo=false;
   function liberarBoton(){ btn.disabled=false; btn.textContent='Registrar abono'; }
+  // Pago mayor que TODO lo que se le debe al proveedor: el sobrante quedaría como saldo a favor. Se pregunta antes
+  // de guardar (2026-10-27: un pago de $1.971,99 se escribió $1.971.099 y dejó $1,9 millones a favor de MYSTIC).
+  var provId=ABONO_FAC.proveedor_id||PROV_ACTUAL;
+  var deuda=await deudaFrescaProveedor(provId);
+  if(deuda!==null && monto>deuda+0.01){
+    var prov=DATA.proveedores.find(function(x){ return x.id===provId; });
+    if(!confirm('A '+(prov?prov.proveedor:'este proveedor')+' le debes en total '+fmtUSD(deuda)+'.\n\n'+
+        'Este pago es de '+fmtUSD(monto)+' y dejaría '+fmtUSD(r2(monto-deuda))+' como saldo a favor.\n\n¿El monto está bien escrito?')){
+      msg.className='modal-msg error'; msg.textContent='No se registró. Revisa el monto.'; liberarBoton(); return;
+    }
+  }
   // Si en 20 s no terminó, AVISAR pero NO reactivar el botón: el pago puede estar llegando a la base,
   // y tocar otra vez lo duplicaba. El botón se libera solo cuando la base responde (bien o mal).
   var guardia=setTimeout(function(){
@@ -1998,7 +2025,7 @@ async function toggleHistorial(facId){
   box.style.display='block';
   box.innerHTML='<div class="ab-vacio"><span class="loader" style="width:14px;height:14px;"></span> Cargando abonos...</div>';
   try{
-    var r=await sb.from('prov_abonos').select('id,fecha,monto,metodo,titular_zelle,en_transito,cascada_origen_fac,observaciones,ganancia').eq('factura_id',facId).order('fecha',{ascending:true});
+    var r=await sb.from('prov_abonos').select('id,fecha,monto,metodo,titular_zelle,en_transito,cascada_origen_fac,observaciones,ganancia,operacion_id').eq('factura_id',facId).order('fecha',{ascending:true});
     if(r.error) throw r.error;
     var abs=r.data||[];
     if(!abs.length){ box.innerHTML='<div class="ab-titulo">Historial de abonos</div><div class="ab-vacio">Esta factura no tiene abonos registrados.</div>'; return; }
@@ -2017,7 +2044,7 @@ async function toggleHistorial(facId){
           '<div class="ab-acciones">'+
             (transito?'<button class="ab-mini confirmar" data-confabono="'+esc(a.id)+'" data-fac="'+esc(facId)+'">Confirmar recibido</button>':'')+
             '<button class="ab-mini edit" data-edabono="'+esc(a.id)+'" data-fac="'+esc(facId)+'">Editar</button>'+
-            '<button class="ab-mini del" data-delabono="'+esc(a.id)+'" data-fac="'+esc(facId)+'" data-monto="'+a.monto+'">Eliminar</button>'+
+            '<button class="ab-mini del" data-delabono="'+esc(a.id)+'" data-fac="'+esc(facId)+'" data-monto="'+a.monto+'">'+(seDeshaceCompleto(a)?'Deshacer pago':'Eliminar')+'</button>'+
           '</div>'+
         '</div>'+
         '<div class="ab-metodo">'+esc(metodo)+'</div>'+
@@ -2055,17 +2082,47 @@ async function confirmarTransito(abonoId, facId){
   }
 }
 
+// Un pago registrado con prov_registrar_abono / prov_aplicar_saldo_favor (tiene operacion_id) se deshace COMPLETO:
+// todas sus partes en cascada y el saldo a favor que dejó o usó. Las devoluciones y los abonos viejos sin
+// operación se siguen eliminando de a uno.
+function seDeshaceCompleto(a){ return !!(a && a.operacion_id && a.metodo!=='Devolución'); }
+async function deshacerPago(a){
+  var res;
+  try{
+    // Primero el resumen desde la base (no cambia nada), para que la confirmación diga exactamente qué se deshace
+    var rv=await sb.rpc('prov_deshacer_pago',{ p_operacion_id:a.operacion_id, p_aplicar:false });
+    if(rv.error) throw rv.error;
+    res=rv.data||{};
+  }catch(e){ toast('No se puede deshacer este pago: '+(e.message||e),'error'); return; }
+  var partes=res.partes||[];
+  var aviso='¿Deshacer este pago COMPLETO?\n\n'+
+    'Pago de '+fmtUSD(res.total_pago)+' a '+res.proveedor+' ('+res.metodo+', '+fmtFecha(res.fecha)+').\n';
+  if(partes.length>1) aviso+='Se repartió en '+partes.length+' facturas: '+partes.map(function(p){ return p.num+' ('+fmtUSD(p.monto)+')'; }).join(', ')+'.\n';
+  else if(partes.length===1) aviso+='Factura '+partes[0].num+'.\n';
+  if(Number(res.credito_generado)>0) aviso+='Dejó '+fmtUSD(res.credito_generado)+' de saldo a favor: se quita.\n';
+  if(Number(res.credito_devuelto)>0) aviso+='Usó '+fmtUSD(res.credito_devuelto)+' de saldo a favor: se le devuelve al proveedor.\n';
+  aviso+='\nEsas facturas vuelven a deber lo que este pago les abonó. Queda copia en la auditoría.';
+  if(!confirm(aviso)) return;
+  try{
+    var ra=await sb.rpc('prov_deshacer_pago',{ p_operacion_id:a.operacion_id, p_aplicar:true, p_usuario:(currentUserApp&&currentUserApp.nombre)||null });
+    if(ra.error) throw ra.error;
+  }catch(e){ toast('No se deshizo el pago ('+(e.message||e)+'). Nada cambió.','error'); return; }
+  toast('Pago deshecho. Las facturas vuelven a deber.');
+  await refrescarProveedor(PROV_ACTUAL);
+  irDetalle(PROV_ACTUAL);
+}
 async function eliminarAbono(abonoId, facId, monto){
   var a=null, partes=0;
   try{
     var ra=await sb.from('prov_abonos').select('*').eq('id',abonoId).single();
     if(ra.error) throw ra.error;
     a=ra.data;
-    if(a.operacion_id){
+    if(a.operacion_id && !seDeshaceCompleto(a)){
       var rp=await sb.from('prov_abonos').select('id').eq('operacion_id',a.operacion_id);
       if(!rp.error) partes=(rp.data||[]).length;
     }
   }catch(e){ toast('No se pudo leer el abono: '+(e.message||e),'error'); return; }
+  if(seDeshaceCompleto(a)) return deshacerPago(a);
   var aviso='¿Seguro que quieres ELIMINAR este abono de '+fmtUSD(a.monto)+'?\n\nEsto sumará ese monto de vuelta al saldo pendiente de la factura. Queda copia en la auditoría.';
   if(partes>1) aviso+='\n\nOJO: este abono es 1 de '+partes+' partes de un mismo pago repartido entre varias facturas. Solo se elimina esta parte; las otras siguen igual.';
   if(!confirm(aviso)) return;
