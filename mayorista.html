@@ -771,7 +771,7 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
   </div>
 </div>
 
-<!-- ===== PAGO REGISTRADO (caja y admin): recibo impreso o por WhatsApp ===== -->
+<!-- ===== PAGO REGISTRADO (solo caja): recibo impreso o por WhatsApp ===== -->
 <div class="modal-overlay" id="modalPagoListo">
   <div class="modal">
     <h2 id="plTitulo">Pago <em>registrado</em></h2>
@@ -2378,10 +2378,8 @@ async function guardarAbono(){
   toast(aFavor > 0.01 ? 'Abono registrado. El cliente queda con ' + fmt(aFavor) + ' a favor' : 'Abono registrado', 's');
   await cargarDatos();
   renderDetalle();
-  // Ya no se abre sola la ventana de envío después de cada abono (pedido de Kinan). Queda a la vista
-  // "Pago registrado" con los botones Imprimir recibo y WhatsApp, que solo se usan si se tocan.
-  var aNuevo = res.abono_id && ABONOS.find(function(x){ return x.id === res.abono_id; });
-  if(aNuevo) mostrarPagoListoAdmin(aNuevo);
+  // Sin ventana después de cada abono (pedido de Kinan, 2026-10-27: traslada 10 o 20 pagos seguidos y
+  // siempre manda el estado de cuenta). El recibo y el WhatsApp de cada pago están en "Historial de abonos".
 }
 // Recibo de un abono por WhatsApp (botón del historial), con el saldo de la cuenta de hoy
 function enviarAbonoWhatsApp(abonoId){
@@ -3285,7 +3283,7 @@ function imprimirEnVentana(win, html){
 }
 function cerrarVentana(win){ try { if(win) win.close(); } catch(e){} }
 
-// ===== "Pago registrado" (los dos modos): Imprimir recibo / WhatsApp / Listo =====
+// ===== "Pago registrado" (solo la caja; el admin usa los botones del historial): Imprimir recibo / WhatsApp / Listo =====
 // info = { titulo, nombre, monto, metodo, fecha, debe (null = no se sabe todavía) }
 var PL_ACCIONES = null;
 function mostrarPagoListo(info, acciones){
@@ -3340,14 +3338,6 @@ function imprimirEstado80Admin(clienteId){
     cliente: datosClienteRecibo(c), debe: m.debe, pagos: abonosDeCliente(c.id).slice(0, ESTADO80_ULTIMOS_PAGOS),
     facturas: m.facturas.map(function(f){ return { numero: f.numero, fecha: f.fecha, monto_total: f.monto_total, pendiente: saldoFactura(f) }; })
   }));
-}
-function mostrarPagoListoAdmin(a){
-  var c = CLIENTES.find(function(x){ return x.id === a.cliente_id; });
-  if(!c) return;
-  mostrarPagoListo({ nombre: c.nombre, monto: a.monto, metodo: a.metodo, fecha: a.fecha, debe: totalesCliente(c.id).debe }, {
-    imprimir: function(){ imprimirReciboAbonoAdmin(a.id, true); },
-    whatsapp: function(){ enviarAbonoWhatsApp(a.id); }
-  });
 }
 
 // ===== PEDIDOS DE CAJA (palabras iguales en la caja y en el admin) =====

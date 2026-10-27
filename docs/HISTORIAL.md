@@ -283,3 +283,8 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - La Cocina Mabe 6H con gratinador no tenía precio en la nota; Kinan la dejó en $590. El resto suma $3.236.
   - Antes se revisó que nada de la lista estuviera cargado: la factura anterior, la #187 del 19/10, es otra entrega.
   - La cuenta de Socopó pasa de deber $34.380,18 a $38.206,18.
+- **Mayorista, sin ventana después de cada abono (2026-10-27, `mayorista.html?v=20261027`):** a pedido de Kinan, que traslada 10 o 20 pagos seguidos y siempre manda el estado de cuenta.
+  - En el modo admin ya no sale "Pago registrado"; queda solo el aviso corto "Abono registrado".
+  - El recibo impreso y el WhatsApp de cada pago siguen en **Historial de abonos**, en los botones "Recibo" y "WhatsApp" de cada pago.
+  - La caja (Lixney) sigue viendo "Pago registrado", porque imprime el recibo en el mostrador.
+  - Se quitó `mostrarPagoListoAdmin`. Probado simulando un abono: no hay ventana ni errores.
