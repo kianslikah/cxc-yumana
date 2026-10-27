@@ -177,6 +177,13 @@
   .method-opt{background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:12px 10px;color:var(--text-2);font-size:13px;font-family:inherit;cursor:pointer;transition:all .18s ease;text-align:center;font-weight:500;}
   .method-opt:hover{border-color:var(--gold-deep);color:var(--text);}
   .method-opt.active{border-color:var(--gold);background:rgba(212,162,78,0.12);color:var(--gold-soft);font-weight:600;}
+  .monto-fila{display:flex;gap:8px;}
+  .monto-fila input{flex:1;min-width:0;}
+  .btn-completo{flex-shrink:0;background:rgba(212,162,78,0.12);border:1px solid var(--gold-deep);color:var(--gold-soft);border-radius:11px;padding:0 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .18s ease;}
+  .btn-completo:hover{border-color:var(--gold);}
+  .monto-reparto{font-size:12.5px;color:var(--text-2);margin-top:7px;line-height:1.4;}
+  .monto-reparto:empty{display:none;}
+  .monto-reparto.alerta{color:var(--red);font-weight:600;}
   .calc-box{background:var(--bg);border:1px solid var(--border-soft);border-radius:11px;padding:13px 15px;margin-bottom:15px;font-size:13px;}
   .calc-row{display:flex;justify-content:space-between;padding:4px 0;}
   .calc-row .lbl{color:var(--text-2);}
@@ -454,7 +461,10 @@
       <div class="modal-title">Registrar abono</div>
       <div class="modal-sub" id="abonoSub">—</div>
     </div>
-    <div class="fg"><label>Monto del abono (USD)</label><input type="number" id="aMonto" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+    <div class="fg"><label>Monto del abono (USD)</label>
+      <div class="monto-fila"><input type="number" id="aMonto" placeholder="0.00" step="0.01" inputmode="decimal"><button type="button" class="btn-completo" id="aCompleto">Pago completo</button></div>
+      <div class="monto-reparto" id="aReparto"></div>
+    </div>
     <div class="fg"><label>Método de pago</label>
       <div class="method-grid" id="aMetodos">
         <button type="button" class="method-opt" data-m="Zelle">Zelle</button>
@@ -1644,6 +1654,7 @@ function abrirAbono(facId){
   ABONO_FAC=f; ABONO_METODO=null;
   document.getElementById('abonoSub').textContent=(f.num?'Factura '+f.num:'Factura s/n')+' · Saldo '+fmtUSD(saldo)+' · '+(p?p.proveedor:'');
   document.getElementById('aMonto').value='';
+  actualizarReparto();
   document.getElementById('aTitularZelle').value='';
   document.getElementById('aObs').value='';
   document.getElementById('aTransito').checked=false;
@@ -1671,6 +1682,29 @@ function abrirAbono(facId){
   setTimeout(function(){ document.getElementById('aMonto').focus(); },100);
 }
 function cerrarAbono(){ document.getElementById('modalAbono').classList.remove('show'); ABONO_FAC=null; ABONO_METODO=null; }
+// Guía bajo el monto: a dónde va el dinero. Usa lo que está en pantalla; al guardar se vuelve a leer fresco de la base.
+function saldoAbonoFac(){ return ABONO_FAC ? r2((ABONO_FAC.monto||0)-(ABONO_FAC.abonado||0)) : 0; }
+function deudaEnPantalla(provId){
+  return r2((DATA.facturasPorProv[provId]||[]).reduce(function(s,f){ var x=r2((f.monto||0)-(f.abonado||0)); return s+(x>0.01?x:0); },0));
+}
+function actualizarReparto(){
+  var box=document.getElementById('aReparto');
+  box.className='monto-reparto'; box.textContent='';
+  if(!ABONO_FAC) return;
+  var monto=r2(parseFloat(document.getElementById('aMonto').value)||0);
+  if(monto<=0) return;
+  var saldo=saldoAbonoFac(), deuda=deudaEnPantalla(ABONO_FAC.proveedor_id||PROV_ACTUAL);
+  if(monto<saldo-0.009) box.textContent='Esta factura queda debiendo '+fmtUSD(r2(saldo-monto))+'.';
+  else if(monto<=saldo+0.009) box.textContent='Paga esta factura completa.';
+  else if(monto<=deuda+0.009) box.textContent='Paga esta factura y '+fmtUSD(r2(monto-saldo))+' pasa a las otras facturas de este proveedor (primero las que vencen antes).';
+  else { box.className='monto-reparto alerta'; box.textContent='Es más de todo lo que le debes a este proveedor ('+fmtUSD(deuda)+'): quedarían '+fmtUSD(r2(monto-deuda))+' a favor. Revisa el monto.'; }
+}
+function ponerPagoCompleto(){
+  var saldo=saldoAbonoFac();
+  if(saldo<=0) return;
+  document.getElementById('aMonto').value=saldo.toFixed(2);
+  actualizarCalc(); actualizarReparto();
+}
 function actualizarCalc(){
   var monto=parseFloat(document.getElementById('aMonto').value)||0;
   var box=document.getElementById('aCalc');
@@ -2588,6 +2622,8 @@ document.querySelectorAll('#aMetodos .method-opt').forEach(function(b){
   });
 });
 document.getElementById('aMonto').addEventListener('input',actualizarCalc);
+document.getElementById('aMonto').addEventListener('input',actualizarReparto);
+document.getElementById('aCompleto').addEventListener('click',ponerPagoCompleto);
 document.getElementById('aCancel').addEventListener('click',cerrarAbono);
 document.getElementById('aConfirm').addEventListener('click',confirmarAbono);
 document.getElementById('modalAbono').addEventListener('click',function(e){ if(e.target===this) cerrarAbono(); });

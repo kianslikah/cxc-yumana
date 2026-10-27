@@ -303,3 +303,9 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - **Aviso antes de guardar un pago más grande que todo lo que se le debe al proveedor** (deuda leída fresca): "le debes $X; este pago dejaría $Y a favor. ¿El monto está bien escrito?". Con este aviso, el error de MYSTIC no habría pasado.
   - **Pruebas:** con un cliente falso y los datos del pago de MYSTIC: deshacer completo; falla a mitad, que da el aviso "A MEDIAS"; falla al principio, que no cambia nada; y aviso con $1.971.099. No hubo errores.
   - **Respaldo previo:** `respaldo_20261027` (63 tablas, 17.447 filas, conteos verificados).
+- **Proveedores, botón "Pago completo" y guía del reparto (2026-10-27, `Proveedores_yumana.html?v=51`):** a pedido de Kinan.
+  - En la ventana de abono, el botón **"Pago completo"** pone el saldo exacto de la factura.
+  - Se puede seguir escribiendo un monto mayor, y el sobrante pasa a las otras facturas como siempre.
+  - Debajo del monto se dice en vivo a dónde va el dinero: "queda debiendo $X", "paga esta factura completa", "paga esta factura y $X pasa a las otras facturas" o, en rojo, "es más de todo lo que le debes a este proveedor: quedarían $X a favor".
+  - Al guardar se mantiene la confirmación con la deuda leída fresca de la base.
+  - Probado a tamaño de iPhone con los montos de MYSTIC.
