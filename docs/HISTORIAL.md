@@ -309,3 +309,4 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - Debajo del monto se dice en vivo a dónde va el dinero: "queda debiendo $X", "paga esta factura completa", "paga esta factura y $X pasa a las otras facturas" o, en rojo, "es más de todo lo que le debes a este proveedor: quedarían $X a favor".
   - Al guardar se mantiene la confirmación con la deuda leída fresca de la base.
   - Probado a tamaño de iPhone con los montos de MYSTIC.
+- **Proveedores, sin la opción "Transferencia" (2026-10-27, `?v=52`):** Kinan pidió quitarla porque no la usa. Los 3 pagos viejos con ese método (hasta el 28/08, $7.112) quedan como están.
