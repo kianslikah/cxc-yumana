@@ -310,3 +310,4 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - Al guardar se mantiene la confirmación con la deuda leída fresca de la base.
   - Probado a tamaño de iPhone con los montos de MYSTIC.
 - **Proveedores, sin la opción "Transferencia" (2026-10-27, `?v=52`):** Kinan pidió quitarla porque no la usa. Los 3 pagos viejos con ese método (hasta el 28/08, $7.112) quedan como están.
+- **Usuario desactivado (2026-10-28):** Jennyfer Rojas (cajera) ya no trabaja en la tienda; a pedido de Kinan, `usuarios_app.activo = false`. No estaba en `may_acceso_caja`. Quedan activos 4 admin (Kinan, Fayssal, Bassma Al Chibani y Rami) y 1 cajera (Lixney).
