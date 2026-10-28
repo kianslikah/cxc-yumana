@@ -2,6 +2,8 @@
 
 Pedido de Kinan del 2026-10-28. Es el primer paso del plan para sistematizar la tienda (pendiente 19 de `CLAUDE.md`).
 
+**Estado:** la versión 1 (puntos 1 a 5, con los avisos al teléfono) se hizo el 2026-10-28. Detalle en `docs/HISTORIAL.md`.
+
 **Datos de los empleados** (nombres, cargos, teléfonos, sueldos, turnos y domingos): están en el documento del plan, secciones "Equipo de hoy" y "Pago de hoy". Se leen con el conector de Claude Docs. **No copiarlos a este repo, que es público.** Se cargan solo en la base.
 
 ## El problema
