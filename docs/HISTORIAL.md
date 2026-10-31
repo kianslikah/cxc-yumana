@@ -359,3 +359,7 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - **Estadísticas:** la explicación se arma completa con las reglas de la base (tramos, cortes, letra máxima, tope), con letras E y N; se quitó la columna "Ritmo".
   - Revisado con `/thermos` y corregido lo que marcó (el D sin cuentas terminadas no avisaba; la regla de "cabe" estaba en dos lugares; recarga fallida; copia SQL vieja; escape repetido). Probado con datos simulados: 55 revisiones (390 y 1280 px, admin, cajera, D sin tope, D que cabe, base caída y recarga fallida).
   - Quedó así: 129 A, 440 B, 63 C, 28 D, 54 E y 128 N (24 de ellos sin cuentas).
+- **Estadísticas con estilo iPhone y los colores del ecosistema (2026-10-31, `?v=3`):** Kinan comparó 5 estilos (página https://claude.ai/artifact/Kea6K9Zbhd1UjyijH4vMo6) y eligió la forma de "app de iPhone" con la paleta del Portal.
+  - Títulos grandes en Outfit gruesa; tarjetas e indicadores planos y más redondeados; el período es un control segmentado; los bloques llevan título de sección en vez de la línea dorada.
+  - Teléfono: barra de secciones abajo (`.tabbar`, los mismos `data-vista` que la barra lateral; el menú de arriba queda para la cuenta), las tablas se ven como lista (cada celda lleva `data-l` con el nombre de su columna) y arrancan con 8 filas en vez de 20. Entre 561 y 800 px sigue la tabla con la primera columna fija.
+  - Solo cambió la presentación: ningún cálculo. Probado con datos simulados a 390, 820 y 1280 px, sin desbordes ni textos raros.

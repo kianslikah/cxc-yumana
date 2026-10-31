@@ -29,12 +29,11 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{background:var(--bg);color:var(--text);font-family:'Outfit',-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;font-size:15px;line-height:1.5;}
-body{background:
-  radial-gradient(1200px 600px at 80% -10%, rgba(212,162,78,0.07), transparent 60%),
-  radial-gradient(900px 500px at -10% 110%, rgba(91,155,213,0.05), transparent 55%),
-  var(--bg);}
+body{background:var(--bg);}
 ::selection{background:rgba(212,162,78,0.3);}
 h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;letter-spacing:0.2px;}
+/* Estilo iPhone (elegido por Kinan el 2026-10-31) con los colores del ecosistema: dentro de la app, títulos en Outfit gruesa */
+.container h1,.container h2,.container h3,.formula h4{font-family:'Outfit',-apple-system,system-ui,sans-serif;font-weight:700;letter-spacing:-0.01em;}
 h1,h2,h3,h4,.login-title,.bloque-eyebrow .lbl,.kpi-l{text-wrap:balance;}
 p,.sub,.desc,.kpi-s,.nota > div,.formula,.login-desc,.t-vacio,.chart-vacio,.t-diferida p{text-wrap:pretty;}
 em{font-style:italic;color:var(--gold-soft);}
@@ -108,6 +107,7 @@ button{font-family:inherit;}
 .side-links svg{width:14px;height:14px;}
 .mobile-top{display:none;}
 .scrim{display:none;}
+.tabbar{display:none;}
 @media(max-width:800px){
   /* clip y no solo hidden: con hidden en html y body, body se vuelve contenedor de scroll y la barra de arriba
      deja de quedar fija al bajar. hidden queda de respaldo para Safari viejo (anterior a iOS 16). */
@@ -121,22 +121,42 @@ button{font-family:inherit;}
   .burger{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;}
   .burger svg{width:20px;height:20px;}
   .scrim.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:70;}
+  .tabbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:50;
+    background:rgba(20,24,33,0.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--border);
+    padding:6px max(6px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left, 0px));}
+  .tabbar .nav-item{flex-direction:column;gap:3px;padding:6px 2px;border:0;border-radius:10px;font-size:10.5px;font-weight:600;text-align:center;justify-content:center;color:var(--muted);min-height:50px;}
+  .tabbar .nav-item svg{width:23px;height:23px;}
+  .tabbar .nav-item.active{background:transparent;color:var(--gold);}
+  .tabbar .nav-item:hover{background:transparent;}
+  .container{padding-bottom:110px;}
+  .btn-arriba{bottom:calc(78px + env(safe-area-inset-bottom, 0px));}
+  #toast{bottom:calc(84px + env(safe-area-inset-bottom, 0px));}
 }
 
 /* ===== Contenido ===== */
 .container{max-width:1180px;margin:0 auto;padding:26px 28px 90px;}
 @media(max-width:800px){ .container{padding:18px 16px 80px;} }
 .screen-header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
-.screen-header h1{font-size:28px;font-weight:500;line-height:1.15;}
+.screen-header h1{font-size:32px;font-weight:700;line-height:1.1;letter-spacing:-0.02em;}
+.screen-header h1 em{font-style:normal;color:var(--gold-soft);}
 .screen-header .sub{font-size:13.5px;color:var(--text-2);margin-top:4px;max-width:640px;}
-@media(max-width:560px){ .screen-header h1{font-size:24px;} }
+@media(max-width:560px){ .screen-header h1{font-size:28px;} }
 
 /* Filtro de período */
-.periodo{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;margin-bottom:22px;}
+.periodo{margin-bottom:22px;}
 .chips{display:flex;flex-wrap:wrap;gap:6px;}
 .chip{padding:8px 13px;border-radius:999px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-2);font-size:13.5px;font-weight:500;cursor:pointer;min-height:44px;transition:border-color .15s ease, color .15s ease, background .15s ease;}
 .chip:hover{border-color:var(--gold-deep);color:var(--text);}
 .chip.active{background:var(--gold);border-color:var(--gold);color:var(--on-gold);font-weight:600;}
+.periodo .chips{display:inline-flex;flex-wrap:wrap;gap:2px;padding:3px;border-radius:12px;background:var(--surface-2);max-width:100%;}
+.periodo .chip{border:0;border-radius:9px;background:transparent;min-height:40px;padding:8px 14px;color:var(--text-2);}
+.periodo .chip:hover{color:var(--text);}
+.periodo .chip.active{background:var(--gold);color:var(--on-gold);box-shadow:0 1px 4px rgba(0,0,0,0.35);}
+@media(max-width:800px){
+  .periodo .chips{display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .periodo .chips::-webkit-scrollbar{display:none;}
+  .periodo .chip{flex-shrink:0;white-space:nowrap;}
+}
 .rango-custom{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-top:12px;}
 .rango-custom label{display:block;font-size:11.5px;color:var(--text-2);text-transform:uppercase;letter-spacing:1px;font-weight:600;min-width:0;}
 .rango-custom input{display:block;margin-top:6px;background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:10px 12px;color:var(--text);font-size:16px;font-family:inherit;color-scheme:dark;}
@@ -166,8 +186,8 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0;}
 .vista{scroll-margin-top:0;}
 @media(max-width:800px){ .bloque{scroll-margin-top:80px;} }
 .bloque-eyebrow{display:flex;align-items:center;gap:12px;}
-.bloque-eyebrow .lbl{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;white-space:normal;min-width:0;}
-.bloque-eyebrow .line{height:1px;flex:1;min-width:24px;background:var(--border-soft);}
+.bloque-eyebrow .lbl{font-size:21px;font-weight:700;letter-spacing:-0.01em;color:var(--text);white-space:normal;min-width:0;}
+.bloque-eyebrow .line{display:none;}
 .bloque p{font-size:13px;color:var(--text-2);margin-top:6px;max-width:760px;}
 
 /* Botón flotante "Arriba": vuelve al filtro de período */
@@ -175,9 +195,9 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0;}
 
 /* Indicadores */
 .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:12px;margin-bottom:14px;}
-.kpi{background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--border-soft);border-radius:15px;padding:15px 16px;min-width:0;}
-.kpi-l{font-size:11.5px;color:var(--text-2);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px;}
-.kpi-v{font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2;overflow-wrap:anywhere;}
+.kpi{background:var(--surface);border:1px solid var(--border-soft);border-radius:18px;padding:15px 16px;min-width:0;}
+.kpi-l{font-size:13px;color:var(--text-2);font-weight:600;margin-bottom:4px;}
+.kpi-v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15;letter-spacing:-0.01em;overflow-wrap:anywhere;}
 .kpi.gold .kpi-v{color:var(--gold-soft);}
 .kpi.red .kpi-v{color:var(--red);}
 .kpi.green .kpi-v{color:var(--green);}
@@ -188,12 +208,12 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0;}
 .delta.mal{background:rgba(232,117,92,0.14);color:var(--red);}
 .delta.neutro{background:rgba(154,166,184,0.12);color:var(--text-2);}
 .delta-ant{color:var(--muted);font-size:12px;}
-@media(max-width:420px){ .kpis{grid-template-columns:1fr 1fr;gap:10px;} .kpi{padding:13px 12px;} .kpi-v{font-size:19px;} }
+@media(max-width:560px){ .kpis{grid-template-columns:1fr 1fr;gap:10px;} .kpi{padding:13px 12px;} .kpi-v{font-size:21px;} }
 
 /* Tarjetas, gráficos y tablas */
-.card{background:var(--surface);border:1px solid var(--border-soft);border-radius:16px;padding:16px;margin-bottom:14px;min-width:0;}
+.card{background:var(--surface);border:1px solid var(--border-soft);border-radius:18px;padding:16px;margin-bottom:14px;min-width:0;}
 .card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
-.card-head h3{font-size:16px;font-weight:600;}
+.card-head h3{font-size:17px;font-weight:700;}
 .card-head .desc{font-size:12.5px;color:var(--text-2);margin-top:3px;max-width:640px;}
 .card-head > div{min-width:0;flex:1 1 220px;}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
@@ -216,8 +236,25 @@ table.t td.largo{min-width:220px;}
 table.t td.nw{white-space:nowrap;}
 table.t td .suave{color:var(--text-2);font-size:12px;display:block;}
 table.t tfoot td{border-top:1px solid var(--border);font-weight:700;}
-@media(max-width:800px){
-  /* Teléfono: la primera columna (el nombre) queda fija al deslizar la tabla de lado */
+@media(max-width:560px){
+  table.t thead{display:none;}
+  table.t, table.t tbody, table.t tfoot, table.t tr, table.t td{display:block;width:100%;}
+  table.t tr{padding:11px 0;border-bottom:1px solid var(--border-soft);}
+  table.t tbody tr:last-child{border-bottom:0;}
+  table.t td, table.t .num{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:2px 0;border:0;text-align:right;white-space:normal;min-width:0;}
+  table.t td::before{content:attr(data-l);color:var(--text-2);font-size:13px;text-align:left;flex-shrink:0;max-width:55%;}
+  table.t td:first-child{display:block;text-align:left;font-weight:600;font-size:15px;padding-bottom:5px;}
+  table.t td:first-child::before{content:none;}
+  table.t td.nombre, table.t td.largo{min-width:0;}
+  table.t td .suave{display:inline;margin-left:6px;}
+  table.t tfoot tr{border-top:1px solid var(--border);border-bottom:0;}
+  table.t tfoot td{border-top:0;}
+  table.t tbody tr:hover td{background:transparent;}
+  table.t td:empty{display:none;}
+  .tabla-wrap{overflow-x:visible;margin:0;padding:0;}
+}
+@media(min-width:561px) and (max-width:800px){
+  /* Tableta angosta: la primera columna (el nombre) queda fija al deslizar la tabla de lado */
   .tabla-wrap{margin:0;padding:0;}  /* sin relleno: si no, lo que se desliza se asoma a la izquierda de la columna fija */
   table.t th:first-child, table.t td:first-child{position:sticky;left:0;z-index:1;background:var(--surface);box-shadow:inset -1px 0 0 var(--border);}
   table.t tbody tr:hover td:first-child{background:var(--surface);}
@@ -246,13 +283,13 @@ table.t tfoot td{border-top:1px solid var(--border);font-weight:700;}
 .barrita span{display:block;height:100%;background:var(--gold);border-radius:3px;}
 
 /* Notas y avisos */
-.nota{display:flex;gap:10px;align-items:flex-start;background:rgba(91,155,213,0.08);border:1px solid rgba(91,155,213,0.28);border-radius:13px;padding:12px 14px;font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:14px;}
+.nota{display:flex;gap:10px;align-items:flex-start;background:rgba(91,155,213,0.08);border:1px solid rgba(91,155,213,0.28);border-radius:16px;padding:12px 14px;font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:14px;}
 .nota svg{width:18px;height:18px;flex-shrink:0;color:var(--blue);margin-top:1px;}
 .nota b{color:var(--text);font-weight:600;}
 .nota.aviso{background:rgba(212,162,78,0.08);border-color:rgba(212,162,78,0.35);}
 .nota.aviso svg{color:var(--gold);}
-.formula{background:var(--bg-2);border:1px solid var(--border);border-radius:13px;padding:14px 16px;font-size:13px;color:var(--text-2);line-height:1.6;}
-.formula h4{font-family:'Fraunces',serif;font-size:15px;color:var(--text);margin-bottom:6px;font-weight:600;}
+.formula{background:var(--surface);border:1px solid var(--border-soft);border-radius:16px;padding:14px 16px;font-size:13px;color:var(--text-2);line-height:1.6;}
+.formula h4{font-size:16px;color:var(--text);margin-bottom:6px;font-weight:600;}
 .formula ul{margin:6px 0 0 18px;}
 .formula b{color:var(--text);}
 
@@ -371,7 +408,7 @@ table.t tfoot td{border-top:1px solid var(--border);font-weight:700;}
 
   <div class="layout-main" id="layoutMain">
     <div class="mobile-top">
-      <button class="burger" id="burger" aria-label="Abrir menú"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
+      <button class="burger" id="burger" aria-label="Abrir el menú de la cuenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
       <div class="mt-title" id="mtTitle">Resumen</div>
       <div style="width:42px;"></div>
     </div>
@@ -428,6 +465,13 @@ table.t tfoot td{border-top:1px solid var(--border);font-weight:700;}
  </div>
 </div>
 
+<nav class="tabbar" aria-label="Secciones">
+  <button class="nav-item active" data-vista="resumen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-7"/></svg><span>Resumen</span></button>
+  <button class="nav-item" data-vista="detal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg><span>Créditos</span></button>
+  <button class="nav-item" data-vista="mayorista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span>Mayor</span></button>
+  <button class="nav-item" data-vista="proveedores"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg><span>Proveedores</span></button>
+  <button class="nav-item" data-vista="inventario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg><span>Inventario</span></button>
+</nav>
 <button class="btn btn-arriba" id="btnArriba" type="button" hidden>Arriba</button>
 <div id="toast" role="status"></div>
 
@@ -446,7 +490,8 @@ var TABLAS = {};             // tablas dibujadas (para "Mostrar más" y CSV)
 var GRAFICOS = {};           // gráficos dibujados (para destruirlos al redibujar)
 var GRAF_PENDIENTES = [];    // gráficos por crear después de pintar el HTML
 var CACHE_RPC = {};          // respuestas que no dependen del período (lista de puntajes): se guardan mientras dure la sesión
-var FILAS_INICIO = 20, FILAS_MAS = 80;   // tablas largas: 20 filas y "Mostrar más" de 80 en 80 (el CSV trae todo)
+// En el teléfono cada fila es una celda alta: se empieza con 8 para no hacer la página eterna
+var FILAS_INICIO = (window.matchMedia && window.matchMedia('(max-width: 560px)').matches) ? 8 : 20, FILAS_MAS = 80;   // tablas largas: 20 filas y "Mostrar más" de 80 en 80 (el CSV trae todo)
 // El aparato pide reducir el movimiento: gráficos y saltos sin animación
 var REDUCIR_MOVIMIENTO = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 // "Todo" no lleva fecha aquí: la app manda p_desde vacío y la fecha de inicio la define la base (est_rango).
@@ -886,11 +931,11 @@ function cuerpoTabla(id){
   }).join('') + '</tr></thead><tbody>' + ver.map(function(r){
     return '<tr>' + cfg.cols.map(function(c){
       var F = FORMATOS[c.f] || {};
-      return '<td class="' + (esNum(c) ? 'num ' : '') + (F.nw ? 'nw ' : '') + (c.cls || '') + '">' + celda(c, r) + '</td>';
+      return '<td class="' + (esNum(c) ? 'num ' : '') + (F.nw ? 'nw ' : '') + (c.cls || '') + '" data-l="' + esc(c.t) + '">' + celda(c, r) + '</td>';
     }).join('') + '</tr>';
   }).join('') + '</tbody>' + (cfg.pie ? '<tfoot><tr>' + cfg.cols.map(function(c, i){
     var v = cfg.pie[c.k];
-    return '<td class="' + (esNum(c) ? 'num' : '') + '">' + (i === 0 && v == null ? 'Total' : (v == null ? '' : celda(c, cfg.pie))) + '</td>';
+    return '<td class="' + (esNum(c) ? 'num' : '') + '" data-l="' + esc(c.t) + '">' + (i === 0 && v == null ? 'Total' : (v == null ? '' : celda(c, cfg.pie))) + '</td>';
   }).join('') + '</tr></tfoot>' : '') + '</table></div>';
   if (filas.length > t.mostrar) {
     h += '<div class="t-mas"><button class="btn btn-sm" data-mas="' + id + '">Mostrar más (' + fmtN(filas.length - t.mostrar) + ' restantes)</button></div>';

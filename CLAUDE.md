@@ -42,6 +42,7 @@ El diseño del Portal es el estándar de TODO el ecosistema. Kinan exige **idén
 - Paleta exacta: fondo `#0d0f14`, dorado `#d4a24e`, dorado claro `#e8c583`, dorado oscuro `#9c7330`, superficies `#1a1f2b` y `#212838`, bordes `#2a3344`, texto sobre dorado `#1a1206`.
 - Íconos SVG monocromáticos. **Cero emojis en interfaces.**
 - Layout de referencia: sidebar izquierdo de `mayorista.html` y `Proveedores_yumana.html`.
+- **Estilo iPhone (decisión de Kinan del 2026-10-31, empezando por `estadisticas.html`):** con la paleta de arriba, títulos grandes en Outfit gruesa (Fraunces queda para la marca y el login), celdas planas muy redondeadas, período como control segmentado, en el teléfono barra de secciones abajo y tablas como listas (cada fila una celda). Kinan quiere pasarlo al resto de las apps poco a poco.
 - PDFs corporativos: dorado `#9c7330`, crema `#f5ead2`. Columnas de productos en orden **Cantidad → Producto → Precio → Subtotal**, con precio en negrita.
 
 ## Apps (nombres EXACTOS, respetar mayúsculas)
