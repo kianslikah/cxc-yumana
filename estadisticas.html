@@ -282,6 +282,26 @@ table.t tfoot td{border-top:1px solid var(--border);font-weight:700;}
 .barrita{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;min-width:70px;margin-top:5px;}
 .barrita span{display:block;height:100%;background:var(--gold);border-radius:3px;}
 
+/* Metas del mes */
+.meta-fila{padding:12px 0;border-bottom:1px solid var(--border-soft);}
+.meta-fila:first-child{padding-top:0;}
+.meta-cab{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:15px;}
+.meta-cab .suave{color:var(--text-2);font-size:13px;}
+.meta-num{font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;}
+.meta-num .suave{font-size:13px;font-weight:500;color:var(--text-2);}
+.meta-barra{position:relative;height:12px;border-radius:6px;background:var(--surface-2);margin:10px 0 8px;overflow:hidden;}
+.meta-barra span{display:block;height:100%;background:var(--gold);border-radius:6px;}
+.meta-barra i{position:absolute;top:0;bottom:0;width:2px;background:var(--text);opacity:.55;}
+.meta-pie{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums;}
+.meta-pie b{color:var(--text);}
+.meta-acciones{margin-top:12px;}
+.meta-form{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-top:12px;}
+.meta-form label{display:block;font-size:12.5px;color:var(--text-2);font-weight:600;min-width:0;}
+.meta-form input{display:block;width:100%;margin-top:6px;background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:10px 12px;color:var(--text);font-size:16px;font-family:inherit;}
+.meta-form input:focus{outline:none;border-color:var(--gold);box-shadow:var(--glow);}
+.meta-form .rango-msg{grid-column:1 / -1;}
+@media(max-width:560px){ .meta-form{grid-template-columns:1fr;} }
+
 /* Notas y avisos */
 .nota{display:flex;gap:10px;align-items:flex-start;background:rgba(91,155,213,0.08);border:1px solid rgba(91,155,213,0.28);border-radius:16px;padding:12px 14px;font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:14px;}
 .nota svg{width:18px;height:18px;flex-shrink:0;color:var(--blue);margin-top:1px;}
@@ -498,7 +518,7 @@ var REDUCIR_MOVIMIENTO = !!(window.matchMedia && window.matchMedia('(prefers-red
 
 var SECCIONES = {
   resumen:     { fn: 'est_resumen',     titulo: 'Resumen',              render: renderResumen },
-  detal:       { fn: 'est_detal',       titulo: 'Créditos y apartados', render: renderDetal },
+  detal:       { fn: 'est_detal',       titulo: 'Créditos y apartados', render: renderDetal, fnMas: 'est_detal_mas' },
   mayorista:   { fn: 'est_mayorista',   titulo: 'Mayorista',            render: renderMayorista },
   proveedores: { fn: 'est_proveedores', titulo: 'Proveedores',          render: renderProveedores },
   inventario:  { fn: 'est_inventario',  titulo: 'Inventario y ventas',  render: renderInventario, sinPeriodo: true }
@@ -792,7 +812,8 @@ function pintarError(sec, e){
 async function cargarSeccion(sec, forzar){
   var clave = claveCache(sec);
   if (!forzar && DATOS[sec] && DATOS[sec].clave === clave) { dibujar(sec); return; }
-  if (forzar && sec === 'detal') delete CACHE_RPC.est_detal_puntajes; // "Actualizar" también refresca la lista de puntajes
+  // "Actualizar" también refresca las listas que se piden aparte
+  if (forzar && sec === 'detal') { delete CACHE_RPC.est_detal_puntajes; delete CACHE_RPC.est_detal_volver; delete CACHE_RPC.est_detal_no_volvieron; }
   var n = PEDIDO[sec] = (PEDIDO[sec] || 0) + 1;
   pintarCargando(sec);
   var params = {};
@@ -801,13 +822,23 @@ async function cargarSeccion(sec, forzar){
     params = { p_desde: r.desde, p_hasta: r.hasta, p_ant_desde: r.ant_desde, p_ant_hasta: r.ant_hasta };
   }
   try {
-    var res = await sb.rpc(SECCIONES[sec].fn, params);
+    // Las secciones con fnMas piden sus métricas nuevas al mismo tiempo; si esa falla, la sección sale igual sin ellas
+    var fnMas = SECCIONES[sec].fnMas;
+    var resp = await Promise.all([
+      sb.rpc(SECCIONES[sec].fn, params),
+      fnMas ? sb.rpc(fnMas, params).then(function(x){ return x; }, function(e){ return { error: e }; }) : Promise.resolve(null)
+    ]);
+    var res = resp[0], resMas = resp[1];
     if (n !== PEDIDO[sec]) return; // llegó tarde: el usuario ya pidió otro período
     if (res.error) {
       if (res.error.code === '42501') { mostrarRestringido('Tu usuario ya no tiene permiso para ver las estadísticas.'); return; }
       throw res.error;
     }
     if (!res.data) throw new Error('La base no devolvió datos.');
+    if (resMas) {
+      if (resMas.error) console.error('cargarSeccion (métricas nuevas)', sec, resMas.error);
+      res.data.mas = resMas.error || !resMas.data ? { error: resMas.error || true } : resMas.data;
+    }
     DATOS[sec] = { clave: clave, d: res.data };
     if (VISTA === sec) dibujar(sec);
   } catch (e) {
@@ -1292,11 +1323,159 @@ function textoPuntaje(R){
 function colCliente(conTelefono){
   return { k: 'nombre', t: 'Cliente', cls: 'nombre', html: function(v, r){ return esc(v) + (conTelefono && r.telefono ? '<span class="suave">' + esc(r.telefono) + '</span>' : ''); } };
 }
+// ===== Créditos y apartados: métricas nuevas (est_detal_mas, 2026-10-31). X = d.mas =====
+// Cada función devuelve el HTML de un bloque; renderDetal las va poniendo en su lugar.
+function masDisponible(X){ return X && !X.error; }
+function notaFaltaMas(X){
+  return X && X.error ? nota('No se pudieron cargar las métricas nuevas (metas, lo que viene, morosidad y oportunidades). Toca <b>Actualizar</b> para intentarlo otra vez.', true) : '';
+}
+// C9: metas del mes en curso, con barra de avance y a qué ritmo vas
+function barraMeta(titulo, logrado, meta, m){
+  if (meta == null || num(meta) <= 0) return '<div class="meta-fila"><div class="meta-cab"><b>' + esc(titulo) + '</b><span class="suave">Sin meta para este mes</span></div>' +
+    '<div class="meta-num">' + fmt(logrado) + ' <span class="suave">llevas</span></div></div>';
+  var p = Math.min(100, num(logrado) / num(meta) * 100), esperado = m.dia / m.dias_mes * 100;
+  var cierre = m.dia > 0 ? num(logrado) / m.dia * m.dias_mes : 0, falta = Math.max(0, num(meta) - num(logrado));
+  var porDia = m.dias_mes > m.dia ? falta / (m.dias_mes - m.dia) : falta;
+  var bien = p >= esperado - 0.5;
+  return '<div class="meta-fila"><div class="meta-cab"><b>' + esc(titulo) + '</b><span class="delta ' + (bien ? 'bien' : 'mal') + '">' + fmtDec(p, 0) + '% de ' + fmt(meta) + '</span></div>' +
+    '<div class="meta-barra" role="img" aria-label="' + esc(titulo + ': ' + fmtDec(p, 0) + '% de la meta') + '"><span style="width:' + p.toFixed(1) + '%"></span><i style="left:' + Math.min(100, esperado).toFixed(1) + '%" title="Donde deberías ir hoy"></i></div>' +
+    '<div class="meta-pie"><span>Llevas <b>' + fmt(logrado) + '</b></span>' +
+    (falta > 0 ? '<span>Faltan <b>' + fmt(falta) + '</b>' + (m.dias_mes > m.dia ? ' · ' + fmt(porDia) + ' por día' : '') + '</span>' : '<span class="verde-txt"><b>Meta cumplida</b></span>') +
+    '<span>A este ritmo cierras en <b>' + fmt(cierre) + '</b></span></div></div>';
+}
+function bloqueMetas(X){
+  if (!masDisponible(X) || !X.metas) return notaFaltaMas(X);
+  var m = X.metas;
+  return bloque('Metas de ' + mesLargo(m.mes).toLowerCase(), 'Las pones tú. Siempre es el mes en curso: no cambia con el período elegido. La raya clara marca dónde deberías ir hoy (día ' + fmtN(m.dia) + ' de ' + fmtN(m.dias_mes) + ').', 'Metas') +
+    '<div class="card">' + barraMeta('Venta (créditos y apartados)', m.vendido, m.meta_venta, m) + barraMeta('Cobranza', m.cobrado, m.meta_cobro, m) +
+    '<div class="meta-acciones"><button class="btn btn-sm" type="button" data-editar-metas>' + (m.meta_venta == null && m.meta_cobro == null ? 'Poner las metas del mes' : 'Cambiar las metas') + '</button></div>' +
+    '<form class="meta-form" id="formMetas" hidden>' +
+      '<label for="metaVenta">Meta de venta<input type="number" inputmode="decimal" min="0" step="0.01" id="metaVenta" value="' + (m.meta_venta != null ? esc(m.meta_venta) : '') + '" placeholder="Ej. 100000"></label>' +
+      '<label for="metaCobro">Meta de cobranza<input type="number" inputmode="decimal" min="0" step="0.01" id="metaCobro" value="' + (m.meta_cobro != null ? esc(m.meta_cobro) : '') + '" placeholder="Ej. 95000"></label>' +
+      '<button class="btn btn-primary" type="submit" id="btnGuardarMetas" data-mes="' + esc(m.mes) + '">Guardar metas</button>' +
+      '<div class="rango-msg" id="metasMsg" role="alert"></div>' +
+    '</form></div>';
+}
+async function guardarMetas(btn){
+  var v = document.getElementById('metaVenta').value, c = document.getElementById('metaCobro').value;
+  var msg = document.getElementById('metasMsg');
+  var venta = v === '' ? null : Number(v), cobro = c === '' ? null : Number(c);
+  if ((venta != null && !(venta >= 0)) || (cobro != null && !(cobro >= 0))) { msg.textContent = 'Escribe montos en dólares, sin signos (por ejemplo 100000).'; return; }
+  btn.disabled = true; btn.textContent = 'Guardando...'; msg.textContent = '';
+  try {
+    var r = await sb.rpc('est_guardar_meta', { p_mes: btn.dataset.mes, p_venta: venta, p_cobro: cobro });
+    if (r.error) throw r.error;
+    toast('Metas guardadas');
+    cargarSeccion('detal', true);
+  } catch (e) {
+    console.error('guardarMetas', e);
+    msg.textContent = 'No se guardaron: ' + textoError(e);
+    btn.disabled = false; btn.textContent = 'Guardar metas';
+  }
+}
+// C2 y C8: si se pagó lo que vencía y cuánto entró de cuentas atrasadas
+function bloqueCumplimiento(X){
+  if (!masDisponible(X)) return '';
+  var C = X.cumplimiento || {}, a = C.act || {}, b = C.ant || {}, T = X.cobrado_atraso || {};
+  var pa = pct(a.a_tiempo, a.n), pb = b.n ? pct(b.a_tiempo, b.n) : undefined;
+  var tr = T.tramos || [], viejo = tr.slice(3).reduce(function(s, x){ return s + num(x.monto); }, 0);
+  var h = bloque('Cumplimiento y recuperación', 'De las cuentas cuya fecha límite cayó en el período (hasta hoy), cuántas se pagaron completas a tiempo (con ' + fmtN(C.gracia) + ' días de gracia), tarde o siguen debiendo. Y lo cobrado en el período según cuánto atraso tenía la cuenta el día del pago.', 'Cumplimiento');
+  h += kpis([
+    kpi({ l: 'Vencían en el período', v: a.n || 0, f: 'int', ant: b.n, sentido: 'neutro', s: fmt(a.monto) + ' en total' }),
+    kpi({ l: 'Pagadas a tiempo', v: pa, f: 'pct', ant: pb, sentido: 'sube', tono: 'green', s: fmtN(a.a_tiempo) + ' cuentas · ' + fmt(a.a_tiempo_monto) }),
+    kpi({ l: 'Pagadas tarde', v: a.tarde || 0, f: 'int', ant: b.tarde, sentido: 'baja', s: 'Terminaron después de la gracia' }),
+    kpi({ l: 'Siguen debiendo', v: a.deben_saldo || 0, f: 'money', ant: b.deben_saldo, sentido: 'baja', tono: 'red', s: fmtN(a.deben) + ' cuentas que ya vencieron' }),
+    kpi({ l: 'Recuperado de lo muy atrasado', v: viejo, f: 'money', tono: 'gold', s: 'Cobrado de cuentas con más de 60 días vencidas' })
+  ]);
+  h += tabla({ id: 'cobrado_atraso', titulo: 'Lo cobrado según el atraso de la cuenta', desc: 'Cada abono del período, según cuántos días tenía vencida su cuenta el día que se pagó.',
+    cols: [{ k: 'etiqueta', t: 'Atraso al pagar', cls: 'nw' }, { k: 'monto', t: 'Cobrado', f: 'money' }, { k: 'p', t: '% de lo cobrado', f: 'pct' }, { k: 'pagos', t: 'Pagos', f: 'int' }, { k: 'clientes', t: 'Clientes', f: 'int' }],
+    filas: tr.map(function(x){ return Object.assign({}, x, { p: pct(x.monto, T.total) }); }), vacio: 'No hubo cobros en el período.',
+    pie: { monto: T.total, p: 100, pagos: tr.reduce(function(s, x){ return s + num(x.pagos); }, 0) } });
+  return h;
+}
+// C1 y C3: lo que vence pronto y cómo ha ido la morosidad al cierre de cada mes
+function bloqueViene(X){
+  if (!masDisponible(X)) return '';
+  var V = X.viene || {}, t = V.tramos || [], Mo = X.morosidad || [];
+  var h = bloque('Lo que viene y la morosidad', 'Lo que te deben según cuándo vence, para saber qué entra en las próximas semanas. Y qué parte de la deuda estaba vencida al cierre de cada mes. No cambia con el período.', 'Lo que viene');
+  h += kpis([kpi({ l: 'Ya vencido', v: V.vencido, f: 'money', tono: 'red', s: fmtN(V.vencido_n) + ' cuentas' })].concat(t.slice(0, 3).map(function(x){
+    return kpi({ l: x.etiqueta, v: x.saldo, f: 'money', tono: 'gold', s: fmtN(x.n) + ' cuentas' });
+  })));
+  h += '<div class="grid-2">' + card('Morosidad al cierre de cada mes', 'Lo que te debían y lo vencido el último día de cada mes (el mes en curso, hasta hoy).',
+      barras('morosidad', Mo.map(function(x){ return x.mes; }), [
+        { label: 'Al día', color: COL.oro, pila: 'd', valores: Mo.map(function(x){ return num(x.deuda) - num(x.vencido); }) },
+        { label: 'Vencido', color: COL.coral, pila: 'd', valores: Mo.map(function(x){ return x.vencido; }) }], { meses: true })) +
+    tabla({ id: 'morosidad', titulo: 'Morosidad por mes', cols: [{ k: 'mes', t: 'Mes', f: 'mes' }, { k: 'deuda', t: 'Te debían', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' },
+      { k: 'pct', t: '% vencido', f: 'pct' }, { k: 'vencido_60', t: 'Vencido hace más de 60 días', f: 'money' }],
+      filas: Mo.slice().reverse(), vacio: 'Todavía no hay meses con deuda.' }) + '</div>';
+  h += tabla({ id: 'viene', titulo: 'Cuentas que vencen en los próximos 30 días', desc: 'La más próxima primero. Sirve para recordarle al cliente antes de que se atrase.',
+    cols: [colCliente(true), { k: 'numero', t: 'Cuenta', cls: 'nw', html: function(v, r){ return (r.tipo === 'credito' ? 'Crédito #' : 'Apartado #') + esc(v); }, csv: function(v, r){ return (r.tipo === 'credito' ? 'Crédito #' : 'Apartado #') + v; } },
+      { k: 'vence', t: 'Vence', f: 'date' }, { k: 'faltan', t: 'Faltan', f: 'dias' }, { k: 'saldo', t: 'Debe', f: 'money' },
+      { k: 'letra', t: 'Nota', html: function(v){ return etiquetaLetra(v); }, csv: function(v){ return v; } }],
+    filas: V.lista || [], vacio: 'Nada vence en los próximos 30 días.' });
+  return h;
+}
+// C4: de lo vendido cada mes, cómo se pagó
+function bloqueCosecha(X){
+  if (!masDisponible(X)) return '';
+  var K = X.cosecha || [];
+  var h = bloque('Cómo pagó cada mes de venta', 'Solo créditos. De los que se vendieron cada mes: cuántos se pagaron a tiempo (con la gracia), tarde, cuántos siguen debiendo ya vencidos y cuántos todavía están dentro del plazo. % a tiempo = a tiempo ÷ los que ya llegaron a su fecha límite.', 'Por mes de venta');
+  h += card('Créditos por mes de venta', 'Cada barra es un mes de venta, partida según cómo se pagó.',
+    barras('cosecha', K.map(function(x){ return x.mes; }), [
+      { label: 'A tiempo', color: COL.verde, pila: 'c', valores: K.map(function(x){ return x.a_tiempo; }) },
+      { label: 'Tarde', color: COL.oro, pila: 'c', valores: K.map(function(x){ return x.tarde; }) },
+      { label: 'Vencidos sin pagar', color: COL.coral, pila: 'c', valores: K.map(function(x){ return x.vencidas; }) },
+      { label: 'Todavía en plazo', color: COL.gris, pila: 'c', valores: K.map(function(x){ return x.al_dia; }) }], { meses: true, formato: 'int' }));
+  h += tabla({ id: 'cosecha', titulo: 'Cómo pagó cada mes de venta', cols: [{ k: 'mes', t: 'Mes de venta', f: 'mes' }, { k: 'n', t: 'Créditos', f: 'int' }, { k: 'vendido', t: 'Vendido', f: 'money' },
+      { k: 'a_tiempo', t: 'A tiempo', f: 'int' }, { k: 'tarde', t: 'Tarde', f: 'int' }, { k: 'vencidas', t: 'Vencidos sin pagar', f: 'int' }, { k: 'al_dia', t: 'En plazo', f: 'int' },
+      { k: 'pct_a_tiempo', t: '% a tiempo', f: 'pct' }, { k: 'debe_vencido', t: 'Deben vencido', f: 'money' }, { k: 'con_interes', t: 'Con interés', f: 'int' }],
+    filas: K.slice().reverse(), vacio: 'Todavía no hay créditos.' });
+  return h;
+}
+// C5: morosidad y notas de los clientes de cada vendedor
+function letrasVendedor(L){
+  return ['A', 'B', 'C', 'D', 'E', 'N'].filter(function(l){ return L && L[l]; }).map(function(l){ return etiquetaLetra(l) + ' ' + fmtN(L[l]); }).join(' ');
+}
+function tablaVendedoresMas(X){
+  if (!masDisponible(X)) return '';
+  return tabla({ id: 'vend_mas', titulo: 'Morosidad y notas por vendedor', desc: 'Cartera = lo que todavía deben los créditos que vendió cada uno (de cualquier fecha). Notas = cuántos de sus clientes tienen cada letra hoy.',
+    cols: [{ k: 'vendedor', t: 'Vendedor', cls: 'nombre' }, { k: 'vendido_periodo', t: 'Vendió en el período', f: 'money' }, { k: 'creditos_periodo', t: 'Créditos', f: 'int' },
+      { k: 'cartera', t: 'Cartera', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }, { k: 'pct_vencido', t: '% vencido', f: 'pct' },
+      { k: 'pct_a_tiempo', t: '% terminados a tiempo', f: 'pct' }, { k: 'clientes', t: 'Clientes', f: 'int' },
+      { k: 'letras', t: 'Notas de sus clientes', cls: 'largo', html: function(v){ return letrasVendedor(v); },
+        csv: function(v){ return ['A', 'B', 'C', 'D', 'E', 'N'].map(function(l){ return l + ':' + ((v && v[l]) || 0); }).join(' '); } }],
+    filas: X.vendedores || [], vacio: 'Todavía no hay créditos con vendedor.' });
+}
+// C6 y C7: a quién volver a venderle y quién no volvió (las listas se piden solo al tocarlas)
+function bloqueOportunidades(X){
+  if (!masDisponible(X)) return '';
+  var Vo = X.volver || {}, No = X.no_volvieron || {};
+  var h = bloque('Oportunidades', 'Clientes buenos a quienes ofrecerles otra compra. No depende del período.', 'Oportunidades');
+  h += kpis([
+    kpi({ l: 'Para volver a venderles', v: Vo.n, f: 'int', tono: 'green', s: 'Nota A o B, sin nada vencido · pueden sacar ' + fmt(Vo.puede_sacar) + ' entre todos' }),
+    kpi({ l: 'No volvieron', v: No.n, f: 'int', tono: 'gold', s: 'Terminaron de pagar hace más de 60 días · compraron ' + fmt(No.comprado) })
+  ]);
+  h += tabla({ id: 'volver', titulo: 'A quién volver a venderle', desc: 'De quien más puede sacar a quien menos. Puede sacar = su tope menos lo que debe hoy.',
+    cols: [colCliente(true), { k: 'letra', t: 'Nota', html: function(v, r){ return etiquetaLetra(v) + (r.puntaje != null ? ' <span class="suave" style="display:inline">' + fmtN(r.puntaje) + '</span>' : ''); }, csv: function(v){ return v; } },
+      { k: 'disponible', t: 'Puede sacar', f: 'money' }, { k: 'tope', t: 'Tope', f: 'money' }, { k: 'deuda', t: 'Debe hoy', f: 'money' },
+      { k: 'cerradas', t: 'Cuentas terminadas', f: 'int' }, { k: 'ultima_compra', t: 'Última compra', f: 'date' }, { k: 'dias_sin_comprar', t: 'Días sin comprar', f: 'int' }],
+    filas: CACHE_RPC.est_detal_volver || null, vacio: 'Ningún cliente cumple hoy.',
+    diferida: { fn: 'est_detal_volver', boton: 'Ver la lista', texto: 'Son ' + fmtN(Vo.n) + ' clientes. La lista se trae de la base solo cuando la pides (o al descargar el CSV).' } });
+  h += tabla({ id: 'no_volvieron', titulo: 'Clientes que no volvieron', desc: 'Pagaron todo y no han vuelto a comprar en más de 60 días. Los que más compraron primero.',
+    cols: [colCliente(true), { k: 'letra', t: 'Nota', html: function(v){ return etiquetaLetra(v); }, csv: function(v){ return v; } },
+      { k: 'compras', t: 'Compras', f: 'int' }, { k: 'comprado', t: 'Compraron', f: 'money' }, { k: 'ultima_compra', t: 'Última compra', f: 'date' },
+      { k: 'termino', t: 'Terminó de pagar', f: 'date' }, { k: 'dias_sin_volver', t: 'Días sin volver', f: 'int' }],
+    filas: CACHE_RPC.est_detal_no_volvieron || null, vacio: 'Todos los que terminaron de pagar volvieron a comprar.',
+    diferida: { fn: 'est_detal_no_volvieron', boton: 'Ver la lista', texto: 'Son ' + fmtN(No.n) + ' clientes. La lista se trae de la base solo cuando la pides (o al descargar el CSV).' } });
+  return h;
+}
 function renderDetal(d){
   // datos: est_detal(); la lista completa de puntajes, est_detal_puntajes() (solo al pedirla)
   var A = d.kpis.act, B = d.kpis.ant, M = d.meses || [], C = d.cartera, CL = d.clientes, R = d.reglas_puntaje || {};
   var meses = M.map(function(x){ return x.mes; });
   var h = '';
+  var X = d.mas;  // métricas nuevas (est_detal_mas); si no llegaron, esos bloques no salen y queda un aviso
+  h += bloqueMetas(X);
 
   h += bloque('Ventas del período', 'Vendido = valor de lo vendido sin intereses (los intereses van aparte, más abajo). Cuenta créditos y apartados que no fueron anulados ni cancelados.', 'Ventas');
   h += kpis([
@@ -1343,6 +1522,8 @@ function renderDetal(d){
     cols: [{ k: 'cuenta', t: 'Cuenta destino', cls: 'nombre' }, { k: 'n', t: 'Abonos', f: 'int' }, { k: 'monto', t: 'Monto', f: 'money' }, { k: 'p', t: '%', f: 'pct' }],
     filas: (d.cobrado_cuenta || []).map(function(x){ return Object.assign({}, x, { p: pct(x.monto, A.cobrado) }); }), vacio: 'No hubo cobros en este período.' });
 
+  h += bloqueCumplimiento(X);
+
   h += bloque('Cartera viva (hoy)', 'Lo que te deben hoy en créditos y apartados activos o vencidos. No cambia con el período.', 'Cartera');
   h += kpis([
     kpi({ l: 'Te deben en el detal', v: C.deuda, f: 'money', tono: 'gold', s: fmtN(C.clientes) + ' clientes · ' + fmtN(C.cuentas) + ' cuentas' }),
@@ -1364,6 +1545,8 @@ function renderDetal(d){
       { label: 'Por días sin pagar', color: COL.azul, valores: sp.map(function(x){ return x.deuda; }) }
     ], { horizontal: true, alto: 260, vacio: 'Nadie debe hoy.' }));
 
+  h += bloqueViene(X);
+
   h += bloque('Créditos terminados y apartados completados', 'Cuántos terminaron de pagar cada mes y cuántos días tardaron desde que empezaron.', 'Terminados');
   h += card('Terminados por mes', 'Créditos pagados completos y apartados completados.',
     barras('terminados', meses, [
@@ -1381,6 +1564,8 @@ function renderDetal(d){
     cols: [{ k: 'estado_t', t: 'Estado' }, { k: 'n', t: 'Del período', f: 'int' }, { k: 'monto', t: 'Monto del período', f: 'money' }, { k: 'p', t: '% del período', f: 'pct' },
       { k: 'n_total', t: 'Todos', f: 'int' }, { k: 'monto_total', t: 'Monto de todos', f: 'money' }, { k: 'pt', t: '% de todos', f: 'pct' }],
     filas: est, vacio: 'Todavía no hay apartados.' });
+
+  h += bloqueCosecha(X);
 
   h += bloque('Plazos', 'Plazo que se le dio a cada venta del período.', 'Plazos');
   var pr = (d.plazos_real || []), RANGO_PLAZO = ['Hasta 15 días', '16 a 30 días', '31 a 45 días', '46 a 60 días', '61 a 90 días', 'Más de 90 días'];
@@ -1444,12 +1629,16 @@ function renderDetal(d){
     filas: CACHE_RPC.est_detal_puntajes || null, vacio: 'Todavía no hay clientes con compras.',
     diferida: { fn: 'est_detal_puntajes', boton: 'Ver todos los clientes', texto: 'Son ' + fmtN(CL.con_compras) + ' clientes. La lista se trae de la base solo cuando la pides (o al descargar el CSV).' } });
 
+  h += bloqueOportunidades(X);
+
   h += bloque('Por vendedor', 'Solo créditos: los apartados no guardan quién vendió. "Atrasado" = lo que todavía deben de los créditos que vendió en el período y que ya pasaron su fecha límite.', 'Vendedores');
   h += tabla({ id: 'vendedores', titulo: 'Créditos por vendedor', cols: [
       { k: 'vendedor', t: 'Vendedor' }, { k: 'n', t: 'Créditos', f: 'int' }, { k: 'vendido', t: 'Vendido', f: 'money' }, { k: 'promedio', t: 'Promedio', f: 'money' },
       { k: 'pendiente', t: 'Pendiente hoy', f: 'money' }, { k: 'atrasado', t: 'Atrasado', f: 'money' }, { k: 'atrasados_n', t: 'Créditos atrasados', f: 'int' },
       { k: 'p', t: '% atrasado', f: 'pct' }],
     filas: (d.vendedores || []).map(function(x){ return Object.assign({}, x, { p: pct(x.atrasado, x.vendido) }); }), vacio: 'No hubo créditos en este período.' });
+
+  h += tablaVendedoresMas(X);
 
   h += bloque('Productos', 'Lo vendido en créditos y apartados del período, por producto y por categoría del catálogo.', 'Productos');
   var en = d.enlace || {};
@@ -1719,12 +1908,19 @@ document.addEventListener('click', function(e){
   if (b.dataset.csv) { descargarCSV(b.dataset.csv); return; }
   if (b.dataset.cargar) { cargarDiferida(b.dataset.cargar); return; }
   if (b.dataset.ir) { irABloque(b.dataset.ir); return; }
+  if (b.hasAttribute('data-editar-metas')) { var fm = document.getElementById('formMetas'); if (fm) { fm.hidden = !fm.hidden; if (!fm.hidden) document.getElementById('metaVenta').focus(); } return; }
   if (b.id === 'btnArriba') { subirAlFiltro(); return; }
   if (b.dataset.mas) {
     var t = TABLAS[b.dataset.mas]; if (!t) return;
     t.mostrar += FILAS_MAS;
     redibujarTabla(b.dataset.mas);
   }
+});
+document.addEventListener('submit', function(e){
+  if (e.target.id !== 'formMetas') return;
+  e.preventDefault();
+  var btn = document.getElementById('btnGuardarMetas');
+  if (btn && !btn.disabled) guardarMetas(btn);
 });
 // El botón "Arriba" aparece al bajar (en iPad se desliza .layout-main; en el teléfono, la página)
 var esperaScroll = null;
