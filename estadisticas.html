@@ -519,7 +519,7 @@ var REDUCIR_MOVIMIENTO = !!(window.matchMedia && window.matchMedia('(prefers-red
 var SECCIONES = {
   resumen:     { fn: 'est_resumen',     titulo: 'Resumen',              render: renderResumen },
   detal:       { fn: 'est_detal',       titulo: 'Créditos y apartados', render: renderDetal, fnMas: 'est_detal_mas' },
-  mayorista:   { fn: 'est_mayorista',   titulo: 'Mayorista',            render: renderMayorista },
+  mayorista:   { fn: 'est_mayorista',   titulo: 'Mayorista',            render: renderMayorista, fnMas: 'est_mayorista_mas' },
   proveedores: { fn: 'est_proveedores', titulo: 'Proveedores',          render: renderProveedores },
   inventario:  { fn: 'est_inventario',  titulo: 'Inventario y ventas',  render: renderInventario, sinPeriodo: true }
 };
@@ -1674,11 +1674,110 @@ function graficoCategorias(cats, nombre){
 // =====================================================================
 // 3. MAYORISTA
 // =====================================================================
+// ===== Mayorista: métricas nuevas (est_mayorista_mas, 2026-10-31). Y = d.mas =====
+function notaFaltaMasMayor(Y){
+  return Y && Y.error ? nota('No se pudieron cargar las métricas nuevas del mayor (notas, calendario, riesgo, precios y caja). Toca <b>Actualizar</b> para intentarlo otra vez.', true) : '';
+}
+function colNombreMayor(){ return { k: 'nombre', t: 'Cliente', cls: 'nombre', html: function(v){ return esc(v); } }; }
+// M2 y M4: qué entra cada semana y cuánto te arriesgas con cada cliente
+function bloqueCobrosMayor(Y){
+  if (!masDisponible(Y)) return notaFaltaMasMayor(Y);
+  var Ca = Y.calendario || [], Ri = Y.riesgo || [];
+  var proximas = Ca.filter(function(x){ return x.desde && x.hasta; }).slice(0, 4);
+  var h = bloque('Cobros que vienen y riesgo', 'Las facturas con saldo según la semana en que vencen (contando desde hoy). Y cuánto tardaría cada cliente en saldar lo que debe si sigue pagando como en los últimos 90 días. No cambia con el período.', 'Cobros y riesgo');
+  h += kpis(proximas.map(function(x){ return kpi({ l: x.etiqueta, v: x.saldo, f: 'money', tono: 'gold', s: fmtN(x.facturas) + ' facturas · del ' + fmtFecha(x.desde) + ' al ' + fmtFecha(x.hasta) }); }));
+  h += '<div class="grid-2">' + card('Lo que vence cada semana', 'La primera barra es lo que ya está vencido.',
+      barras('calendario_may', Ca.map(function(x){ return x.etiqueta; }), [{ label: 'Saldo', color: COL.oro, valores: Ca.map(function(x){ return x.saldo; }),
+        colores: Ca.map(function(x){ return x.desde ? COL.oro : COL.coral; }) }], { horizontal: true })) +
+    tabla({ id: 'calendario_may', titulo: 'Calendario de cobros', cols: [{ k: 'etiqueta', t: 'Semana', cls: 'nw' },
+      { k: 'desde', t: 'Desde', f: 'date' }, { k: 'hasta', t: 'Hasta', f: 'date' }, { k: 'facturas', t: 'Facturas', f: 'int' }, { k: 'saldo', t: 'Saldo', f: 'money' },
+      { k: 'quienes', t: 'De quiénes', cls: 'largo' }], filas: Ca, vacio: 'Ninguna factura tiene saldo.' }) + '</div>';
+  h += tabla({ id: 'riesgo_may', titulo: 'Riesgo por cliente', desc: 'Paga al mes = sus abonos de los últimos 90 días ÷ 3. Meses para saldar = lo que debe ÷ lo que paga al mes. Arriba, los que no han abonado nada en 90 días y después los que más tardarían.',
+    cols: [colNombreMayor(), { k: 'letra', t: 'Nota', html: function(v){ return etiquetaLetra(v); }, csv: function(v){ return v; } },
+      { k: 'deuda', t: 'Debe', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }, { k: 'pct_deuda', t: '% de la deuda del mayor', f: 'pct' },
+      { k: 'paga_mes', t: 'Paga al mes', f: 'money' }, { k: 'compra_mes', t: 'Compra al mes', f: 'money' },
+      { k: 'meses_saldar', t: 'Meses para saldar', html: function(v){ return v == null ? '<span class="rojo-txt">Sin abonos en 90 días</span>' : esc(fmtDec(v, 1)); },
+        csv: function(v){ return v == null ? 'Sin abonos en 90 días' : num(v).toFixed(1); } }],
+    filas: Ri, vacio: 'Ningún cliente del mayor debe hoy.' });
+  return h;
+}
+// M1, M3 y M6: nota de cada cliente, quién compra menos y cómo crece cada uno
+function bloqueClientesMayor(Y){
+  if (!masDisponible(Y)) return '';
+  var No = Y.notas || [], Co = Y.compras || [], Cr = Y.crecimiento || {};
+  var cuenta = {}; No.forEach(function(x){ cuenta[x.letra] = (cuenta[x.letra] || 0) + 1; });
+  var atrasados = Co.filter(function(x){ return x.atrasado; }).length;
+  var h = bloque('Nota y compras de cada cliente', 'La nota del mayor usa las mismas reglas que la del detal (puntualidad con 5 días de gracia, lo vencido y los días sin abonar), sin intereses porque el mayor no los cobra: puntualidad 80% y facturas pagadas 20%. Cada factura cuenta como pagada el día en que los abonos (a lo más viejo primero) la cubrieron.', 'Notas del mayor');
+  h += kpis(['A', 'B', 'C', 'D', 'E', 'N'].filter(function(l){ return cuenta[l]; }).map(function(l){
+    return kpi({ l: 'Nota ' + l, v: cuenta[l], f: 'int', tono: l === 'A' || l === 'B' ? 'green' : (l === 'D' || l === 'E' ? 'red' : ''), s: l === 'N' ? 'Todavía sin facturas vencidas ni pagadas' : '' });
+  }).concat([kpi({ l: 'Tardan en volver a comprar', v: atrasados, f: 'int', tono: atrasados ? 'gold' : '', s: 'Llevan 1,5 veces su frecuencia sin comprar' })]));
+  h += tabla({ id: 'notas_may', titulo: 'Nota de cada cliente del mayor', desc: 'De la mejor a la peor nota.',
+    cols: [{ k: 'nombre', t: 'Cliente', cls: 'nombre', html: function(v, r){ return esc(v) + (r.no_vender ? ' <span class="etq rojo">No venderle</span>' : '') + (r.telefono ? '<span class="suave">' + esc(r.telefono) + '</span>' : ''); } },
+      { k: 'letra', t: 'Nota', html: function(v, r){ return etiquetaLetra(v) + (r.puntaje != null ? ' <span class="suave" style="display:inline">' + fmtN(r.puntaje) + '</span>' : ''); }, csv: function(v, r){ return v + (r.puntaje != null ? ' (' + r.puntaje + ')' : ''); } },
+      { k: 'a_tiempo', t: 'A tiempo', html: function(v, r){ return esc(fmtN(v) + ' de ' + fmtN(r.evaluadas)); }, csv: function(v, r){ return v + ' de ' + r.evaluadas; } },
+      { k: 'atraso_prom_tarde', t: 'Atraso de las tardías', f: 'dias' }, { k: 'pagadas', t: 'Facturas pagadas', f: 'int' },
+      { k: 'deuda', t: 'Debe', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }, { k: 'dias_vencido', t: 'Días vencida la más vieja', f: 'int' },
+      { k: 'dias_sin_abonar', t: 'Días sin abonar', f: 'int' }],
+    filas: No, vacio: 'Todavía no hay clientes del mayor con facturas.' });
+  h += tabla({ id: 'compras_may', titulo: 'Quién compra menos', desc: 'Lo que compró cada cliente en el período contra el período anterior. Primero los que más bajaron. "Tarda en volver" = lleva más de 1,5 veces su frecuencia sin comprar.',
+    cols: [colNombreMayor(), { k: 'comprado', t: 'Compró', f: 'money' }, { k: 'comprado_ant', t: 'Antes', f: 'money' },
+      { k: 'cambio_pct', t: 'Cambio', html: function(v){ return v == null ? '—' : '<span class="' + (num(v) < 0 ? 'rojo-txt' : 'verde-txt') + '">' + (num(v) > 0 ? '+' : '') + esc(fmtDec(v, 1)) + '%</span>'; }, csv: function(v){ return v == null ? '' : num(v).toFixed(1); } },
+      { k: 'facturas', t: 'Facturas', f: 'int' }, { k: 'cada_dias', t: 'Compra cada', f: 'dias' }, { k: 'ultima_compra', t: 'Última compra', f: 'date' },
+      { k: 'dias_sin_comprar', t: 'Días sin comprar', html: function(v, r){ return esc(formatear(v, 'int')) + (r.atrasado ? ' <span class="etq rojo">Tarda en volver</span>' : ''); }, csv: function(v){ return v; } }],
+    filas: Co, vacio: 'Ningún cliente compró en estos períodos.' });
+  var cm = Cr.meses || [], cc = Cr.clientes || [];
+  var paleta = [COL.oro, COL.azul, COL.verde, COL.coral, COL.violeta, COL.oroClaro, COL.pizarra, COL.gris];
+  h += card('Crecimiento de los clientes que más compran', 'Facturado de cada mes, últimos 6 meses (los 8 que más compraron).',
+    lineasMes('crecimiento_may', cm, cc.map(function(x, i){ return { label: x.nombre, color: paleta[i % paleta.length], valores: x.valores }; }), { alto: 320 }));
+  var colsCrec = [colNombreMayor()].concat(cm.map(function(m, i){
+    return { k: 'm' + i, t: mesCorto(m), f: 'money' };
+  })).concat([{ k: 'total', t: 'Total', f: 'money' }]);
+  h += tabla({ id: 'crecimiento_may', titulo: 'Facturado por mes de cada cliente', cols: colsCrec,
+    filas: cc.map(function(x){ var o = { nombre: x.nombre, total: x.total }; (x.valores || []).forEach(function(v, i){ o['m' + i] = v; }); return o; }),
+    vacio: 'No hubo facturas en los últimos 6 meses.' });
+  return h;
+}
+// M5: a quién le vendes más barato
+function bloquePreciosMayor(Y){
+  if (!masDisponible(Y)) return '';
+  var Pc = Y.precio_cliente || [], Pr = Y.precios || [];
+  var h = bloque('Precio por cliente', 'Últimos 180 días. Solo productos que se vendieron a 2 clientes o más. El % compara lo que pagó cada cliente con el precio promedio de esos mismos productos: negativo = le vendes más barato que al resto.', 'Precios');
+  h += tabla({ id: 'precio_cliente_may', titulo: 'A quién le vendes más barato', desc: 'Del más barato al más caro.',
+    cols: [colNombreMayor(), { k: 'pct', t: 'Frente al promedio', html: function(v){ return v == null ? '—' : '<span class="' + (num(v) < -0.05 ? 'verde-txt' : (num(v) > 0.05 ? 'rojo-txt' : '')) + '">' + (num(v) > 0 ? '+' : '') + esc(fmtDec(v, 1)) + '%</span>'; }, csv: function(v){ return v == null ? '' : num(v).toFixed(1); } },
+      { k: 'productos', t: 'Productos comparados', f: 'int' }, { k: 'unidades', t: 'Unidades', f: 'int' }, { k: 'monto', t: 'Monto', f: 'money' }],
+    filas: Pc, vacio: 'Todavía no hay productos vendidos a 2 clientes o más.' });
+  h += tabla({ id: 'precios_may', titulo: 'Precio de cada producto por cliente', desc: 'Los 60 productos que más se facturaron. Más barato y más caro: el precio unitario promedio que pagó cada cliente.',
+    cols: [{ k: 'producto', t: 'Producto', cls: 'largo' }, { k: 'clientes', t: 'Clientes', f: 'int' }, { k: 'unidades', t: 'Unidades', f: 'int' }, { k: 'precio_prom', t: 'Precio promedio', f: 'money' },
+      { k: 'min', t: 'Más barato', html: function(v, r){ return esc(fmt(v)) + '<span class="suave">' + esc(r.min_cliente || '') + '</span>'; }, csv: function(v, r){ return num(v).toFixed(2) + ' ' + (r.min_cliente || ''); } },
+      { k: 'max', t: 'Más caro', html: function(v, r){ return esc(fmt(v)) + '<span class="suave">' + esc(r.max_cliente || '') + '</span>'; }, csv: function(v, r){ return num(v).toFixed(2) + ' ' + (r.max_cliente || ''); } },
+      { k: 'monto', t: 'Facturado', f: 'money' }],
+    filas: Pr, vacio: 'Todavía no hay productos vendidos a 2 clientes o más.' });
+  return h;
+}
+// M7: pedidos que anota la caja (Lixney) y cuánto tardan en facturarse
+function bloqueCajaMayor(Y){
+  if (!masDisponible(Y)) return '';
+  var K = Y.caja || {};
+  var h = bloque('Pedidos de la caja', 'Pedidos sin precio que anota la caja del mayor. Facturarlos o descartarlos lo haces tú en la app del mayor.', 'Caja');
+  h += kpis([
+    kpi({ l: 'Esperando que los factures', v: K.pendientes, f: 'int', tono: num(K.pendientes) ? 'red' : '' }),
+    kpi({ l: 'Anotados en el período', v: K.en_periodo, f: 'int' }),
+    kpi({ l: 'Facturados', v: K.facturados, f: 'int', tono: 'green' }),
+    kpi({ l: 'Descartados', v: K.descartados, f: 'int' }),
+    kpi({ l: 'Tiempo hasta facturar', v: K.horas_facturar == null ? null : num(K.horas_facturar) / 24, f: 'dias', s: 'Promedio, desde que la caja lo anota' })
+  ]);
+  h += tabla({ id: 'caja_pend_may', titulo: 'Pedidos esperando', cols: [colNombreMayor(), { k: 'creado', t: 'Anotado', f: 'date' },
+      { k: 'horas', t: 'Esperando', html: function(v){ return esc(num(v) >= 48 ? fmtDec(num(v) / 24, 0) + ' días' : fmtN(v) + ' horas'); }, csv: function(v){ return v; } },
+      { k: 'renglones', t: 'Renglones', f: 'int' }, { k: 'notas', t: 'Notas', cls: 'largo' }],
+    filas: K.lista_pendientes || [], vacio: 'No hay pedidos esperando.' });
+  return h;
+}
 function renderMayorista(d){
   // datos: est_mayorista()
   var A = d.kpis.act, B = d.kpis.ant, M = d.meses || [], D = d.deuda;
   var meses = M.map(function(x){ return x.mes; });
   var h = '';
+  var Y = d.mas;  // métricas nuevas (est_mayorista_mas); si no llegaron, esos bloques no salen y queda un aviso
   h += bloque('Ventas y cobros del período', 'Cobrado = abonos de los clientes. Los descuentos y devoluciones bajan la deuda pero no son dinero cobrado: van aparte.', 'Ventas y cobros');
   h += kpis([
     kpi({ l: 'Facturado', v: A.facturado, ant: B.facturado, f: 'money', tono: 'gold', s: fmtN(A.facturas) + ' facturas (antes ' + fmtN(B.facturas) + ')' }),
@@ -1740,6 +1839,8 @@ function renderMayorista(d){
       { label: 'Por vencer', color: COL.oro, pila: 'd', valores: conDeuda.map(function(x){ return num(x.deuda) - num(x.vencido); }) }
     ], { horizontal: true, vacio: 'Nadie debe hoy.' }));
 
+  h += bloqueCobrosMayor(Y);
+
   h += bloque('Clientes', 'Compras de todo el histórico. Frecuencia = cada cuántos días compra en promedio (entre su primera y su última compra). Días en pagar: los abonos se aplican a las facturas más viejas primero, como en la app.', 'Clientes');
   h += tabla({ id: 'clientes', titulo: 'Clientes del mayor', cols: [
       { k: 'nombre', t: 'Cliente', cls: 'nombre', html: function(v, r){ return esc(v) + (r.no_vender ? ' <span class="etq rojo">No venderle</span>' : '') + '<span class="suave">Plazo ' + formatear(r.plazo_dias, 'dias') + '</span>'; }, csv: function(v){ return v; } },
@@ -1756,10 +1857,14 @@ function renderMayorista(d){
       { k: 'nombre', t: 'Cliente', cls: 'nombre' }, { k: 'numero', t: 'N.º', f: 'int' }, { k: 'saldo', t: 'Debe', f: 'money' }, { k: 'total', t: 'Total factura', f: 'money' }, { k: 'fecha', t: 'Fecha', f: 'date' }, { k: 'fecha_vencimiento', t: 'Vence', f: 'date' }, { k: 'dias', t: 'Faltan (días)', f: 'int' }],
       filas: d.por_vencer || [], vacio: 'Nada vence en los próximos 30 días.' });
 
+  h += bloqueClientesMayor(Y);
+
   h += bloque('Productos', 'Lo facturado al mayor en el período, por producto y por categoría del catálogo.', 'Productos');
   var en = d.enlace || {};
   h += nota('De ' + fmtN(en.lineas) + ' renglones facturados, <b>' + fmtN(en.por_id) + '</b> están enlazados al catálogo, <b>' + fmtN(en.por_descripcion) + '</b> se enlazaron por descripción idéntica y <b>' + fmtN(en.sin_enlace) + '</b> no están enlazados (' + fmt(en.monto_sin_enlace) + ' de ' + fmt(en.monto) + '). Las facturas del sistema de cobros anterior guardaban el producto como texto, por eso muchas no se pueden enlazar.') + nota(SIN_COSTO, true);
   h += tablasProductos(d.productos || [], d.categorias || [], en, false);
+  h += bloquePreciosMayor(Y);
+  h += bloqueCajaMayor(Y);
   return h;
 }
 

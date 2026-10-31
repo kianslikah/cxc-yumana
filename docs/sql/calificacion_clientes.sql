@@ -38,6 +38,9 @@ AS $function$
     'interes_resta', 50,                             -- intereses: pierde 50 por cada interés cobrado por cuenta evaluada
     'perdonado_vale', 0.4,                           -- un interés perdonado pesa 0,4 de uno cobrado
     'historial_puntos', jsonb_build_array(0, 40, 60, 75, 90, 100),  -- por cuentas terminadas: 0, 1, 2, 3, 4, 5 o más
+    -- Nota de los clientes del mayor (est_mayorista_mas): no hay intereses, así que solo puntualidad y facturas pagadas
+    'mayor_peso_puntualidad', 0.80,
+    'mayor_peso_historial', 0.20,
     -- Lo de hoy solo resta (así, no deber nada hoy no regala puntos)
     'vencido_resta', jsonb_build_array(              -- días que lleva vencida su cuenta más atrasada, pasada la gracia
       jsonb_build_object('hasta', 15, 'resta', 3),
