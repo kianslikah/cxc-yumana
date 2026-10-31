@@ -363,3 +363,32 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - Títulos grandes en Outfit gruesa; tarjetas e indicadores planos y más redondeados; el período es un control segmentado; los bloques llevan título de sección en vez de la línea dorada.
   - Teléfono: barra de secciones abajo (`.tabbar`, los mismos `data-vista` que la barra lateral; el menú de arriba queda para la cuenta), las tablas se ven como lista (cada celda lleva `data-l` con el nombre de su columna) y arrancan con 8 filas en vez de 20. Entre 561 y 800 px sigue la tabla con la primera columna fija.
   - Solo cambió la presentación: ningún cálculo. Probado con datos simulados a 390, 820 y 1280 px, sin desbordes ni textos raros.
+- **Estadísticas, métricas nuevas de Créditos y del mayor (2026-10-31, `?v=4`):** pedido de Kinan ("súper completas de todo"). No cambian `est_detal` ni `est_mayorista`: cada sección pide además su `fnMas` en paralelo (`cargarSeccion`) y lo guarda en `d.mas`. Si esa consulta falla, la sección se dibuja igual con un aviso.
+  - **Créditos (`est_detal_mas`, `docs/sql/estadisticas_creditos_mas.sql`):**
+    - Metas del mes en curso: tabla nueva `est_metas` (RLS: solo lectura para `est_puede_ver()`; se escribe solo con `est_guardar_meta`). Barra de avance con la raya de "dónde deberías ir hoy", lo que falta por día y a qué ritmo cierras.
+    - Cumplimiento: de las cuentas cuya fecha límite cayó en el período, cuántas se pagaron a tiempo (con la gracia de la calificación), tarde o siguen debiendo. Lo cobrado según el atraso que tenía la cuenta el día del pago.
+    - Lo que viene: vencido hoy y lo que vence en 7, 15 y 30 días, con la lista de cuentas.
+    - Morosidad al cierre de cada mes (últimos 12): saldo de cada cuenta reconstruido con sumas acumuladas (venta + intereses − abonos). Lo fechado en el futuro cae en el mes en curso, así el último mes cuadra con la cartera de hoy (verificado: $82,485.01 y $31,708.26 vencido).
+    - Cómo pagó cada mes de venta (solo créditos): a tiempo, tarde, vencidos sin pagar y en plazo.
+    - Morosidad y notas de los clientes por vendedor.
+    - Oportunidades: a quién volver a venderle (A y B sin nada vencido, con lo que pueden sacar; `est_detal_volver`) y quién no volvió (pagó todo hace más de 60 días; `est_detal_no_volvieron`). Las dos listas se piden solo al tocarlas.
+  - **Mayor (`est_mayorista_mas`, `docs/sql/estadisticas_mayorista_mas.sql`):**
+    - Nota A–E de cada cliente del mayor: las mismas reglas del detal sin el factor de intereses (puntualidad 80% y facturas pagadas 20%: `mayor_peso_puntualidad` y `mayor_peso_historial` en `cli_reglas_calificacion`). Cada factura queda pagada el día en que los abonos a lo más viejo primero la cubren, como en `est_mayorista`.
+    - Calendario de cobros por semana (lo vencido cuadra con la deuda del mayor: $99,432.96).
+    - Riesgo por cliente: lo que paga al mes en los últimos 90 días y cuántos meses tardaría en saldar.
+    - Quién compra menos: período contra período anterior, cada cuánto compra y quién tarda en volver.
+    - Precio por cliente (últimos 180 días, productos vendidos a 2 clientes o más): quién paga más barato frente al promedio, y el más barato y el más caro de cada producto.
+    - Crecimiento mensual de los 8 que más compran.
+    - Pedidos de la caja (hoy no hay ninguno).
+  - Probado con datos simulados a 390 y 1280 px, también con las consultas nuevas fallando. Guardar las metas recarga la sección.
+  - **Revisado con `/thermos` y corregido:**
+    - La nota del mayor contaba los días sin abonar desde el último abono de toda la vida: ahora cuenta desde lo más reciente entre ese abono y la factura viva más vieja, como el detal.
+    - "No volvieron" y "volver a venderle" salen de funciones de origen únicas (`est_clientes_volver`, `est_clientes_no_volvieron`), así el número de arriba y la lista cuadran.
+    - Lo cobrado según el atraso toma todos los abonos (cuadra con el "Cobrado" de `est_detal`) y usa los tramos de `est_tramo_dias`.
+    - El cumplimiento solo cuenta cuentas que ya pasaron su gracia.
+    - Los días y cortes de los textos salen de `est_parametros()`, y las reglas de la nota del mayor de `cli_reglas_calificacion`.
+    - El reparto a lo más viejo primero quedó en `est_may_facturas_pagadas()`. Una factura cerrada sin fecha de pago no se evalúa.
+    - Precio por cliente: solo productos del catálogo (el renglón "Saldo pendiente" de una carga inicial salía como producto).
+    - La meta superada dice su % real, los porcentajes negativos van bien al CSV y los gráficos por mes que no dependen del período no se atenúan.
+    - En la app, `d.extra` (antes `d.mas`), un solo aviso si falla y la limpieza de listas diferidas al Actualizar sin nombres escritos.
+  - La morosidad de meses pasados se calcula con los datos de hoy: un interés perdonado o una cuenta anulada después cambian también los meses viejos.
