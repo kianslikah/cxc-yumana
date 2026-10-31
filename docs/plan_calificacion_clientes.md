@@ -23,7 +23,8 @@ Pedido de Kinan del 2026-10-31: "sofisticar la clasificación de los clientes, s
 3. **Cliente D o E al crear un crédito:**
    - El sistema avisa la nota y el motivo.
    - Si lo crea una cajera, el crédito queda esperando la aprobación de un admin (`pendiente_aprobacion`, que ya existe).
-4. **Tope de crédito automático:** sale de lo que el cliente ya ha pagado bien antes. Los clientes nuevos empiezan con un tope bajo que define Kinan. **Falta el monto.**
+4. **Tope de crédito automático:** sale de lo que el cliente ya ha pagado bien antes.
+5. **Cliente nuevo (N): sin tope automático** (Kinan, 2026-10-31). Cada cliente es diferente y depende del fiador, así que decide el admin. El sistema solo muestra que es nuevo y quién es su fiador.
 
 ## Diseño propuesto
 
@@ -63,7 +64,7 @@ Cada nota trae 2 a 4 frases que la explican. Por ejemplo: "Pagó 5 de 6 cuentas 
 - La base es lo más alto que el cliente ha pagado completo antes.
 - Esa base se multiplica según la letra: A × 1,5, B × 1,2, C × 1,0, D × 0,5, E × 0.
 - Al resultado se le resta lo que debe hoy.
-- Un cliente N empieza con el tope inicial que fije Kinan.
+- **Un cliente N no tiene tope automático:** se muestra "Nuevo: decide el admin según el fiador".
 
 ## Dónde vive
 
@@ -74,8 +75,9 @@ Cada nota trae 2 a 4 frases que la explican. Por ejemplo: "Pagó 5 de 6 cuentas 
 - **Al crear un crédito:**
   - Se muestran la nota, el tope y lo que debe el cliente.
   - Si es D o E, o si supera el tope:
-    - con una cajera, el crédito queda en `pendiente_aprobacion`;
+    - con una cajera, el crédito queda en `pendiente_aprobacion` (hoy toda solicitud de cajera ya queda así: verificarlo);
     - con un admin, solo se avisa.
+  - **En la pantalla de aprobar solicitudes** se muestran la nota, las razones, el tope y el fiador, para que el admin decida con todo a la vista.
 - **`clientes.score`:** o se llena desde la función, o se deja de usar. Nunca puede volver a quedar una letra fija.
 
 ## Reglas para hacerlo
