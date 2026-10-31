@@ -137,7 +137,7 @@ Kinan manda nombre, zona, teléfono(s), cédula o RIF, plazo (30 o 60 días) y f
 ## Pendientes conocidos
 
 1. ~~Verificador de cuadre~~ **HECHO el 2026-10-04.** Los dos abonos de $20 del crédito #62 PASCUAL RODRÍGUEZ (2026-06-14) son reales, confirmado por Kinan el 2026-10-10. Hay 1 interés huérfano en el crédito eliminado #309 (inofensivo).
-2. **Tope de crédito por cliente** según su score, con aviso al crear uno nuevo.
+2. **Tope de crédito por cliente** según su score, con aviso al crear uno nuevo. **Diseñado con Kinan el 2026-10-31, junto con la calificación real de clientes: ver `docs/plan_calificacion_clientes.md`** (hoy los 842 clientes tienen "B" fija). Falta el tope inicial para clientes nuevos.
 3. ~~Cartera por antigüedad~~ **HECHO el 2026-10-04** (KPIs en Cobranza).
 4. ~~Migrar login de Inventario~~ **Ya usa Supabase Auth.** Queda la tabla vieja `inv_usuarios` (1 fila, contraseña en texto plano): Kinan debe decidir si se desactiva. Desde el 2026-10-08 la base exige personal activo en Inventario, pero los permisos por rol (cajera vs admin) de Inventario y Control siguen solo en el navegador: endurecer con RLS por rol cuando se haga el login único.
 5. **Seguridad (tanda del 2026-10-08 hecha, ver `docs/HISTORIAL.md`).** ~~(a) Login de mayorista con Supabase Auth y tablas `may_*` cerradas~~ **HECHO el 2026-10-10.** Falta: (b) crear usuarios con una función del servidor y apagar el registro público en Supabase; (c) Kinan: activar "leaked password protection" en Supabase Auth. La key de Google que se mencionaba no aparece en el código ni en el historial de git. La key pública de Supabase no se puede restringir por dominio: la protección real son las políticas RLS.
