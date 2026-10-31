@@ -8026,7 +8026,7 @@ function imprimirRecibo(tipo, obj, abono) {
     '<h3>RESUMEN</h3>' +
     '<div class="row"><span class="label">Total ' + label.toLowerCase() + ':</span><span class="bold">' + fmt(total) + '</span></div>' +
     '<div class="row"><span class="label">Total pagado:</span><span class="bold">' + fmt(pagado) + '</span></div>' +
-    '<div class="row" style="margin-top:4px;"><span class="big">SALDO:</span><span class="big">' + fmt(saldo) + '</span></div>' +
+    '<div class="row" style="margin-top:4px;"><span class="big">DEUDA:</span><span class="big">' + fmt(saldo) + '</span></div>' +
 
     (saldo <= 0.01 ?
       '<div class="divider"></div><div class="center bold" style="padding:8px;border:3px solid #000;margin:5px 0;font-size:13px;font-weight:900;">COMPLETAMENTE PAGADO</div>' :
@@ -8131,7 +8131,7 @@ function imprimirComprobanteCredito(cr) {
     '<h3>RESUMEN</h3>' +
     '<div class="row"><span class="label">Total crédito:</span><span class="bold">' + fmt(total) + '</span></div>' +
     (pagado > 0.009 ? '<div class="row"><span class="label">Pagado:</span><span class="bold">' + fmt(pagado) + '</span></div>' : '') +
-    '<div class="row" style="margin-top:4px;"><span class="big">SALDO:</span><span class="huge">' + fmt(total - pagado) + '</span></div>' +
+    '<div class="row" style="margin-top:4px;"><span class="big">DEUDA:</span><span class="huge">' + fmt(total - pagado) + '</span></div>' +
     '<div class="row"><span class="label">Fecha límite:</span><span style="font-weight:800;">' + fmtDate(cr.fecha_limite) + '</span></div>' +
     '<div class="divider-solid"></div>' +
     '<div class="center" style="font-size:11px;margin:5px 0;font-weight:700;">Atendido por: ' + (vendedor ? vendedor.nombre : (currentUserApp ? currentUserApp.nombre : '—')) + '</div>' +

@@ -329,3 +329,4 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - En el detalle de cada crédito hay un botón "Imprimir comprobante del crédito". No sale en las solicitudes que esperan aprobación.
   - El recibo de pago y el comprobante comparten los estilos y el encabezado del ticket (`RECIBO80_CSS`, `encabezadoRecibo80`, `clienteTicket80`, `productosTicket80`, `abrirTicket80`). El recibo de pago se ve igual que antes.
   - Probado con datos simulados: los dos tickets a tamaño de impresora, y la vuelta a Cobranza sin perder la posición. No hubo errores.
+- **Créditos, "DEUDA" en vez de "SALDO" en los tickets (2026-10-31, `?v=20261031b`):** a pedido de Kinan. El recibo de pago y el comprobante del crédito dicen "DEUDA:" en la línea de lo que queda por pagar.
