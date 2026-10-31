@@ -335,3 +335,4 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - En el detalle del apartado hay un botón "Imprimir comprobante del apartado".
   - El apartado muestra lo abonado al crearlo, la deuda, la fecha límite y quién lo creó (`created_by`).
   - Probado con datos simulados.
+- **Créditos, Top deudores separado en créditos y apartados (2026-10-31, `?v=20261031d`):** a pedido de Kinan. La pestaña Estadísticas muestra dos listas, "Top deudores de créditos" y "Top deudores de apartados", con los 10 que más deben de cada tipo y su porcentaje de la deuda de ese tipo. Antes era una sola lista que sumaba las dos cosas. El reporte PDF diario sigue con la lista junta. Probado con datos simulados.

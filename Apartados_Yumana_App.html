@@ -9542,22 +9542,26 @@ function renderEstadisticas() {
   var crCompletados = CREDITOS.filter(function(c){return c.estado === 'completado';}).length;
 
   // Clientes con deuda
-  var clientesConDeuda = {};
+  // Deuda por cliente, separada en créditos y apartados (pedido de Kinan, 2026-10-31)
+  var deudaCliCr = {}, deudaCliAp = {};
   apartadosAct.forEach(function(a){
     var saldo = parseFloat(a.monto_total) - parseFloat(a.monto_abonado || 0);
-    if (saldo > 0) clientesConDeuda[a.cliente_id] = (clientesConDeuda[a.cliente_id] || 0) + saldo;
+    if (saldo > 0) deudaCliAp[a.cliente_id] = (deudaCliAp[a.cliente_id] || 0) + saldo;
   });
   creditosAct.forEach(function(c){
     var saldo = parseFloat(c.monto_total) - parseFloat(c.monto_pagado || 0);
-    if (saldo > 0) clientesConDeuda[c.cliente_id] = (clientesConDeuda[c.cliente_id] || 0) + saldo;
+    if (saldo > 0) deudaCliCr[c.cliente_id] = (deudaCliCr[c.cliente_id] || 0) + saldo;
   });
-  var totalClientesDeuda = Object.keys(clientesConDeuda).length;
+  var totalClientesDeuda = Object.keys(Object.assign({}, deudaCliCr, deudaCliAp)).length;
 
-  // Top 10 deudores
-  var topDeudores = Object.keys(clientesConDeuda).map(function(cid){
-    var cli = CLIENTES.find(function(c){return c.id === cid;});
-    return {cliente: cli, total: clientesConDeuda[cid]};
-  }).filter(function(d){return d.cliente;}).sort(function(a,b){return b.total - a.total;}).slice(0, 10);
+  // Top 10 deudores de cada tipo
+  function top10Deudores(deudaPorCliente) {
+    return Object.keys(deudaPorCliente).map(function(cid){
+      var cli = CLIENTES.find(function(c){return c.id === cid;});
+      return {cliente: cli, total: deudaPorCliente[cid]};
+    }).filter(function(d){return d.cliente;}).sort(function(a,b){return b.total - a.total;}).slice(0, 10);
+  }
+  var topDeudoresCr = top10Deudores(deudaCliCr), topDeudoresAp = top10Deudores(deudaCliAp);
 
   // Por método de pago (este mes)
   var porMetodo = {};
@@ -9703,22 +9707,26 @@ function renderEstadisticas() {
   html += '</div>';
   html += '<div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px;">Total 30 días: ' + fmt(datosGrafico.reduce(function(s,d){return s + d.total;}, 0)) + '</div>';
 
-  // Top deudores
-  if (topDeudores.length > 0) {
-    html += '<div class="sec-title">' + ic('chartUp',15) + ' Top <em>deudores</em></div>';
-    topDeudores.forEach(function(d, i){
-      var pct = totalPorCobrar > 0 ? (d.total / totalPorCobrar * 100) : 0;
+  // Top deudores, separados: créditos y apartados
+  function htmlTopDeudores(titulo, lista, totalTipo) {
+    if (!lista.length) return '';
+    var h = '<div class="sec-title">' + ic('chartUp',15) + ' Top deudores de <em>' + titulo + '</em></div>';
+    lista.forEach(function(d, i){
+      var pct = totalTipo > 0 ? (d.total / totalTipo * 100) : 0;
       var phoneBtn = d.cliente.telefono ?
         '<button class="btn-mini" onclick="sendQuickWhatsApp(\'' + d.cliente.id + '\')" title="WhatsApp">' + ic('phone',14) + '</button>' : '';
-      html += '<div class="top-deudor">' +
+      h += '<div class="top-deudor">' +
         '<div class="rank">' + (i+1) + '</div>' +
         '<div class="av">' + initials(d.cliente.nombre) + '</div>' +
         '<div><h5>' + d.cliente.nombre + '</h5><p>' + (d.cliente.cedula || '—') + (d.cliente.telefono ? ' · ' + d.cliente.telefono : '') + '</p></div>' +
-        '<div><div class="amt">' + fmt(d.total) + '</div><div class="pct">' + pct.toFixed(1) + '% del total</div></div>' +
+        '<div><div class="amt">' + fmt(d.total) + '</div><div class="pct">' + pct.toFixed(1) + '% de los ' + titulo + '</div></div>' +
         phoneBtn +
       '</div>';
     });
+    return h;
   }
+  html += htmlTopDeudores('créditos', topDeudoresCr, deudaCreditos);
+  html += htmlTopDeudores('apartados', topDeudoresAp, deudaApartados);
 
   // Métodos de pago
   if (metodosArr.length > 0) {
