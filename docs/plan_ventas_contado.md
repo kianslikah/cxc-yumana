@@ -57,6 +57,35 @@ Además:
   
   Es la que hoy está "preparada" en "Inventario y ventas".
 
+## Rapidez (para que la caja no se trabe)
+
+La caja trabaja con teclado y ratón, no con el dedo. La pantalla de venta se arma para eso:
+
+- **Teclado primero:**
+  - `F2` o `/` va al buscador; `Enter` agrega el primer resultado.
+  - `+` y `−` cambian la cantidad del último renglón; `Supr` lo quita.
+  - `F9` guarda e imprime; `Esc` limpia la venta (pide confirmación si tiene renglones).
+- **Vendedor:** botones grandes y teclas `1` a `9`. Se recuerda el último, porque casi siempre vende el mismo un buen rato.
+- **Más vendidos:** una fila de botones con los 12 productos que más salen, para agregarlos de un toque.
+- **Catálogo en memoria:** se carga una vez al abrir (los 1.737 productos, paginado) y se guarda en el navegador. El buscador busca ahí, sin ir a la base: la respuesta es instantánea aunque el internet esté lento.
+- **Ticket sin cuadro ni ventanas:** se imprime desde un marco escondido de la misma página (como el ticket de prueba de `configurar_caja.html`). En la PC de la caja, con `--kiosk-printing`, sale directo; no abre ventanas que haya que cerrar.
+- **Guardar sin esperar al ticket:** primero la base confirma la venta (función atómica) y en ese instante sale el ticket con su número. Si la base falla, no se imprime nada y la venta queda en pantalla para reintentar.
+- **Más adelante (pendiente 9):** si se cae el internet, guardar la venta en una cola del navegador con un id generado en la PC, imprimir el ticket como "provisional" y subirla sola al volver. La función de la base tiene que aceptar ese id para que un reintento nunca duplique la venta.
+
+## La PC de la caja
+
+- **Guía paso a paso:** `configurar_caja.html` (app.mercantilyumana.com/configurar_caja.html). Se abre en la PC de la caja. Revisa el sistema y el navegador, arma los accesos directos y tiene un ticket de prueba de 80 mm.
+- **Cómo queda:** un acceso directo "Caja Yumana" que abre Chrome en modo app (ventana propia, sin barras, con su ícono) en un perfil aparte (`C:\CajaYumana`) y con impresión directa a la ticketera:
+  `chrome.exe --user-data-dir="C:\CajaYumana" --kiosk-printing --app=https://app.mercantilyumana.com/portal.html`
+- **Por qué así y no un programa instalado:**
+  - Un programa (Electron o nativo) no correría más rápido: lo lento es la red y la base, no el navegador.
+  - Habría que reinstalarlo en la PC con cada cambio, en vez de publicarlo y listo.
+  - Electron ya no funciona en Windows 7.
+  - El modo app de Chrome ya da lo que se busca: ícono propio, abre en un segundo, sin barras e imprime sin cuadro.
+- **Opcional:** cuando exista `ventas.html` se le puede poner manifiesto y un service worker con alcance solo a esa página (nunca en la raíz, ahí vive el de Créditos). Así Chrome lo deja instalar como app y abre aunque no haya internet (base de la cola sin conexión).
+- **Ojo:** desde ese acceso todo lo que se imprime sale en la ticketera, también lo de hoja carta. Para hoja carta se usa el Chrome normal de la PC.
+- **Windows 7:** Chrome se quedó en la versión 109, sin arreglos de seguridad. Funciona, pero conviene cambiar la PC de la caja por una con Windows 10 u 11 (una mini PC sirve). La página de `ventas.html` tiene que funcionar en Chrome 109: nada de CSS o JS más nuevo que eso.
+
 ## Lo que falta de Kinan
 
 - El Excel de Valery con los productos y su costo.

@@ -392,3 +392,14 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - La meta superada dice su % real, los porcentajes negativos van bien al CSV y los gráficos por mes que no dependen del período no se atenúan.
     - En la app, `d.extra` (antes `d.mas`), un solo aviso si falla y la limpieza de listas diferidas al Actualizar sin nombres escritos.
   - La morosidad de meses pasados se calcula con los datos de hoy: un interés perdonado o una cuenta anulada después cambian también los meses viejos.
+- **PC de la caja: guía de configuración e impresión directa (2026-10-31, Créditos `?v=20261031f`, mayorista `?v=20261031`):** pedido de Kinan, para preparar la caja antes de Ventas de contado.
+  - Página nueva `configurar_caja.html` (estática, sin login ni datos). Se abre en la PC de la caja y:
+    - revisa el sistema y el navegador, con aviso si es Windows 7 (Chrome 109 sin arreglos de seguridad);
+    - arma los textos de los accesos directos según la ruta de Chrome;
+    - tiene un ticket de prueba de 80 mm que se imprime desde un marco escondido.
+  - Los accesos directos que deja:
+    - "Caja Yumana - impresora": Chrome sin `--kiosk-printing`, para elegir la ticketera una vez;
+    - "Caja Yumana": `--user-data-dir="C:\CajaYumana" --kiosk-printing --app=.../portal.html`, ventana propia que imprime sin el cuadro.
+  - Créditos (`abrirTicket80`) y mayorista (`imprimirEnVentana`) cierran solos la ventana del recibo de 80 mm 1,5 s después de imprimir, solo en Windows (`cerrarTrasImprimir`). En iPhone, iPad y Mac no se cierra, porque ahí `print()` puede volver antes de imprimir.
+  - En `docs/plan_ventas_contado.md` quedaron las secciones "Rapidez" (teclado primero, vendedor recordado, más vendidos, catálogo en memoria, ticket desde marco escondido, cola sin internet más adelante) y "La PC de la caja" (por qué un acceso directo en modo app y no un programa instalado).
+  - Ojo: desde "Caja Yumana" todo lo que se imprime sale en la ticketera, también lo de hoja carta. Para hoja carta se usa el Chrome normal.

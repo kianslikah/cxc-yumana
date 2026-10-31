@@ -8264,7 +8264,15 @@ function abrirTicket80(titulo, cuerpo) {
   setTimeout(function(){
     win.focus();
     win.print();
+    cerrarTrasImprimir(win);
   }, 500);
+}
+// En una PC con Windows, print() espera a que el ticket se mande: luego se cierra la ventana del recibo, para que en la caja
+// (que imprime directo, sin cuadro: ver configurar_caja.html) no se acumulen ventanas. En iPhone, iPad y Mac no se cierra,
+// porque ahí print() puede volver antes de imprimir y cerrarla cortaría la impresión.
+function cerrarTrasImprimir(win) {
+  if (!/Windows/.test(navigator.userAgent)) return;
+  setTimeout(function(){ try { win.close(); } catch (e) {} }, 1500);
 }
 
 // Comprobante de un crédito o un apartado nuevo (pedido de Kinan, 2026-10-31): lo que se llevó, el total, lo pagado

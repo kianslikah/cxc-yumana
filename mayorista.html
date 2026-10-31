@@ -3279,9 +3279,16 @@ function abrirVentanaImpresion(){
 function imprimirEnVentana(win, html){
   if(!win) return;
   win.document.open(); win.document.write(html); win.document.close();
-  setTimeout(function(){ try { win.focus(); win.print(); } catch(e){} }, 500);
+  setTimeout(function(){ try { win.focus(); win.print(); cerrarTrasImprimir(win); } catch(e){} }, 500);
 }
 function cerrarVentana(win){ try { if(win) win.close(); } catch(e){} }
+// En una PC con Windows, print() espera a que el ticket se mande: luego se cierra la ventana del recibo, para que en la caja
+// (que imprime directo, sin cuadro: ver configurar_caja.html) no se acumulen ventanas. En iPhone, iPad y Mac no se cierra,
+// porque ahí print() puede volver antes de imprimir y cerrarla cortaría la impresión.
+function cerrarTrasImprimir(win){
+  if(!/Windows/.test(navigator.userAgent)) return;
+  setTimeout(function(){ cerrarVentana(win); }, 1500);
+}
 
 // ===== "Pago registrado" (solo la caja; el admin usa los botones del historial): Imprimir recibo / WhatsApp / Listo =====
 // info = { titulo, nombre, monto, metodo, fecha, debe (null = no se sabe todavía) }
