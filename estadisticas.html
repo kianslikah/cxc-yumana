@@ -231,10 +231,11 @@ table.t tfoot td{border-top:1px solid var(--border);font-weight:700;}
 .t-mas{display:flex;justify-content:center;margin-top:12px;}
 .t-cuenta{font-size:12px;color:var(--muted);margin-top:8px;text-align:right;}
 .etq{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;letter-spacing:.3px;white-space:nowrap;}
+/* Letras de la calificación: los mismos colores que en Créditos */
 .etq.A{background:rgba(78,168,118,0.16);color:var(--green);}
-.etq.B{background:rgba(91,155,213,0.16);color:var(--blue);}
-.etq.C{background:rgba(212,162,78,0.16);color:var(--gold-soft);}
-.etq.D{background:rgba(232,117,92,0.16);color:var(--red);}
+.etq.B{background:rgba(212,162,78,0.16);color:var(--gold);}
+.etq.C{background:rgba(240,168,56,0.16);color:#f0a838;}
+.etq.D{background:rgba(232,117,92,0.14);color:#ff9485;}
 .etq.E{background:rgba(232,117,92,0.28);color:var(--red);}
 .etq.N{background:rgba(154,166,184,0.12);color:var(--text-2);}
 .etq.rojo{background:rgba(232,117,92,0.16);color:var(--red);}
@@ -1209,34 +1210,38 @@ function renderResumen(d){
 // 2. CRÉDITOS Y APARTADOS (DETAL)
 // =====================================================================
 // Explicación de la calificación armada con las reglas que manda la base (est_reglas_puntaje = cli_reglas_calificacion):
-// ningún número escrito a mano. Es la misma nota que ve Créditos en la ficha de cada cliente.
+// ningún número ni letra escritos a mano. Es la misma nota que ve Créditos en la ficha de cada cliente.
+function letrasCalif(R){ return ((R && R.cortes) || []).map(function(c){ return c.letra; }).concat(['N']); }
 function textoPuntaje(R){
-  if (!R || !R.nombres) return '';
-  function tramos(lista, campo, signo){
-    var desde = num(R.gracia_dias) + 1;
+  if (!R || !R.nombres || !R.cortes) return '';
+  var coma = function(x){ return fmtDec(x, 1).replace('.', ','); };
+  var porc = function(x){ return Math.round(num(x) * 100) + '%'; };
+  // Tramos [{hasta, valor}] en texto: "6 a 15 días: 90 · ..."; empiezan en el día `desde`
+  function tramos(lista, campo, signo, desde){
     return (lista || []).map(function(t){
       var txt = t.hasta == null ? 'más de ' + fmtN(desde - 1) + ' días' : fmtN(desde) + ' a ' + fmtN(t.hasta) + ' días';
       desde = num(t.hasta) + 1;
       return txt + ': ' + (signo || '') + fmtN(t[campo]);
     }).join(' · ');
   }
-  var sinAbonar = (R.tramos || []).map(function(t, i){ return t.etiqueta.toLowerCase() + ': −' + fmtN((R.sin_abonar_resta || [])[i]); }).join(' · ');
-  var pct = function(x){ return Math.round(num(x) * 100) + '%'; };
-  var N = R.nombres, M = R.tope_multiplica || {}, H = R.historial_puntos || [];
-  var maxCerr = R.letra_max_por_cerradas || [];
+  var g = num(R.gracia_dias), N = R.nombres, M = R.tope_multiplica || {}, H = R.historial_puntos || [], C = R.cortes;
+  var escalera = C.map(function(c, i){
+    var rango = i === 0 ? fmtN(c.desde) + ' o más' : i === C.length - 1 ? 'menos de ' + fmtN(C[i - 1].desde) : fmtN(c.desde) + ' a ' + fmtN(C[i - 1].desde - 1);
+    return '<b>' + esc(c.letra) + '</b> ' + esc(N[c.letra]) + ', ' + rango;
+  }).join(' · ');
+  var maxCerr = (R.letra_max_por_cerradas || []).map(function(l, i){ return 'con ' + fmtN(i) + ' cuenta' + (i === 1 ? '' : 's') + ' terminada' + (i === 1 ? '' : 's') + ', como máximo ' + esc(l); }).join('; ');
+  var peor = C[C.length - 1].letra;
   return '<div class="formula"><h4>Calificación de pago</h4>La misma nota que sale en Créditos. Se calcula con lo que de verdad hace cada cliente:' +
-    '<ul><li><b>Puntualidad (' + pct(R.peso_puntualidad) + ')</b>: cada cuenta terminada, o vencida pasada la gracia, vale 100 si se pagó hasta ' + fmtN(R.gracia_dias) + ' días después de su fecha límite. ' +
-      'Terminada tarde sin interés: ' + tramos(R.cerrada_tarde_puntos, 'puntos') + '. Si se le cobró interés, como máximo ' + fmtN(R.cerrada_con_interes_max) + '. ' +
-      'Vencida y sin terminar: ' + tramos(R.abierta_vencida_puntos, 'puntos') + '. Se promedian todas.</li>' +
-    '<li><b>Intereses (' + pct(R.peso_intereses) + ')</b>: pierde ' + fmtN(R.interes_resta) + ' por cada interés cobrado por cuenta evaluada; uno perdonado cuenta ' + fmtDec(R.perdonado_vale, 1).replace('.', ',') + '.</li>' +
-    '<li><b>Cuentas terminadas (' + pct(R.peso_historial) + ')</b>: ' + H.map(function(p, i){ return (i === H.length - 1 ? fmtN(i) + ' o más' : fmtN(i)) + ' = ' + fmtN(p); }).join(' · ') + '.</li>' +
-    '<li><b>Lo de hoy solo resta</b>: por lo vencido (' + tramos(R.vencido_resta, 'resta', '−') + ') y por los días sin abonar (' + sinAbonar + ').</li></ul>' +
-    'Letras: <b>A</b> ' + esc(N.A) + ', ' + fmtN(R.corte_a) + ' o más · <b>B</b> ' + esc(N.B) + ', ' + fmtN(R.corte_b) + ' a ' + fmtN(R.corte_a - 1) +
-    ' · <b>C</b> ' + esc(N.C) + ', ' + fmtN(R.corte_c) + ' a ' + fmtN(R.corte_b - 1) + ' · <b>D</b> ' + esc(N.D) + ', ' + fmtN(R.corte_d) + ' a ' + fmtN(R.corte_c - 1) +
-    ' · <b>E</b> ' + esc(N.E) + ', menos de ' + fmtN(R.corte_d) + ' (o nunca pagó nada y tiene una cuenta vencida) · <b>N</b> ' + esc(N.N) + ': todavía no tiene cuentas terminadas ni vencidas. ' +
-    'Sin cuentas terminadas, como máximo ' + esc(maxCerr[0] || '') + '; con 1, como máximo ' + esc(maxCerr[1] || '') + '. ' +
+    '<ul><li><b>Puntualidad (' + porc(R.peso_puntualidad) + ')</b>: cada cuenta terminada, o vencida pasada la gracia, vale 100 si se pagó hasta ' + fmtN(g) + ' días después de su fecha límite. ' +
+      'Terminada tarde sin interés: ' + tramos(R.cerrada_tarde_puntos, 'puntos', '', g + 1) + '. Si se le cobró interés, como máximo ' + fmtN(R.cerrada_con_interes_max) + '. ' +
+      'Vencida y sin terminar: ' + tramos(R.abierta_vencida_puntos, 'puntos', '', g + 1) + '. Se promedian todas.</li>' +
+    '<li><b>Intereses (' + porc(R.peso_intereses) + ')</b>: pierde ' + fmtN(R.interes_resta) + ' por cada interés cobrado por cuenta evaluada; uno perdonado cuenta ' + coma(R.perdonado_vale) + '.</li>' +
+    '<li><b>Cuentas terminadas (' + porc(R.peso_historial) + ')</b>: ' + H.map(function(p, i){ return (i === H.length - 1 ? fmtN(i) + ' o más' : fmtN(i)) + ' = ' + fmtN(p); }).join(' · ') + '.</li>' +
+    '<li><b>Lo de hoy solo resta</b>: por lo vencido pasada la gracia (' + tramos(R.vencido_resta, 'resta', '−', g + 1) + ') y por los días sin abonar (' + tramos(R.sin_abonar_resta, 'resta', '−', 0) + ').</li></ul>' +
+    'Letras: ' + escalera + ' (también ' + esc(peor) + ' si nunca pagó nada y tiene una cuenta vencida) · <b>N</b> ' + esc(N.N) + ': todavía no tiene cuentas terminadas ni atrasos de más de ' + fmtN(g) + ' días. ' +
+    'Además, ' + maxCerr + '. ' +
     '<b>Tope de crédito</b>: la cuenta más grande que ya terminó de pagar (sin intereses) × ' +
-      ['A', 'B', 'C', 'D', 'E'].map(function(l){ return l + ' ' + fmtDec(M[l], 1).replace('.', ','); }).join(' / ') + ', menos lo que debe hoy. A los N lo decide el admin según el fiador.</div><div style="height:14px"></div>';
+      C.map(function(c){ return c.letra + ' ' + coma(M[c.letra]); }).join(' / ') + ', menos lo que debe hoy. A los N, y a quien no ha terminado ninguna cuenta, lo decide el admin según el fiador.</div><div style="height:14px"></div>';
 }
 // Cliente con su teléfono debajo (sin ciudad)
 function colCliente(conTelefono){
@@ -1365,7 +1370,8 @@ function renderDetal(d){
 
   h += bloque('Calificación de pago', 'Cómo paga cada cliente, con lo que de verdad hace. Es la misma nota de Créditos y no depende del período.', 'Calificación');
   h += textoPuntaje(R);
-  var letras = (CL.letras || []).slice().sort(function(a, b){ return 'ABCDEN'.indexOf(a.letra) - 'ABCDEN'.indexOf(b.letra); });
+  var orden = letrasCalif(R);
+  var letras = (CL.letras || []).slice().sort(function(a, b){ return orden.indexOf(a.letra) - orden.indexOf(b.letra); });
   var totLet = letras.reduce(function(a, x){ return a + num(x.n); }, 0);
   h += tabla({ id: 'letras', titulo: 'Clientes por nota', cols: [{ k: 'letra', t: 'Nota', html: function(v){ return etiquetaLetra(v); }, csv: function(v){ return v; } },
       { k: 'n', t: 'Clientes', f: 'int' }, { k: 'p', t: '% de clientes', f: 'pct' }, { k: 'deuda', t: 'Deuda hoy', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }],

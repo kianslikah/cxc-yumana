@@ -156,6 +156,7 @@ Kinan manda nombre, zona, teléfono(s), cédula o RIF, plazo (30 o 60 días) y f
 16. **Estadísticas, lo que sigue:**
     - (a) Créditos y Proveedores tienen sus propias pestañas de estadísticas viejas: algunos números salen en dos lugares y pueden no coincidir exacto. Kinan decide si se retiran cuando use la app nueva.
     - ~~(b) Puntaje real en la ficha de Créditos~~ **HECHO el 2026-10-31** (calificación de clientes, pendiente 2).
+    - (f) `est_puntaje_clientes()` y `est_reglas_puntaje()` quedaron como paso directo a `cli_calificacion_base()`. Se pueden quitar haciendo que `est_detal` y `est_detal_puntajes` lean la calificación directo (es un DROP: con el "dale" de Kinan). Hoy esas listas se ordenan por la nota de 0 a 100, no por la letra.
     - (e) **Métricas nuevas pedidas por Kinan (2026-10-31):** proyección de caja a 30 días, tasa de cobro, días promedio de pago, cartera vencida mes a mes, ventas y morosidad por vendedor, concentración del mayor, clientes que no volvieron, lo más vendido a crédito y metas.
     - (c) La sección Inventario y ventas se activa cuando el inventario del día a día y los costos estén cargados (pendientes 10 y 11).
     - (d) Para darle acceso a alguien: agregar su fila en `est_acceso` (tabla cerrada a la API; se hace desde el conector).
