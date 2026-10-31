@@ -381,3 +381,14 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - Crecimiento mensual de los 8 que más compran.
     - Pedidos de la caja (hoy no hay ninguno).
   - Probado con datos simulados a 390 y 1280 px, también con las consultas nuevas fallando. Guardar las metas recarga la sección.
+  - **Revisado con `/thermos` y corregido:**
+    - La nota del mayor contaba los días sin abonar desde el último abono de toda la vida: ahora cuenta desde lo más reciente entre ese abono y la factura viva más vieja, como el detal.
+    - "No volvieron" y "volver a venderle" salen de funciones de origen únicas (`est_clientes_volver`, `est_clientes_no_volvieron`), así el número de arriba y la lista cuadran.
+    - Lo cobrado según el atraso toma todos los abonos (cuadra con el "Cobrado" de `est_detal`) y usa los tramos de `est_tramo_dias`.
+    - El cumplimiento solo cuenta cuentas que ya pasaron su gracia.
+    - Los días y cortes de los textos salen de `est_parametros()`, y las reglas de la nota del mayor de `cli_reglas_calificacion`.
+    - El reparto a lo más viejo primero quedó en `est_may_facturas_pagadas()`. Una factura cerrada sin fecha de pago no se evalúa.
+    - Precio por cliente: solo productos del catálogo (el renglón "Saldo pendiente" de una carga inicial salía como producto).
+    - La meta superada dice su % real, los porcentajes negativos van bien al CSV y los gráficos por mes que no dependen del período no se atenúan.
+    - En la app, `d.extra` (antes `d.mas`), un solo aviso si falla y la limpieza de listas diferidas al Actualizar sin nombres escritos.
+  - La morosidad de meses pasados se calcula con los datos de hoy: un interés perdonado o una cuenta anulada después cambian también los meses viejos.
