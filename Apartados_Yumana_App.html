@@ -2506,7 +2506,7 @@ document.getElementById('toast').addEventListener('click', function() {
 });
 var currentViewId = 'vDashboard';
 var scrollPorVista = {}; // recuerda la posición de scroll de cada lista
-var VISTAS_CON_SCROLL = ['vCreditos', 'vApartados', 'vClientes'];
+var VISTAS_CON_SCROLL = ['vCreditos', 'vApartados', 'vClientes', 'vCobranza'];
 function showView(id) {
   // Guardar la posición actual de la lista antes de cambiar de vista
   if (VISTAS_CON_SCROLL.indexOf(currentViewId) !== -1) {
@@ -6376,6 +6376,15 @@ protegerBoton('btnSaveCr', async function(){
       }
 
       await loadData();
+
+      // Comprobante para que el cliente se lo lleve, aunque no haya dado abono (las solicitudes esperan aprobación)
+      if (esAdmin) {
+        var crNuevo = CREDITOS.find(function(x){ return x.id === cr.id; }) || cr;
+        var cliNuevo = CLIENTES.find(function(x){ return x.id === crNuevo.cliente_id; });
+        confirmAction('¿Imprimir comprobante?', 'Imprime el comprobante del crédito para que el cliente se lo lleve.',
+          'Crédito #' + crNuevo.numero + (cliNuevo ? ' · ' + cliNuevo.nombre : '') + ' · ' + fmt(crNuevo.monto_total),
+          function(){ imprimirComprobanteCredito(crNuevo); }, { btn: 'Imprimir comprobante', clase: 'btn-primary' });
+      }
     }
   } catch (e) {
     toast('Error: ' + e.message, 'e');
@@ -6984,6 +6993,8 @@ function renderDetailCredito() {
         '<button class="btn btn-green" id="btnWaHistorialCr" style="width:100%;justify-content:center;padding:11px;margin-top:8px;background:#25d366;font-size:12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg> Enviar estado de cuenta completo por WhatsApp</button>' : '') +
     '</div>' +
 
+    (cr.estado !== 'pendiente_aprobacion' ?
+      '<button class="btn btn-ghost detail-actions-row" id="btnComprobanteCr" style="width:100%;justify-content:center;padding:12px;margin-top:14px;border-color:#3498db;color:#3498db;">' + ic('print',14) + ' Imprimir comprobante del crédito</button>' : '') +
     (cli && cli.telefono ?
       '<div class="detail-actions-row" style="margin-top:14px;">' +
         '<button class="btn btn-green" id="btnWhatsCr" style="width:100%;justify-content:center;padding:14px;background:#25d366;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg> WhatsApp Recordatorio</button>' +
@@ -7055,6 +7066,9 @@ function renderDetailCredito() {
   if (btnReciboCr) btnReciboCr.addEventListener('click', function(){
     enviarReciboCreditoPorWhatsApp(cr);
   });
+
+  var btnComprobanteCr = document.getElementById('btnComprobanteCr');
+  if (btnComprobanteCr) btnComprobanteCr.addEventListener('click', function(){ imprimirComprobanteCredito(cr); });
 
   // Listeners reimprimir
   var reprintBtns = document.querySelectorAll('[data-reprint-ab]');
@@ -7958,40 +7972,7 @@ function imprimirRecibo(tipo, obj, abono) {
   var fechaHora = now.toLocaleDateString('es-VE', {day:'2-digit', month:'2-digit', year:'numeric'}) +
                   ' ' + now.toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'});
 
-  // Formato 80mm térmico
-  var html =
-    '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
-    '<title>Recibo</title>' +
-    '<style>' +
-    '@page { size: 80mm auto; margin: 2mm; }' +
-    '* { box-sizing: border-box; margin: 0; padding: 0; color: #000 !important; }' +
-    'body { font-family: "Courier New", monospace; font-size: 12px; width: 76mm; color: #000; padding: 2mm; font-weight: 600; }' +
-    '.center { text-align: center; }' +
-    '.right { text-align: right; }' +
-    '.bold { font-weight: 800; }' +
-    '.big { font-size: 15px; font-weight: 900; }' +
-    '.huge { font-size: 20px; font-weight: 900; }' +
-    '.divider { border-top: 2px solid #000; margin: 5px 0; }' +
-    '.divider-solid { border-top: 3px solid #000; margin: 6px 0; }' +
-    '.row { display: flex; justify-content: space-between; padding: 2px 0; font-weight: 700; }' +
-    '.row .label { font-weight: 800; }' +
-    '.brand { font-size: 18px; font-weight: 900; letter-spacing: 3px; }' +
-    '.tipo-doc { background: #000; color: #fff !important; padding: 5px; margin: 4px 0; font-weight: 900; letter-spacing: 2px; font-size: 13px; }' +
-    '.tipo-doc * { color: #fff !important; }' +
-    '.firma { margin-top: 28px; }' +
-    '.firma-line { border-top: 2px solid #000; width: 70%; margin: 0 auto 4px; padding-top: 3px; }' +
-    'h3 { font-size: 13px; margin: 8px 0 4px; font-weight: 900; letter-spacing: 1px; color: #000; }' +
-    '.item { padding: 2px 0; font-size: 11px; font-weight: 700; color: #000; }' +
-    '@media print { body { width: 76mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; } * { color: #000 !important; } .tipo-doc, .tipo-doc * { color: #fff !important; background: #000 !important; } }' +
-    '</style></head><body>' +
-
-    '<div class="center brand">MERCANTIL YUMANA</div>' +
-    '<div class="center" style="font-size:10px;letter-spacing:2px;font-weight:700;">SOCOPÓ - BARINAS</div>' +
-    '<div class="center" style="font-size:10px;margin-top:3px;font-weight:700;">RIF: V-25.650.7389</div>' +
-    '<div class="center" style="font-size:10px;font-weight:700;">Tel: 0412-6087906</div>' +
-
-    '<div class="divider-solid"></div>' +
-
+  var cuerpo =
     '<div class="center tipo-doc">RECIBO DE PAGO</div>' +
     '<div class="center" style="font-size:11px;font-weight:700;">' + label + ' #' + obj.numero + '</div>' +
     '<div class="center" style="font-size:10px;font-weight:600;">Pago N° ' + pagosCount + '</div>' +
@@ -8003,17 +7984,8 @@ function imprimirRecibo(tipo, obj, abono) {
 
     '<div class="divider"></div>' +
 
-    '<h3>CLIENTE</h3>' +
-    '<div style="font-weight:700;font-size:12px;">' + cli.nombre + '</div>' +
-    '<div style="font-size:11px;font-weight:600;">CI: ' + (cli.cedula || '—') + '</div>' +
-    (cli.telefono ? '<div style="font-size:11px;font-weight:600;">Tel: ' + cli.telefono + '</div>' : '') +
-
-    '<div class="divider"></div>' +
-
-    '<h3>PRODUCTOS</h3>' +
-    getProductosArray(tipo, obj).map(function(p){return '<div class="item">- ' + p + '</div>';}).join('') +
-
-    '<div class="divider"></div>' +
+    clienteTicket80(cli) +
+    productosTicket80(tipo, obj) +
 
     '<h3>PAGO RECIBIDO</h3>' +
     '<div class="row"><span class="label">Método:</span><span class="bold">' + abono.metodo + '</span></div>' +
@@ -8022,7 +7994,6 @@ function imprimirRecibo(tipo, obj, abono) {
     '<div class="row" style="margin-top:5px;"><span class="big">MONTO:</span><span class="huge">' + fmt(abono.monto) + '</span></div>' +
 
     '<div class="divider-solid"></div>' +
-
     // HISTORIAL DE PAGOS - todos los abonos del apartado/crédito ordenados
     (function(){
       var todosPagos = ABONOS.filter(function(a){
@@ -8082,19 +8053,97 @@ function imprimirRecibo(tipo, obj, abono) {
 
     '<div class="center" style="font-size:10px;margin-top:8px;font-weight:700;">Gracias por su compra</div>' +
     '<div class="center" style="font-size:10px;font-weight:600;">Mercantil Yumana © 2026</div>' +
-    '<div style="height: 20mm;"></div>' +
+    '<div style="height: 20mm;"></div>';
 
-    '</body></html>';
+  abrirTicket80('Recibo', cuerpo);
+}
 
+// Ticket térmico de 80 mm: estilos y encabezado comunes al recibo de pago y al comprobante de cuenta
+var RECIBO80_CSS =
+    '@page { size: 80mm auto; margin: 2mm; }' +
+    '* { box-sizing: border-box; margin: 0; padding: 0; color: #000 !important; }' +
+    'body { font-family: "Courier New", monospace; font-size: 12px; width: 76mm; color: #000; padding: 2mm; font-weight: 600; }' +
+    '.center { text-align: center; }' +
+    '.right { text-align: right; }' +
+    '.bold { font-weight: 800; }' +
+    '.big { font-size: 15px; font-weight: 900; }' +
+    '.huge { font-size: 20px; font-weight: 900; }' +
+    '.divider { border-top: 2px solid #000; margin: 5px 0; }' +
+    '.divider-solid { border-top: 3px solid #000; margin: 6px 0; }' +
+    '.row { display: flex; justify-content: space-between; padding: 2px 0; font-weight: 700; }' +
+    '.row .label { font-weight: 800; }' +
+    '.brand { font-size: 18px; font-weight: 900; letter-spacing: 3px; }' +
+    '.tipo-doc { background: #000; color: #fff !important; padding: 5px; margin: 4px 0; font-weight: 900; letter-spacing: 2px; font-size: 13px; }' +
+    '.tipo-doc * { color: #fff !important; }' +
+    '.firma { margin-top: 28px; }' +
+    '.firma-line { border-top: 2px solid #000; width: 70%; margin: 0 auto 4px; padding-top: 3px; }' +
+    'h3 { font-size: 13px; margin: 8px 0 4px; font-weight: 900; letter-spacing: 1px; color: #000; }' +
+    '.item { padding: 2px 0; font-size: 11px; font-weight: 700; color: #000; }' +
+    '@media print { body { width: 76mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; } * { color: #000 !important; } .tipo-doc, .tipo-doc * { color: #fff !important; background: #000 !important; } }';
+function encabezadoRecibo80() {
+  return '<div class="center brand">MERCANTIL YUMANA</div>' +
+    '<div class="center" style="font-size:10px;letter-spacing:2px;font-weight:700;">SOCOPÓ - BARINAS</div>' +
+    '<div class="center" style="font-size:10px;margin-top:3px;font-weight:700;">RIF: V-25.650.7389</div>' +
+    '<div class="center" style="font-size:10px;font-weight:700;">Tel: 0412-6087906</div>' +
+    '<div class="divider-solid"></div>';
+}
+function clienteTicket80(cli) {
+  return '<h3>CLIENTE</h3>' +
+    '<div style="font-weight:700;font-size:12px;">' + cli.nombre + '</div>' +
+    '<div style="font-size:11px;font-weight:600;">CI: ' + (cli.cedula || '—') + '</div>' +
+    (cli.telefono ? '<div style="font-size:11px;font-weight:600;">Tel: ' + cli.telefono + '</div>' : '') +
+    '<div class="divider"></div>';
+}
+function productosTicket80(tipo, obj) {
+  return '<h3>PRODUCTOS</h3>' +
+    getProductosArray(tipo, obj).map(function(p){return '<div class="item">- ' + p + '</div>';}).join('') +
+    '<div class="divider"></div>';
+}
+function abrirTicket80(titulo, cuerpo) {
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + titulo + '</title><style>' + RECIBO80_CSS + '</style></head><body>' +
+    encabezadoRecibo80() + cuerpo + '</body></html>';
   var win = window.open('', '_blank', 'width=400,height=700');
   if (!win) return toast('Permite ventanas emergentes para imprimir', 'e');
   win.document.write(html);
   win.document.close();
-
   setTimeout(function(){
     win.focus();
     win.print();
   }, 500);
+}
+
+// Comprobante de un crédito (pedido de Kinan, 2026-10-31): lo que se llevó, el total, lo pagado y la fecha límite,
+// para que el cliente se lo lleve aunque no haya dado ningún abono. Se ofrece al crear el crédito y está en su detalle.
+function imprimirComprobanteCredito(cr) {
+  var cli = CLIENTES.find(function(c){return c.id === cr.cliente_id;});
+  if (!cli) return toast('No se encontró el cliente', 'e');
+  var total = parseFloat(cr.monto_total) || 0;
+  var pagado = parseFloat(cr.monto_pagado || 0);
+  var vendedor = USUARIOS_APP.find(function(u){return u.id === cr.vendedor_id;});
+  var cuerpo =
+    '<div class="center tipo-doc">COMPROBANTE DE CRÉDITO</div>' +
+    '<div class="center" style="font-size:11px;font-weight:700;">CRÉDITO #' + cr.numero + '</div>' +
+    '<div class="divider"></div>' +
+    '<div class="row"><span class="label">Fecha:</span><span style="font-weight:700;">' + fmtDate(cr.fecha_inicio) + '</span></div>' +
+    '<div class="divider"></div>' +
+    clienteTicket80(cli) +
+    productosTicket80('credito', cr) +
+    '<h3>RESUMEN</h3>' +
+    '<div class="row"><span class="label">Total crédito:</span><span class="bold">' + fmt(total) + '</span></div>' +
+    (pagado > 0.009 ? '<div class="row"><span class="label">Pagado:</span><span class="bold">' + fmt(pagado) + '</span></div>' : '') +
+    '<div class="row" style="margin-top:4px;"><span class="big">SALDO:</span><span class="huge">' + fmt(total - pagado) + '</span></div>' +
+    '<div class="row"><span class="label">Fecha límite:</span><span style="font-weight:800;">' + fmtDate(cr.fecha_limite) + '</span></div>' +
+    '<div class="divider-solid"></div>' +
+    '<div class="center" style="font-size:11px;margin:5px 0;font-weight:700;">Atendido por: ' + (vendedor ? vendedor.nombre : (currentUserApp ? currentUserApp.nombre : '—')) + '</div>' +
+    '<div class="firma">' +
+      '<div class="firma-line"></div>' +
+      '<div class="center" style="font-size:10px;font-weight:700;">Firma del cliente</div>' +
+    '</div>' +
+    '<div class="divider"></div>' +
+    '<div class="center" style="font-size:10px;margin-top:8px;font-weight:700;">Gracias por su compra</div>' +
+    '<div class="center" style="font-size:10px;font-weight:600;">Mercantil Yumana © 2026</div>' +
+    '<div style="height: 20mm;"></div>';
+  abrirTicket80('Comprobante', cuerpo);
 }
 
 
