@@ -919,10 +919,30 @@ input:checked + .toggle-slider::before{transform:translateX(20px);}
 .cliente-row .score{
   font-size:20px; font-weight:700; width:30px; text-align:center;
 }
-.score-A{color:var(--green-soft);}
-.score-B{color:var(--gold);}
-.score-C{color:var(--orange);}
-.score-D{color:var(--red-soft);}
+.score-chica{font-size:10px;padding:1px 6px;}
+/* Calificación del cliente (cli_calificaciones / cli_calificacion de la base): un color por letra,
+   el mismo para la letra, la etiqueta y el borde de la tarjeta */
+.nota-A{--nc:var(--green-soft); --nf:rgba(46,194,122,0.15);}
+.nota-B{--nc:var(--gold); --nf:rgba(201,162,76,0.15);}
+.nota-C{--nc:var(--orange); --nf:rgba(240,168,56,0.16);}
+.nota-D{--nc:var(--red-soft); --nf:rgba(232,93,76,0.14);}
+.nota-E{--nc:var(--red); --nf:rgba(232,93,76,0.24);}
+.nota-N{--nc:var(--muted); --nf:rgba(111,111,130,0.16);}
+.score.nota-A, .score.nota-B, .score.nota-C, .score.nota-D, .score.nota-E, .score.nota-N, .calif-letra{color:var(--nc);}
+.tag.tag-nota{margin-top:6px;margin-left:0;background:var(--nf);color:var(--nc);}
+.calif-card{border-left:3px solid var(--nc, var(--border));}
+.calif-cab{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.calif-letra{font-size:34px;font-weight:700;line-height:1;width:40px;text-align:center;font-family:'Fraunces',serif;}
+.calif-nombre{font-size:15px;font-weight:700;color:var(--text);}
+.calif-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.calif-tope{margin-left:auto;text-align:right;}
+.calif-tope .l{font-size:11px;color:var(--muted);}
+.calif-tope .v{font-size:18px;font-weight:700;color:var(--text);}
+.calif-razones{margin:10px 0 0;padding-left:18px;font-size:13px;color:var(--text-2);line-height:1.5;}
+.calif-aviso{margin-top:10px;padding:9px 11px;border-radius:8px;font-size:12px;font-weight:600;}
+.calif-aviso.ok{background:rgba(46,194,122,0.12);color:var(--green-soft);}
+.calif-aviso.mal{background:rgba(232,93,76,0.14);color:var(--red-soft);}
+.calif-aviso.info{background:rgba(111,111,130,0.14);color:var(--text-2);}
 
 /* ============== EMPTY ============== */
 .empty-state{
@@ -1729,6 +1749,7 @@ input:checked + .toggle-slider::before{transform:translateX(20px);}
       <input type="hidden" id="ncrCliente" value="">
       <div class="fg-help">¿No está? <a href="#" id="ncrCrearCli" style="color:var(--gold);">Crear cliente nuevo</a></div>
       <div id="ncrAvisoDeuda" style="display:none;margin-top:8px;"></div>
+      <div id="ncrCalif" style="display:none;margin:8px 0 0;padding:12px;"></div>
     </div>
 
     <div class="fg">
@@ -2163,6 +2184,12 @@ var USUARIOS_APP = [];
 var HISTORIAL_AUDIT = [];
 var ABONOS_EDITADOS = {}; // ids de abonos con alguna edición en la auditoría (para la marca "editado")
 var CONFIG_APP = {};
+// Calificación real de cada cliente (cli_calificaciones de la base, ver docs/sql/calificacion_clientes.sql).
+// Reemplaza la letra fija de clientes.score, que ya no se usa.
+var CALIF = null;        // id -> {letra, puntaje, tope, disponible, deuda, vencido} (+ razones al abrir la tarjeta).
+                         // null = la base no respondió en la última carga: las letras salen "–", nunca una nota vieja o inventada
+var CALIF_NOMBRES = {};  // letra -> nombre ("Excelente", "Bueno"...), lo manda la base
+var CALIF_TURNO = 0;     // cada tarjeta pintada lleva su turno: una respuesta que llega tarde no pisa a la más nueva
 
 function getUserName(userId) {
   if (!userId) return null;
@@ -2438,6 +2465,8 @@ async function mostrarHistorialAuditoria(entidad, entidadId) {
 function normalizar(txt) {
   return (txt || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
+// Escapa texto para meterlo en HTML (nombres, notas y razones escritos por usuarios)
+function escHtml(t) { return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmt(n) {
   return '$' + (Math.abs(Number(n) || 0)).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
@@ -2804,6 +2833,17 @@ async function loadData() {
     HISTORIAL_AUDIT = r8.data || [];
     CONFIG_APP = {};
     (r9.data || []).forEach(function(row){ CONFIG_APP[row.clave] = row.valor; });
+    // Calificación de clientes: si falla, la app sigue igual y las letras salen "–"
+    try {
+      var rc = await sb.rpc('cli_calificaciones');
+      if (rc.error) throw rc.error;
+      var mapaCalif = {};
+      ((rc.data && rc.data.clientes) || []).forEach(function(x){
+        mapaCalif[x[0]] = { letra: x[1], puntaje: x[2], tope: x[3], disponible: x[4], deuda: x[5], vencido: x[6] };
+      });
+      CALIF_NOMBRES = (rc.data && rc.data.nombres) || {};
+      CALIF = mapaCalif;
+    } catch (e) { CALIF = null; console.warn('calificación de clientes', e); }
     log(CLIENTES.length + ' clientes, ' + APARTADOS.length + ' apartados, ' + CREDITOS.length + ' créditos, ' + ABONOS.length + ' abonos');
     // Marcar vencidos en la base una vez al día (solo cambia activo <-> vencido)
     try { await marcarVencidos(); } catch(e) { console.error(e); }
@@ -3215,7 +3255,7 @@ function renderClientes() {
         '<p>' + (c.cedula || 'Sin cédula') + (c.telefono ? ' · ' + telefonoConBandera(c) : '') + (c.ciudad ? ' · ' + c.ciudad : '') + '</p>' +
         (c.notas_privadas ? '<p style="font-size:11px;color:#f39c12;font-style:italic;margin-top:3px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg> ' + c.notas_privadas.substring(0, 80) + (c.notas_privadas.length > 80 ? '...' : '') + '</p>' : '') +
       '</div>' +
-      '<div class="score score-' + (c.score || 'B') + '">' + (c.score || 'B') + '</div>' +
+      htmlLetra(c.id) +
       actions +
     '</div>';
   }).join('') + '</div>' + (__totCl > list.length ? botonVerMas('cl', __totCl - list.length) : '');
@@ -3305,8 +3345,6 @@ function renderClienteDetalle(clienteId) {
     else { totalDeuda += saldo; activosCount++; }
   });
 
-  var rolColor = c.score === 'A' ? 'var(--green-soft)' : c.score === 'C' ? 'var(--red-soft)' : 'var(--gold)';
-
   var html =
     (c.disputado ?
       '<div style="background:#e74c3c;color:#fff;border-radius:10px;padding:14px 16px;margin-bottom:12px;">' +
@@ -3319,7 +3357,7 @@ function renderClienteDetalle(clienteId) {
         '<h2>' + c.nombre + '</h2>' +
         '<p>' + (c.cedula || 'Sin cédula') + (c.telefono ? ' · ' + telefonoConBandera(c) : '') + (c.ciudad ? ' · ' + c.ciudad : '') + '</p>' +
         (!c.cedula ? '<span class="tag" style="background:rgba(243,156,18,0.2);color:#f39c12;margin-top:6px;margin-left:0;font-size:11px;padding:4px 8px;">Falta cédula</span> ' : '') +
-        '<span class="tag" style="background:rgba(39,174,96,0.15);color:var(--green-soft);margin-top:6px;margin-left:0;">Score ' + (c.score || 'B') + '</span>' +
+        tagCalif(c.id) +
       '</div>' +
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
         '<button class="btn btn-ghost" id="btnHistorialCliPdf" style="border-color:#9b59b6;color:#9b59b6;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg> Estado de cuenta PDF</button>' +
@@ -3333,7 +3371,8 @@ function renderClienteDetalle(clienteId) {
       '<div class="kpi"><div class="l">Pagado histórico</div><div class="v" style="color:var(--green-soft);">' + fmt(totalPagado) + '</div></div>' +
       '<div class="kpi"><div class="l">Cuentas activas</div><div class="v">' + activosCount + '</div></div>' +
       '<div class="kpi"><div class="l">Completadas</div><div class="v">' + completadosCount + '</div></div>' +
-    '</div>';
+    '</div>' +
+    '<div id="califFicha" style="margin-top:12px;"></div>';
 
   // CONTACTO RÁPIDO
   if (c.telefono) {
@@ -3459,6 +3498,7 @@ function renderClienteDetalle(clienteId) {
   if (btnPC) btnPC.addEventListener('click', function(){ abrirPagoCuenta(clienteId); });
   var btnRC = document.getElementById('btnResumenCuentaCli');
   if (btnRC) btnRC.addEventListener('click', function(){ enviarWhatsAppCliente(mensajeResumenCuenta(clienteId), clienteId); });
+  pintarCalif('califFicha', clienteId);
 
   showView('vClienteDetalle');
 }
@@ -3586,7 +3626,7 @@ function renderCobranza() {
     return '<div class="cob-row r' + g.rango + '">' +
       '<div class="top">' +
         '<div style="flex:1;min-width:0;">' +
-          '<div class="nombre cob-ver" data-cli="' + c.id + '">' + (c.nombre || '?').replace(/</g,'&lt;') + ' <span class="score score-' + (c.score || 'B') + '" style="font-size:10px;padding:1px 6px;">' + (c.score || 'B') + '</span></div>' +
+          '<div class="nombre cob-ver" data-cli="' + c.id + '">' + (c.nombre || '?').replace(/</g,'&lt;') + ' ' + htmlLetra(c.id, true) + '</div>' +
           '<div class="meta">' + (tel ? tel + ' · ' : '') + cuentasTxt + '</div>' +
           (viejaTxt ? '<div class="meta">' + viejaTxt + '</div>' : '') +
           (g.ultimoPago ? '<div class="meta">Último pago ' + fmtDate(g.ultimoPago) + '</div>' : '') +
@@ -5291,6 +5331,119 @@ function addProduct(containerType) {
 }
 
 // =================================================================
+// CALIFICACIÓN DEL CLIENTE (nota A–E, N = nuevo, y tope de crédito)
+// Todo se calcula en la base (cli_calificacion_base); aquí solo se muestra.
+// =================================================================
+// Calificación de un cliente, o null si la base no respondió. Un cliente creado después de la última carga
+// todavía no está en la lista: cuenta como nuevo (N) hasta la próxima carga.
+function califCliente(id) {
+  if (!CALIF || !id) return null;
+  return CALIF[id] || { letra: 'N', puntaje: null, tope: null, disponible: null, deuda: 0, vencido: 0 };
+}
+function nombreLetra(l) { return CALIF_NOMBRES[l] || ''; }
+function tituloCalif(c) { return c ? nombreLetra(c.letra) + (c.puntaje != null ? ' · nota ' + c.puntaje + ' de 100' : '') : 'No se pudo cargar la calificación'; }
+// Letra de color: grande en la lista de clientes, chica junto al nombre en Cobranza
+function htmlLetra(id, chica) {
+  var c = califCliente(id), tag = chica ? 'span' : 'div';
+  return '<' + tag + ' class="score nota-' + (c ? c.letra : 'N') + (chica ? ' score-chica' : '') + '" title="' + escHtml(tituloCalif(c)) + '">' +
+    (c ? c.letra : '–') + '</' + tag + '>';
+}
+// Etiqueta "Nota B · Bueno" de la ficha y del detalle de cada cuenta
+function tagCalif(id) {
+  var c = califCliente(id);
+  if (!c) return '';
+  return '<span class="tag tag-nota nota-' + c.letra + '" title="' + escHtml(tituloCalif(c)) + '">Nota ' + c.letra + ' · ' + escHtml(nombreLetra(c.letra)) + '</span>';
+}
+// LA regla de un crédito nuevo que deja `monto` por pagar (la usan la tarjeta y el aviso al admin):
+// - avisar: nota D o E (decisión 3 de Kinan), o el crédito pasa lo que puede sacar;
+// - sinTope: N, o sin cuentas terminadas todavía: el tope lo decide el admin según el fiador.
+function evaluarTope(c, monto) {
+  var sinTope = c.letra === 'N' || c.disponible == null;
+  var exceso = sinTope ? 0 : redondear2(monto - c.disponible);
+  if (exceso < 0.01) exceso = 0;
+  var riesgo = c.letra === 'D' || c.letra === 'E';
+  return { sinTope: sinTope, exceso: exceso, riesgo: riesgo, avisar: riesgo || exceso > 0 };
+}
+function fraseTope(monto, ev) {
+  return 'Este crédito deja ' + fmt(monto) + ' por pagar: ' +
+    (ev.exceso > 0 ? 'pasa lo que puede sacar por ' + fmt(ev.exceso) : ev.sinTope ? 'no tiene tope automático' : 'cabe en lo que puede sacar') + '.';
+}
+// Tarjeta: letra, nombre, nota, lo que puede sacar y las razones.
+// opts.monto = lo que deja por pagar el crédito por aprobar; opts.fiador = su fiador.
+function cuerpoCalif(clienteId, opts) {
+  opts = opts || {};
+  var c = califCliente(clienteId);
+  if (!c) return '<p class="calif-sub">No se pudo cargar la calificación. Toca refrescar.</p>';
+  var sinTope = c.letra === 'N' || c.disponible == null;
+  var h = '<div class="calif-cab">' +
+      '<span class="calif-letra">' + c.letra + '</span>' +
+      '<div><div class="calif-nombre">' + escHtml(nombreLetra(c.letra)) + '</div>' +
+        '<div class="calif-sub">' + (c.puntaje != null ? 'Nota ' + c.puntaje + ' de 100' : 'Sin historial suficiente para calificarlo') + '</div></div>' +
+      '<div class="calif-tope"><div class="l">Puede sacar hasta</div>' +
+        (sinTope ? '<div class="v" style="font-size:14px;">Lo decide el admin</div>' +
+                   '<div class="calif-sub">' + (c.deuda > 0 ? 'Debe ' + fmt(c.deuda) : 'No debe nada') + '</div>'
+                 : '<div class="v">' + fmt(c.disponible) + '</div>' +
+                   '<div class="calif-sub">Tope ' + fmt(c.tope) + (c.deuda > 0 ? ' menos ' + fmt(c.deuda) + ' que debe' : '') + '</div>') +
+      '</div>' +
+    '</div>';
+  if (c.razones) {
+    if (c.razones.length) h += '<ul class="calif-razones">' + c.razones.slice(0, 4).map(function(r){ return '<li>' + escHtml(r) + '</li>'; }).join('') + '</ul>';
+  } else {
+    h += '<p class="calif-sub calif-cargando" style="margin-top:8px;">Cargando el porqué de la nota…</p>';
+  }
+  if (opts.monto != null) {
+    var m = redondear2(opts.monto), ev = evaluarTope(c, m);
+    h += '<div class="calif-aviso ' + (ev.avisar ? 'mal' : ev.sinTope ? 'info' : 'ok') + '">' + fraseTope(m, ev) +
+      (ev.riesgo ? ' Nota ' + c.letra + ': ' + escHtml(nombreLetra(c.letra)) + '.' : '') +
+      (ev.sinTope ? (opts.fiador ? ' Fiador: ' + escHtml(opts.fiador) + '.' : ' No tiene fiador anotado.') : '') + '</div>';
+  }
+  return h;
+}
+// Dibuja la tarjeta y trae las razones de la base (una vez por carga de datos).
+function pintarCalif(contId, clienteId, opts) {
+  var el = document.getElementById(contId);
+  if (!el) return;
+  var turno = String(++CALIF_TURNO), c = califCliente(clienteId), mapa = CALIF;
+  el.dataset.turno = turno;
+  el.className = 'card calif-card' + (c ? ' nota-' + c.letra : '');
+  if (!clienteId) { el.innerHTML = '<p class="calif-sub">Esta cuenta no tiene cliente.</p>'; return; }
+  el.innerHTML = cuerpoCalif(clienteId, opts);
+  if (!c || c.razones) return;
+  sb.rpc('cli_calificacion', { p_cliente_id: clienteId }).then(function(r){
+    if (r.error) throw r.error;
+    // Las razones se guardan solo si la lista no cambió mientras tanto (una recarga trae la suya)
+    if (CALIF === mapa) CALIF[clienteId] = Object.assign({}, c, { razones: (r.data && r.data.razones) || [] });
+    var el2 = document.getElementById(contId);
+    if (el2 && el2.dataset.turno === turno && CALIF === mapa) el2.innerHTML = cuerpoCalif(clienteId, opts);
+  }).catch(function(e){
+    console.warn('razones de la calificación', e);
+    var el2 = document.getElementById(contId);
+    var carg = el2 && el2.dataset.turno === turno ? el2.querySelector('.calif-cargando') : null;
+    if (carg) carg.textContent = 'No se pudo cargar el porqué de la nota.';
+  });
+}
+// En el formulario de crédito nuevo, al elegir el cliente
+function mostrarCalifCredito(clienteId) {
+  var el = document.getElementById('ncrCalif');
+  if (!el) return;
+  if (!clienteId || editingCreditoId) { el.style.display = 'none'; el.innerHTML = ''; el.dataset.turno = ''; return; }
+  el.style.display = '';
+  pintarCalif('ncrCalif', clienteId);
+}
+// Texto para confirmar (solo admin) un crédito nuevo según evaluarTope. null = no hace falta.
+// La cajera no pasa por aquí: su crédito ya queda esperando la aprobación de un admin.
+function avisoCalifCredito(clienteId, nuevaDeuda) {
+  var c = califCliente(clienteId);
+  if (!c) return null;
+  var ev = evaluarTope(c, nuevaDeuda);
+  if (!ev.avisar) return null;
+  var cli = CLIENTES.find(function(x){ return x.id === clienteId; });
+  return (cli ? cli.nombre : 'Este cliente') + ' tiene nota ' + c.letra + ' (' + nombreLetra(c.letra) + ').\n' +
+    (ev.sinTope ? '' : 'Puede sacar hasta ' + fmt(c.disponible) + '.\n') +
+    fraseTope(nuevaDeuda, ev) + '\n\n¿Crear el crédito igual?';
+}
+
+// =================================================================
 // AVISO DE DEUDA PREVIA al seleccionar cliente
 // =================================================================
 function mostrarAvisoDeuda(containerType, clienteId) {
@@ -5346,7 +5499,8 @@ function mostrarAvisoDeuda(containerType, clienteId) {
     return;
   }
 
-  if (cuentasActivas === 0) {
+  // En el crédito nuevo, la deuda sale en la tarjeta de calificación (de la base). Este aviso queda solo si no cargó.
+  if (cuentasActivas === 0 || (containerType === 'ncr' && califCliente(clienteId))) {
     aviso.style.display = 'none';
     return;
   }
@@ -5367,6 +5521,7 @@ function mostrarAvisoDeuda(containerType, clienteId) {
   var selNcr = document.getElementById('ncrCliente');
   if (selNcr) selNcr.addEventListener('change', function(){
     mostrarAvisoDeuda('ncr', selNcr.value);
+    mostrarCalifCredito(selNcr.value);
   });
 })();
 
@@ -6009,6 +6164,7 @@ function openNewCredito() {
   document.getElementById('ncrCliente').value = '';
   var avNcr = document.getElementById('ncrAvisoDeuda');
   if (avNcr) avNcr.style.display = 'none';
+  mostrarCalifCredito('');
   document.getElementById('ncrInicial').value = '';
   document.getElementById('ncrNotas').value = '';
   document.getElementById('ncrDireccion').value = '';
@@ -6269,6 +6425,10 @@ protegerBoton('btnSaveCr', async function(){
     if (inicial < 0) return toast('El abono no puede ser negativo', 'e');
     if (inicial > 0 && !selMetInicial) return toast('Selecciona método del abono inicial', 'e');
     if (inicial > totalProds) return toast('El abono no puede ser mayor al total', 'e');
+    if (currentUserApp.rol === 'admin') {
+      var avisoCalif = avisoCalifCredito(cliente_id, redondear2(totalProds - inicial));
+      if (avisoCalif && !confirm(avisoCalif)) return;
+    }
   }
 
   // Convertir productos a texto multilinea (con cantidad si es >1)
@@ -6901,7 +7061,7 @@ function renderDetailCredito() {
           '<span class="tag" style="background:rgba(243,156,18,0.2);color:#f39c12;margin-top:6px;margin-left:0;font-size:11px;padding:4px 8px;">PENDIENTE DE APROBACIÓN</span>' :
           '<span class="tag" style="background:rgba(155,89,182,0.15);color:#b97fd1;margin-top:6px;margin-left:0;">CRÉDITO #' + cr.numero + '</span>'
         ) +
-        ' <span class="tag" style="background:rgba(39,174,96,0.15);color:var(--green-soft);margin-top:6px;margin-left:4px;">Score ' + ((cli && cli.score) || 'B') + '</span>' +
+        (cli ? ' ' + tagCalif(cli.id) : '') +
         (cr.aplica_interes ? ' <span class="interes-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg> INTERÉS 10% MENSUAL</span>' : '') +
       '</div>' +
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
@@ -6921,6 +7081,7 @@ function renderDetailCredito() {
       '</div>' +
     '</div>' +
 
+    (cr.estado === 'pendiente_aprobacion' ? '<div id="califAprob"></div>' : '') +
     '<div class="card">' +
       '<h3 style="font-size:15px;margin-bottom:10px;">Productos <em style="color:#b97fd1;font-style:italic;">entregados</em></h3>' +
       (prodLines.length === 0 ? '<p style="font-size:12px;color:var(--muted);">Sin productos</p>' :
@@ -7013,6 +7174,8 @@ function renderDetailCredito() {
 
   var btnAprob = document.getElementById('btnAprobarCr');
   if (btnAprob) btnAprob.addEventListener('click', function(){aprobarCredito(cr);});
+  // Solicitud por aprobar: nota, razones, lo que puede sacar y si este crédito cabe
+  if (cr.estado === 'pendiente_aprobacion') pintarCalif('califAprob', cr.cliente_id, { monto: saldo, fiador: cr.fiador_nombre || null });
 
   var btnRech = document.getElementById('btnRechazarCr');
   if (btnRech) btnRech.addEventListener('click', function(){rechazarCredito(cr);});
@@ -7443,9 +7606,6 @@ function enviarWhatsAppHistorialAbonos(tipo, obj) {
 // (ABONOS sin borrados, INTERESES, CREDITOS_ALL, APARTADOS_ALL). monto_total YA incluye los intereses: la compra
 // se muestra sin ellos (monto_total − intereses) y cada interés va como su propio cargo, así el saldo final
 // de la tabla es exactamente monto_total − pagado.
-function escPdf(t) {
-  return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 // Saldo con signo: negativo = pagado de más (fmt() siempre muestra el valor absoluto)
 function fmtSaldoPdf(n) {
   n = redondear2(n);
@@ -7540,7 +7700,7 @@ function tablaMovimientosPdf(movs) {
     totCargo += m.cargo; totPago += m.pago; if (m.clase === 'pago') nPagos++;
     return '<tr class="mov-' + m.clase + '">' +
       '<td style="white-space:nowrap;">' + fmtDate(m.fecha) + '</td>' +
-      '<td><b>' + escPdf(m.concepto) + '</b>' + (m.detalle ? '<small>' + escPdf(m.detalle) + '</small>' : '') + '</td>' +
+      '<td><b>' + escHtml(m.concepto) + '</b>' + (m.detalle ? '<small>' + escHtml(m.detalle) + '</small>' : '') + '</td>' +
       '<td class="n">' + (m.cargo ? fmt(m.cargo) : '') + '</td>' +
       '<td class="n pago">' + (m.pago ? fmt(m.pago) : '') + '</td>' +
       '<td class="n"><b>' + fmtSaldoPdf(m.saldo) + '</b></td>' +
@@ -8232,7 +8392,7 @@ function renderDetail() {
         '<h2>' + ((cli && cli.nombre) || '—') + '</h2>' +
         '<p>' + ((cli && cli.cedula) || 'Sin cédula') + (cli && cli.telefono ? ' · ' + telefonoConBandera(cli) : '') + (cli && cli.ciudad ? ' · ' + cli.ciudad : '') + '</p>' +
         (cli && !cli.cedula ? '<span class="tag" style="background:rgba(243,156,18,0.2);color:#f39c12;margin-top:6px;margin-left:0;font-size:11px;padding:4px 8px;">Falta cédula del cliente</span> ' : '') +
-        '<span class="tag" style="background:rgba(39,174,96,0.15);color:var(--green-soft);margin-top:6px;margin-left:0;">Score ' + ((cli && cli.score) || 'B') + '</span>' +
+        (cli ? tagCalif(cli.id) : '') +
       '</div>' +
       '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
         '<button class="btn btn-ghost" id="btnEditApDetail"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;display:inline-block"><path d="M11 4H5a2 2 0 00-2 2v13a2 2 0 002 2h13a2 2 0 002-2v-6"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg> Editar</button>' +
@@ -10271,7 +10431,6 @@ function totalProductosDeTexto(txt) {
   return alguno ? redondear2(total) : null;
 }
 
-function escVer(t) { return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 async function verificarCuadre() {
   if (!currentUserApp || currentUserApp.rol !== 'admin') return toast('Solo administrador', 'e');
@@ -10366,20 +10525,20 @@ async function verificarCuadre() {
         var etiqueta = (p.tipo === 'credito' ? 'Crédito #' : 'Apartado #') + p.c.numero;
         html += '<div style="border:1px solid rgba(232,93,76,0.35);background:rgba(232,93,76,0.06);border-radius:10px;padding:10px 12px;margin-bottom:8px;">' +
           '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px;">' +
-            '<div style="font-weight:700;">' + escVer(etiqueta) + ' · ' + escVer(nombreCli[p.c.cliente_id] || '?') + ' <span style="color:var(--muted);font-weight:400;font-size:11px;">(' + escVer(p.c.estado) + ')</span></div>' +
-            '<button class="btn btn-ghost ver-goto" data-tipo="' + p.tipo + '" data-id="' + escVer(p.c.id) + '" style="padding:4px 10px;font-size:11px;">Ver</button>' +
+            '<div style="font-weight:700;">' + escHtml(etiqueta) + ' · ' + escHtml(nombreCli[p.c.cliente_id] || '?') + ' <span style="color:var(--muted);font-weight:400;font-size:11px;">(' + escHtml(p.c.estado) + ')</span></div>' +
+            '<button class="btn btn-ghost ver-goto" data-tipo="' + p.tipo + '" data-id="' + escHtml(p.c.id) + '" style="padding:4px 10px;font-size:11px;">Ver</button>' +
           '</div>' +
-          p.fallas.map(function(f){ return '<div style="font-size:12.5px;color:var(--text-2);padding-left:2px;">• ' + escVer(f) + '</div>'; }).join('') +
+          p.fallas.map(function(f){ return '<div style="font-size:12.5px;color:var(--text-2);padding-left:2px;">• ' + escHtml(f) + '</div>'; }).join('') +
         '</div>';
       });
       dobles.forEach(function(d){
         var etiqueta = (d.tipo === 'credito' ? 'Crédito #' : 'Apartado #') + d.c.numero;
         html += '<div style="border:1px solid rgba(240,168,56,0.35);background:rgba(240,168,56,0.06);border-radius:10px;padding:10px 12px;margin-bottom:8px;">' +
           '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px;">' +
-            '<div style="font-weight:700;">' + escVer(etiqueta) + ' · ' + escVer(nombreCli[d.c.cliente_id] || '?') + '</div>' +
-            '<button class="btn btn-ghost ver-goto" data-tipo="' + d.tipo + '" data-id="' + escVer(d.c.id) + '" style="padding:4px 10px;font-size:11px;">Ver</button>' +
+            '<div style="font-weight:700;">' + escHtml(etiqueta) + ' · ' + escHtml(nombreCli[d.c.cliente_id] || '?') + '</div>' +
+            '<button class="btn btn-ghost ver-goto" data-tipo="' + d.tipo + '" data-id="' + escHtml(d.c.id) + '" style="padding:4px 10px;font-size:11px;">Ver</button>' +
           '</div>' +
-          '<div style="font-size:12.5px;color:var(--text-2);">• Dos abonos de ' + fmt(d.a.monto) + ' el ' + escVer(fmtDate(d.a.fecha)) + ' (' + escVer(d.a.metodo || '') + '), registrados con ' + d.seg + ' segundos de diferencia. Revisa con el recibo si de verdad fueron dos pagos.</div>' +
+          '<div style="font-size:12.5px;color:var(--text-2);">• Dos abonos de ' + fmt(d.a.monto) + ' el ' + escHtml(fmtDate(d.a.fecha)) + ' (' + escHtml(d.a.metodo || '') + '), registrados con ' + d.seg + ' segundos de diferencia. Revisa con el recibo si de verdad fueron dos pagos.</div>' +
         '</div>';
       });
     }
@@ -10401,7 +10560,7 @@ async function verificarCuadre() {
       })(gos[g]);
     }
   } catch (e) {
-    cont.innerHTML = '<div style="color:var(--red-soft);">Error al verificar: ' + escVer(e.message) + '</div>';
+    cont.innerHTML = '<div style="color:var(--red-soft);">Error al verificar: ' + escHtml(e.message) + '</div>';
   } finally {
     VERIFICANDO = false;
     if (btnOtra) btnOtra.disabled = false;
@@ -10475,7 +10634,7 @@ function exportarExcel() {
         'Cédula': c.cedula || 'Sin cédula',
         'Teléfono': c.telefono || '',
         'Ciudad': c.ciudad || '',
-        'Score': c.score || 'B',
+        'Nota': (califCliente(c.id) || {}).letra || '',
         'Apartados': apsCount,
         'Créditos': crsCount,
         'Disputado': c.disputado ? 'SÍ' : 'No'

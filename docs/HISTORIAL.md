@@ -336,7 +336,26 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - El apartado muestra lo abonado al crearlo, la deuda, la fecha límite y quién lo creó (`created_by`).
   - Probado con datos simulados.
 - **Créditos, Top deudores separado en créditos y apartados (2026-10-31, `?v=20261031d`):** a pedido de Kinan. La pestaña Estadísticas muestra dos listas, "Top deudores de créditos" y "Top deudores de apartados", con los 10 que más deben de cada tipo y su porcentaje de la deuda de ese tipo. Antes era una sola lista que sumaba las dos cosas. El reporte PDF diario sigue con la lista junta. Probado con datos simulados.
-- **Calificación real de clientes, paso 1: la función en la base (2026-10-31, en revisión con Kinan):** respaldo `respaldo_20261031` (70 tablas, 18.069 filas). Se crearon `cli_reglas_calificacion()`, `cli_tramo()` y `cli_calificacion_base()`, sin ejecución para `anon` ni `authenticated`. Copia en `docs/sql/calificacion_clientes.sql`, diseño en `docs/plan_calificacion_clientes.md`.
-  - Letras A–E y N, con razones y tope. Solo lee: no cambia montos.
-  - Cambio sobre el plan: la nota sale de la historia (puntualidad 70%, intereses 15%, cuentas terminadas 15%) y lo de hoy solo resta (vencido hasta −30, días sin abonar hasta −15). Así, no deber nada hoy no regala puntos. Con 1 cuenta terminada, máximo B; sin ninguna, máximo C.
-  - Todavía no lo usa ninguna app: falta que Kinan revise los ejemplos. Después vienen las funciones con guardia para Créditos, la interfaz y el cambio de `est_puntaje_clientes` para que Estadísticas diga lo mismo.
+- **Calificación real de clientes y tope de crédito (2026-10-31, Créditos `?v=20261031e`, Estadísticas `?v=2`):** pendiente 2. Diseño en `docs/plan_calificacion_clientes.md`; copia del SQL en `docs/sql/calificacion_clientes.sql`. Respaldo `respaldo_20261031` (70 tablas, 18.069 filas). Solo lee y califica: no cambia montos.
+  - **Base:**
+    - `cli_reglas_calificacion()` (todas las reglas: tramos, cortes de letras, tope), `cli_tramo()`, `cli_peor_letra()` y `cli_calificacion_base()` (función de origen, sin acceso desde la API). Una fila por cliente activo; sin cuentas = N. Los intereses cobrados y perdonados salen de `est_detal_intereses()`, la misma regla de Estadísticas.
+    - Para la app, con guardia `coalesce(es_staff(), false)`: `cli_calificaciones()` (lista corta de todos: letra, nota, tope, lo que puede sacar, deuda y vencido) y `cli_calificacion(cliente)` (ficha con razones).
+    - `est_puntaje_clientes()` y `est_reglas_puntaje()` quedaron como paso directo a la misma calificación, así Estadísticas y Créditos dicen lo mismo (`ritmo` va en NULL). Las versiones viejas se quitaron de `docs/sql/estadisticas.sql`.
+  - **Reglas (ajustadas con Kinan):**
+    - La historia vale puntualidad 70%, intereses 15% y cuentas terminadas 15%. Lo de hoy solo resta: vencido pasada la gracia hasta −30 y días sin abonar hasta −15.
+    - Cuenta terminada a tiempo (hasta 5 días): 100. Terminada tarde **sin** interés: 90, 75, 55 o 40 según los días. Si Kinan cobró interés, como máximo 60 ("tarde con interés = regular").
+    - Con 1 cuenta terminada, máximo B; sin ninguna, máximo C. Nunca pagó y tiene una vencida: E.
+    - Tope: la cuenta más grande que terminó de pagar (sin intereses) × 1,5 / 1,2 / 1,0 / 0,5 / 0 (A a E), menos lo que debe. N no tiene tope: decide el admin según el fiador.
+    - Calibrado con ORLANDO PEREZ (A) y ALEXIS VEGA (B), que pagan unos días tarde sin interés.
+  - **Créditos (`Apartados_Yumana_App.html`):**
+    - `loadData` trae `cli_calificaciones` en `CALIF`. Si falla, las letras salen "–" y la app sigue igual.
+    - Lista de clientes y Cobranza con la letra real. La ficha muestra una tarjeta con nota, lo que puede sacar, el tope y hasta 4 razones (`pintarCalif`).
+    - Una sola regla para un crédito nuevo, `evaluarTope`: avisa si el cliente es D o E (aunque quepa o no haya terminado ninguna cuenta) o si el crédito pasa lo que puede sacar; sin tope (N o sin cuentas terminadas) decide el admin según el fiador.
+    - Formulario de crédito nuevo: tarjeta al elegir el cliente (`mostrarCalifCredito`), que es la única que muestra la deuda (el aviso viejo queda solo para la disputa o si la nota no cargó). El admin recibe el `confirm` de `avisoCalifCredito`; la cajera no, porque su crédito ya queda esperando aprobación.
+    - Solicitud por aprobar: la misma tarjeta, con la misma regla y el fiador cuando no hay tope.
+    - Si una recarga de la nota falla, las letras pasan a "–" (no quedan las viejas). Cada tarjeta lleva un turno: una respuesta tardía no pisa a otra.
+    - Un solo escape de HTML, `escHtml` (reemplazó a `escPdf` y `escVer`). Colores por letra con variables CSS (`.nota-A`…), los mismos en Estadísticas.
+    - `clientes.score` ya no se usa: la exportación a Excel lleva la columna "Nota".
+  - **Estadísticas:** la explicación se arma completa con las reglas de la base (tramos, cortes, letra máxima, tope), con letras E y N; se quitó la columna "Ritmo".
+  - Revisado con `/thermos` y corregido lo que marcó (el D sin cuentas terminadas no avisaba; la regla de "cabe" estaba en dos lugares; recarga fallida; copia SQL vieja; escape repetido). Probado con datos simulados: 55 revisiones (390 y 1280 px, admin, cajera, D sin tope, D que cabe, base caída y recarga fallida).
+  - Quedó así: 129 A, 440 B, 63 C, 28 D, 54 E y 128 N (24 de ellos sin cuentas).

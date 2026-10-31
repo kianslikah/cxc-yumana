@@ -11,8 +11,9 @@
 --  * Funciones públicas (las llama la app): SECURITY DEFINER, empiezan con PERFORM public.est_exigir_acceso();
 --    ejecutables solo por authenticated (nunca por anon).
 --  * Funciones de origen (auxiliares): cada regla de dinero vive en UNA sola (est_cuentas_detal, est_detal_abonos,
---    est_detal_intereses, est_may_facturas, est_may_abonos, est_prov_facturas, est_prov_abonos, est_cobranza_clientes,
---    est_puntaje_clientes). El Resumen y las secciones las usan todas, así que cuadran por construcción.
+--    est_detal_intereses, est_may_facturas, est_may_abonos, est_prov_facturas, est_prov_abonos, est_cobranza_clientes).
+--    El Resumen y las secciones las usan todas, así que cuadran por construcción. La nota de cada cliente
+--    (est_puntaje_clientes) sale desde el 2026-10-31 de cli_calificacion_base: ver docs/sql/calificacion_clientes.sql.
 --    Sin SECURITY DEFINER y sin ejecución para anon ni authenticated.
 --  * est_norm_ciudad quedó sin uso (se quitó la ciudad de la app); se deja porque no se borra nada.
 
@@ -359,87 +360,9 @@ $function$;
 
 REVOKE EXECUTE ON FUNCTION public.est_cobranza_clientes() FROM PUBLIC, anon, authenticated;
 
-CREATE OR REPLACE FUNCTION public.est_reglas_puntaje()
- RETURNS jsonb
- LANGUAGE sql
- IMMUTABLE
- SET search_path TO 'public'
-AS $function$
-  SELECT jsonb_build_object(
-    'gracia_dias', 5,                                   -- días después de la fecha límite que todavía cuentan como a tiempo
-    'puntos_por_dia', 2,                                -- puntos que pierde la cuenta por cada día de atraso pasada la gracia
-    'ritmo_puntos', jsonb_build_array(100, 50, 20, 0),  -- ritmo según el tramo de días sin pagar (est_tramo_dias: 30/60/90)
-    'peso_puntualidad', 0.7,
-    'peso_ritmo', 0.3,
-    'corte_a', 85,                                      -- A: 85 o más
-    'corte_b', 70,                                      -- B: 70 a 84
-    'corte_c', 50,                                      -- C: 50 a 69; D: menos de 50
-    'min_cuentas_puntuales', 2                          -- cuentas evaluadas mínimas para el top de más puntuales
-  );
-$function$;
-
-REVOKE EXECUTE ON FUNCTION public.est_reglas_puntaje() FROM PUBLIC, anon, authenticated;
-
-CREATE OR REPLACE FUNCTION public.est_puntaje_clientes()
- RETURNS TABLE(cliente_id uuid, evaluadas bigint, a_tiempo bigint, atraso_prom numeric, puntualidad numeric, ritmo integer, puntaje numeric, letra text)
- LANGUAGE sql
- STABLE
- SET search_path TO 'public'
-AS $function$
-  WITH reglas AS (
-    SELECT (j->>'gracia_dias')::int AS gracia_dias,
-           (j->>'puntos_por_dia')::numeric AS puntos_por_dia,
-           ARRAY(SELECT x::int FROM jsonb_array_elements_text(j->'ritmo_puntos') AS x) AS ritmo_puntos,
-           (j->>'peso_puntualidad')::numeric AS peso_puntualidad,
-           (j->>'peso_ritmo')::numeric AS peso_ritmo,
-           (j->>'corte_a')::numeric AS corte_a,
-           (j->>'corte_b')::numeric AS corte_b,
-           (j->>'corte_c')::numeric AS corte_c
-    FROM (SELECT public.est_reglas_puntaje() AS j) r
-  ),
-  hoy AS (SELECT public.est_hoy() AS d),
-  ev AS (
-    SELECT c.cliente_id, c.evaluada, c.a_tiempo, c.dias_atraso,
-           greatest(0, least(100, 100 - rg.puntos_por_dia * (c.dias_atraso - rg.gracia_dias))) AS pts
-    FROM (
-      SELECT cu.cliente_id,
-             (cu.fecha_completado IS NOT NULL OR (cu.viva AND cu.fecha_limite < h.d)) AS evaluada,
-             (cu.fecha_completado IS NOT NULL AND cu.fecha_completado <= cu.fecha_limite) AS a_tiempo,
-             CASE WHEN cu.fecha_completado IS NOT NULL THEN greatest(cu.fecha_completado - cu.fecha_limite, 0)
-                  WHEN cu.viva AND cu.fecha_limite < h.d THEN h.d - cu.fecha_limite
-                  ELSE 0 END AS dias_atraso
-      FROM public.est_cuentas_detal() cu
-      CROSS JOIN hoy h
-      WHERE cu.vendible
-    ) c
-    CROSS JOIN reglas rg
-  ),
-  sc AS (
-    SELECT cliente_id,
-           count(*) FILTER (WHERE evaluada) AS evaluadas,
-           count(*) FILTER (WHERE evaluada AND a_tiempo) AS a_tiempo,
-           round(avg(dias_atraso) FILTER (WHERE evaluada), 1) AS atraso_prom,
-           round(avg(pts) FILTER (WHERE evaluada), 1) AS puntualidad
-    FROM ev
-    GROUP BY cliente_id
-  ),
-  pu AS (
-    SELECT sc.*, rg.ritmo_puntos[coalesce(tr.indice, 0) + 1] AS ritmo,
-           CASE WHEN sc.evaluadas = 0 THEN NULL
-                ELSE round(rg.peso_puntualidad * sc.puntualidad + rg.peso_ritmo * rg.ritmo_puntos[coalesce(tr.indice, 0) + 1]) END AS puntaje,
-           rg.corte_a, rg.corte_b, rg.corte_c
-    FROM sc
-    CROSS JOIN reglas rg
-    LEFT JOIN public.est_cobranza_clientes() cc ON cc.cliente_id = sc.cliente_id
-    LEFT JOIN LATERAL public.est_tramo_dias(cc.dias_sin_pagar) tr ON true
-  )
-  SELECT cliente_id, evaluadas, a_tiempo, atraso_prom, puntualidad, ritmo, puntaje,
-         CASE WHEN puntaje IS NULL THEN 'Nuevo' WHEN puntaje >= corte_a THEN 'A' WHEN puntaje >= corte_b THEN 'B'
-              WHEN puntaje >= corte_c THEN 'C' ELSE 'D' END
-  FROM pu;
-$function$;
-
-REVOKE EXECUTE ON FUNCTION public.est_puntaje_clientes() FROM PUBLIC, anon, authenticated;
+-- est_reglas_puntaje() y est_puntaje_clientes(): REEMPLAZADAS el 2026-10-31 por la calificación real de clientes.
+-- La definición vigente está en docs/sql/calificacion_clientes.sql (salen de cli_calificacion_base, la misma nota
+-- que ve Créditos). NO volver a crearlas desde aquí: Estadísticas y Créditos dejarían de cuadrar.
 
 CREATE OR REPLACE FUNCTION public.est_detal_lineas()
  RETURNS TABLE(tipo text, cuenta_id uuid, cliente_id uuid, fecha date, producto_id bigint, descripcion text, cantidad numeric, monto numeric, enlace text)
