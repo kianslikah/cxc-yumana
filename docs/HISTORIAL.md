@@ -330,3 +330,8 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - El recibo de pago y el comprobante comparten los estilos y el encabezado del ticket (`RECIBO80_CSS`, `encabezadoRecibo80`, `clienteTicket80`, `productosTicket80`, `abrirTicket80`). El recibo de pago se ve igual que antes.
   - Probado con datos simulados: los dos tickets a tamaño de impresora, y la vuelta a Cobranza sin perder la posición. No hubo errores.
 - **Créditos, "DEUDA" en vez de "SALDO" en los tickets (2026-10-31, `?v=20261031b`):** a pedido de Kinan. El recibo de pago y el comprobante del crédito dicen "DEUDA:" en la línea de lo que queda por pagar.
+- **Créditos, comprobante también para los apartados nuevos (2026-10-31, `?v=20261031c`):** a pedido de Kinan. `imprimirComprobanteCredito` pasó a ser `imprimirComprobanteCuenta(tipo, obj)`, una sola función para crédito y apartado.
+  - Al crear un apartado, `ofrecerComprobante` pregunta "¿Imprimir comprobante?", igual que con el crédito.
+  - En el detalle del apartado hay un botón "Imprimir comprobante del apartado".
+  - El apartado muestra lo abonado al crearlo, la deuda, la fecha límite y quién lo creó (`created_by`).
+  - Probado con datos simulados.
