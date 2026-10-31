@@ -1,5 +1,7 @@
 # Calificación real de los clientes del detal (créditos y apartados)
 
+**Estado:** hecho el 2026-10-31. Las reglas finales, ajustadas con Kinan, están en `docs/HISTORIAL.md` y en `docs/sql/calificacion_clientes.sql`. Cambian respecto de este diseño: lo de hoy solo resta, el atraso sin interés casi no castiga y con 1 cuenta terminada la nota máxima es B.
+
 Pedido de Kinan del 2026-10-31: "sofisticar la clasificación de los clientes, si pagan bien o pagan mal, y calificarlos". Esto cubre los pendientes 2 (tope de crédito) y 16(b) (puntaje real en la ficha) de `CLAUDE.md`.
 
 ## Cómo está hoy

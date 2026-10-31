@@ -235,7 +235,8 @@ table.t tfoot td{border-top:1px solid var(--border);font-weight:700;}
 .etq.B{background:rgba(91,155,213,0.16);color:var(--blue);}
 .etq.C{background:rgba(212,162,78,0.16);color:var(--gold-soft);}
 .etq.D{background:rgba(232,117,92,0.16);color:var(--red);}
-.etq.Nuevo{background:rgba(154,166,184,0.12);color:var(--text-2);}
+.etq.E{background:rgba(232,117,92,0.28);color:var(--red);}
+.etq.N{background:rgba(154,166,184,0.12);color:var(--text-2);}
 .etq.rojo{background:rgba(232,117,92,0.16);color:var(--red);}
 .etq.gris{background:rgba(154,166,184,0.12);color:var(--text-2);}
 .rojo-txt{color:var(--red);}
@@ -850,7 +851,7 @@ function card(titulo, desc, cuerpo, extra){
   return '<div class="card"><div class="card-head"><div><h3>' + esc(titulo) + '</h3>' + (desc ? '<div class="desc">' + desc + '</div>' : '') + '</div>' + (extra || '') + '</div>' + cuerpo + '</div>';
 }
 function pct(a, b){ return num(b) ? num(a) / num(b) * 100 : null; }
-function etiquetaLetra(l){ return '<span class="etq ' + esc(l || 'Nuevo') + '">' + esc(l || 'Nuevo') + '</span>'; }
+function etiquetaLetra(l){ return '<span class="etq ' + esc(l || 'N') + '">' + esc(l || 'N') + '</span>'; }
 
 // ----- Tablas: 20 filas + "Mostrar más" (de 80 en 80), y "Descargar CSV" con todas las filas -----
 // cfg: {id, titulo, desc, cols:[{k, t, f, cls, html(v,row), csv(v,row)}], filas, vacio, limite, pie,
@@ -1207,21 +1208,35 @@ function renderResumen(d){
 // =====================================================================
 // 2. CRÉDITOS Y APARTADOS (DETAL)
 // =====================================================================
-// Explicación del puntaje armada con las reglas que manda la base (est_reglas_puntaje): ningún número escrito a mano.
+// Explicación de la calificación armada con las reglas que manda la base (est_reglas_puntaje = cli_reglas_calificacion):
+// ningún número escrito a mano. Es la misma nota que ve Créditos en la ficha de cada cliente.
 function textoPuntaje(R){
-  if (!R) return '';
-  var tr = R.tramos || [], rp = R.ritmo_puntos || [];
-  var cero = num(R.gracia_dias) + Math.ceil(100 / (num(R.puntos_por_dia) || 1));
-  var ritmo = tr.map(function(t, i){
-    return '<b>' + fmtN(rp[i]) + '</b> si ' + (i === 0 ? 'no debe nada o pagó hace ' + t.etiqueta.toLowerCase().replace('hasta ', '') + ' o menos' : 'lleva ' + t.etiqueta.toLowerCase() + ' sin pagar');
-  }).join('; ');
-  var pp = Math.round(num(R.peso_puntualidad) * 100), pr = Math.round(num(R.peso_ritmo) * 100);
-  return '<div class="formula"><h4>Puntaje real de pago</h4>Se calcula con lo que de verdad hace cada cliente (no usa el campo «score» de la ficha):' +
-    '<ul><li><b>Puntualidad (' + pp + '%)</b>: cada cuenta ya cerrada o ya vencida vale 100 si se pagó completa hasta ' + fmtN(R.gracia_dias) + ' días después de su fecha límite, y pierde ' + fmtN(R.puntos_por_dia) + ' puntos por cada día de atraso adicional (llega a 0 con ' + fmtN(cero) + ' días de atraso). Las cuentas que siguen debiendo y ya vencieron cuentan los días de atraso hasta hoy. Se promedian todas sus cuentas.</li>' +
-    '<li><b>Ritmo actual (' + pr + '%)</b>: ' + ritmo + '.</li></ul>' +
-    'Puntaje = ' + fmtDec(R.peso_puntualidad, 1).replace('.', ',') + ' × puntualidad + ' + fmtDec(R.peso_ritmo, 1).replace('.', ',') + ' × ritmo. ' +
-    '<b>A</b>: ' + fmtN(R.corte_a) + ' o más · <b>B</b>: ' + fmtN(R.corte_b) + ' a ' + fmtN(R.corte_a - 1) + ' · <b>C</b>: ' + fmtN(R.corte_c) + ' a ' + fmtN(R.corte_b - 1) +
-    ' · <b>D</b>: menos de ' + fmtN(R.corte_c) + ' · <b>Nuevo</b>: todavía no tiene cuentas cerradas ni vencidas.</div><div style="height:14px"></div>';
+  if (!R || !R.nombres) return '';
+  function tramos(lista, campo, signo){
+    var desde = num(R.gracia_dias) + 1;
+    return (lista || []).map(function(t){
+      var txt = t.hasta == null ? 'más de ' + fmtN(desde - 1) + ' días' : fmtN(desde) + ' a ' + fmtN(t.hasta) + ' días';
+      desde = num(t.hasta) + 1;
+      return txt + ': ' + (signo || '') + fmtN(t[campo]);
+    }).join(' · ');
+  }
+  var sinAbonar = (R.tramos || []).map(function(t, i){ return t.etiqueta.toLowerCase() + ': −' + fmtN((R.sin_abonar_resta || [])[i]); }).join(' · ');
+  var pct = function(x){ return Math.round(num(x) * 100) + '%'; };
+  var N = R.nombres, M = R.tope_multiplica || {}, H = R.historial_puntos || [];
+  var maxCerr = R.letra_max_por_cerradas || [];
+  return '<div class="formula"><h4>Calificación de pago</h4>La misma nota que sale en Créditos. Se calcula con lo que de verdad hace cada cliente:' +
+    '<ul><li><b>Puntualidad (' + pct(R.peso_puntualidad) + ')</b>: cada cuenta terminada, o vencida pasada la gracia, vale 100 si se pagó hasta ' + fmtN(R.gracia_dias) + ' días después de su fecha límite. ' +
+      'Terminada tarde sin interés: ' + tramos(R.cerrada_tarde_puntos, 'puntos') + '. Si se le cobró interés, como máximo ' + fmtN(R.cerrada_con_interes_max) + '. ' +
+      'Vencida y sin terminar: ' + tramos(R.abierta_vencida_puntos, 'puntos') + '. Se promedian todas.</li>' +
+    '<li><b>Intereses (' + pct(R.peso_intereses) + ')</b>: pierde ' + fmtN(R.interes_resta) + ' por cada interés cobrado por cuenta evaluada; uno perdonado cuenta ' + fmtDec(R.perdonado_vale, 1).replace('.', ',') + '.</li>' +
+    '<li><b>Cuentas terminadas (' + pct(R.peso_historial) + ')</b>: ' + H.map(function(p, i){ return (i === H.length - 1 ? fmtN(i) + ' o más' : fmtN(i)) + ' = ' + fmtN(p); }).join(' · ') + '.</li>' +
+    '<li><b>Lo de hoy solo resta</b>: por lo vencido (' + tramos(R.vencido_resta, 'resta', '−') + ') y por los días sin abonar (' + sinAbonar + ').</li></ul>' +
+    'Letras: <b>A</b> ' + esc(N.A) + ', ' + fmtN(R.corte_a) + ' o más · <b>B</b> ' + esc(N.B) + ', ' + fmtN(R.corte_b) + ' a ' + fmtN(R.corte_a - 1) +
+    ' · <b>C</b> ' + esc(N.C) + ', ' + fmtN(R.corte_c) + ' a ' + fmtN(R.corte_b - 1) + ' · <b>D</b> ' + esc(N.D) + ', ' + fmtN(R.corte_d) + ' a ' + fmtN(R.corte_c - 1) +
+    ' · <b>E</b> ' + esc(N.E) + ', menos de ' + fmtN(R.corte_d) + ' (o nunca pagó nada y tiene una cuenta vencida) · <b>N</b> ' + esc(N.N) + ': todavía no tiene cuentas terminadas ni vencidas. ' +
+    'Sin cuentas terminadas, como máximo ' + esc(maxCerr[0] || '') + '; con 1, como máximo ' + esc(maxCerr[1] || '') + '. ' +
+    '<b>Tope de crédito</b>: la cuenta más grande que ya terminó de pagar (sin intereses) × ' +
+      ['A', 'B', 'C', 'D', 'E'].map(function(l){ return l + ' ' + fmtDec(M[l], 1).replace('.', ','); }).join(' / ') + ', menos lo que debe hoy. A los N lo decide el admin según el fiador.</div><div style="height:14px"></div>';
 }
 // Cliente con su teléfono debajo (sin ciudad)
 function colCliente(conTelefono){
@@ -1348,15 +1363,15 @@ function renderDetal(d){
   h += card('Clientes nuevos por mes', 'Clientes cuya primera compra fue ese mes.',
     barras('nuevos', meses, [{ label: 'Clientes nuevos', color: COL.oro, valores: M.map(function(x){ return x.clientes_nuevos; }) }], { meses: true, formato: 'int' }));
 
-  h += bloque('Puntaje de pago', 'Cómo paga cada cliente, con lo que de verdad hace. No depende del período.', 'Puntaje');
+  h += bloque('Calificación de pago', 'Cómo paga cada cliente, con lo que de verdad hace. Es la misma nota de Créditos y no depende del período.', 'Calificación');
   h += textoPuntaje(R);
-  var letras = (CL.letras || []).slice().sort(function(a, b){ return 'ABCDNuevo'.indexOf(a.letra) - 'ABCDNuevo'.indexOf(b.letra); });
+  var letras = (CL.letras || []).slice().sort(function(a, b){ return 'ABCDEN'.indexOf(a.letra) - 'ABCDEN'.indexOf(b.letra); });
   var totLet = letras.reduce(function(a, x){ return a + num(x.n); }, 0);
-  h += tabla({ id: 'letras', titulo: 'Clientes por puntaje', cols: [{ k: 'letra', t: 'Puntaje', html: function(v){ return etiquetaLetra(v); }, csv: function(v){ return v; } },
+  h += tabla({ id: 'letras', titulo: 'Clientes por nota', cols: [{ k: 'letra', t: 'Nota', html: function(v){ return etiquetaLetra(v); }, csv: function(v){ return v; } },
       { k: 'n', t: 'Clientes', f: 'int' }, { k: 'p', t: '% de clientes', f: 'pct' }, { k: 'deuda', t: 'Deuda hoy', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }],
     filas: letras.map(function(x){ return Object.assign({}, x, { p: pct(x.n, totLet) }); }), vacio: 'Todavía no hay clientes con compras.' });
 
-  var colLetra = { k: 'letra', t: 'Puntaje', html: function(v, r){ return etiquetaLetra(v) + (r.puntaje != null ? ' <span class="suave" style="display:inline">' + fmtN(r.puntaje) + '</span>' : ''); }, csv: function(v, r){ return v + (r.puntaje != null ? ' (' + r.puntaje + ')' : ''); } };
+  var colLetra = { k: 'letra', t: 'Nota', html: function(v, r){ return etiquetaLetra(v) + (r.puntaje != null ? ' <span class="suave" style="display:inline">' + fmtN(r.puntaje) + '</span>' : ''); }, csv: function(v, r){ return v + (r.puntaje != null ? ' (' + r.puntaje + ')' : ''); } };
   h += tabla({ id: 'top_deuda', titulo: 'Top 20 por deuda', cols: [
       colCliente(true), { k: 'deuda', t: 'Debe', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' }, { k: 'dias_sin_pagar', t: 'Días sin pagar', f: 'int' }, colLetra],
       filas: d.top_deuda || [], vacio: 'Nadie debe hoy.' });
@@ -1366,12 +1381,12 @@ function renderDetal(d){
   h += tabla({ id: 'top_puntuales', titulo: 'Top 20 más puntuales', desc: 'Con al menos ' + fmtN(R.min_cuentas_puntuales) + ' cuentas cerradas o vencidas.', cols: [
       colCliente(false), colLetra, { k: 'evaluadas', t: 'Cuentas', f: 'int' }, { k: 'a_tiempo', t: 'A tiempo', f: 'int' }, { k: 'atraso_prom', t: 'Atraso promedio', f: 'dias' }, { k: 'comprado', t: 'Compró', f: 'money' }],
       filas: d.top_puntuales || [], vacio: 'Todavía no hay clientes con cuentas cerradas o vencidas.' });
-  h += tabla({ id: 'top_atrasados', titulo: 'Top 20 más atrasados', desc: 'Los de peor puntaje primero.', cols: [
+  h += tabla({ id: 'top_atrasados', titulo: 'Top 20 más atrasados', desc: 'Los de peor nota primero.', cols: [
       colCliente(true), { k: 'deuda', t: 'Debe', f: 'money' }, { k: 'dias_sin_pagar', t: 'Días sin pagar', f: 'int' },
       colLetra, { k: 'atraso_prom', t: 'Atraso promedio', f: 'dias' }, { k: 'vencido', t: 'Vencido', f: 'money' }],
       filas: d.top_atrasados || [], vacio: 'Todavía no hay clientes con cuentas cerradas o vencidas.' });
-  h += tabla({ id: 'puntajes', titulo: 'Todos los clientes con su puntaje', desc: 'Ordenados del mejor al peor puntaje. Descárgalo en CSV para guardarlo.', cols: [
-      colCliente(false), colLetra, { k: 'puntualidad', t: 'Puntualidad', f: 'dec' }, { k: 'ritmo', t: 'Ritmo', f: 'int' },
+  h += tabla({ id: 'puntajes', titulo: 'Todos los clientes con su nota', desc: 'Ordenados de la mejor a la peor nota. Descárgalo en CSV para guardarlo.', cols: [
+      colCliente(false), colLetra, { k: 'puntualidad', t: 'Puntualidad', f: 'dec' },
       { k: 'compras', t: 'Compras', f: 'int' }, { k: 'comprado', t: 'Compró', f: 'money' }, { k: 'evaluadas', t: 'Cuentas evaluadas', f: 'int' }, { k: 'a_tiempo', t: 'A tiempo', f: 'int' },
       { k: 'atraso_prom', t: 'Atraso promedio', f: 'dias' }, { k: 'deuda', t: 'Debe', f: 'money' }, { k: 'vencido', t: 'Vencido', f: 'money' },
       { k: 'dias_sin_pagar', t: 'Días sin pagar', f: 'int' }, { k: 'ultima', t: 'Última compra', f: 'date' }, { k: 'telefono', t: 'Teléfono', cls: 'nw' }],

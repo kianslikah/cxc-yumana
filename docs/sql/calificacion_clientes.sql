@@ -16,10 +16,12 @@ AS $function$
   SELECT jsonb_build_object(
     -- Puntualidad: cada cuenta cerrada, o abierta y vencida pasada la gracia, saca de 0 a 100
     'gracia_dias', 5,                     -- hasta 5 días después de la fecha límite todavía es "a tiempo" (100)
-    'cerrada_tarde_puntos', jsonb_build_array(   -- cuenta terminada tarde, según los días de atraso: nunca baja de 40,
-      jsonb_build_object('hasta', 15, 'puntos', 75),   -- porque pagó tarde, pero pagó (decisión 2 de Kinan)
-      jsonb_build_object('hasta', 30, 'puntos', 60),
+    'cerrada_tarde_puntos', jsonb_build_array(   -- cuenta terminada tarde SIN interés (Kinan toleró el atraso), según los días:
+      jsonb_build_object('hasta', 15, 'puntos', 90),   -- nunca baja de 40, porque pagó tarde, pero pagó
+      jsonb_build_object('hasta', 30, 'puntos', 75),
+      jsonb_build_object('hasta', 60, 'puntos', 55),
       jsonb_build_object('hasta', NULL, 'puntos', 40)),
+    'cerrada_con_interes_max', 60,        -- terminada tarde y se le cobró interés: como máximo 60 ("regular", decisión 2 de Kinan)
     'abierta_vencida_puntos', jsonb_build_array( -- cuenta que sigue debiendo y ya pasó la gracia, según los días vencida
       jsonb_build_object('hasta', 15, 'puntos', 75),
       jsonb_build_object('hasta', 30, 'puntos', 55),
@@ -114,6 +116,7 @@ AS $function$
            (pc.cerrada OR (pc.vencida_hoy AND pc.dias > rg.gracia)) AS evaluada,
            (pc.cerrada AND pc.dias <= rg.gracia) AS a_tiempo,
            CASE WHEN pc.cerrada AND pc.dias <= rg.gracia THEN 100
+                WHEN pc.cerrada AND pc.cobrados > 0 THEN least(public.cli_tramo(rg.j->'cerrada_tarde_puntos', pc.dias, 'puntos'), (rg.j->>'cerrada_con_interes_max')::numeric)
                 WHEN pc.cerrada THEN public.cli_tramo(rg.j->'cerrada_tarde_puntos', pc.dias, 'puntos')
                 WHEN pc.vencida_hoy AND pc.dias > rg.gracia THEN public.cli_tramo(rg.j->'abierta_vencida_puntos', pc.dias, 'puntos')
            END AS pts
@@ -234,3 +237,79 @@ $function$;
 REVOKE EXECUTE ON FUNCTION public.cli_reglas_calificacion() FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.cli_tramo(jsonb, integer, text) FROM PUBLIC, anon, authenticated;
 REVOKE EXECUTE ON FUNCTION public.cli_calificacion_base() FROM PUBLIC, anon, authenticated;
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- Lo que llama la app de Créditos (personal activo: es_staff()). El conector de la base no pasa la guardia.
+
+-- Lista corta de todos los clientes con cuentas: [id, letra, nota, tope, disponible] + los nombres de las letras.
+CREATE OR REPLACE FUNCTION public.cli_calificaciones()
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v jsonb;
+BEGIN
+  IF NOT public.es_staff() THEN RAISE EXCEPTION 'No autorizado' USING ERRCODE = '42501'; END IF;
+  SELECT jsonb_build_object(
+           'nombres', public.cli_reglas_calificacion()->'nombres',
+           'clientes', coalesce(jsonb_agg(jsonb_build_array(c.cliente_id, c.letra, c.puntaje, c.tope, c.disponible)), '[]'::jsonb))
+    INTO v
+    FROM public.cli_calificacion_base() c;
+  RETURN v;
+END $function$;
+
+-- Ficha completa de un cliente (nota, razones, tope, deuda). Un cliente sin cuentas sale como N.
+CREATE OR REPLACE FUNCTION public.cli_calificacion(p_cliente_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  v jsonb;
+  r jsonb := public.cli_reglas_calificacion();
+BEGIN
+  IF NOT public.es_staff() THEN RAISE EXCEPTION 'No autorizado' USING ERRCODE = '42501'; END IF;
+  SELECT to_jsonb(c) INTO v FROM public.cli_calificacion_base() c WHERE c.cliente_id = p_cliente_id;
+  IF v IS NULL THEN
+    v := jsonb_build_object('cliente_id', p_cliente_id, 'letra', 'N', 'nombre_letra', r->'nombres'->>'N',
+           'puntaje', NULL, 'tope', NULL, 'disponible', NULL, 'deuda', 0, 'vencido', 0, 'evaluadas', 0, 'cerradas', 0,
+           'razones', jsonb_build_array('Cliente nuevo: todavía no tiene créditos ni apartados'));
+  END IF;
+  RETURN v || jsonb_build_object('tope_multiplica', r->'tope_multiplica');
+END $function$;
+
+REVOKE ALL ON FUNCTION public.cli_calificaciones() FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.cli_calificacion(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.cli_calificaciones() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.cli_calificacion(uuid) TO authenticated;
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- Estadísticas usa la misma calificación desde el 2026-10-31 (antes tenía su propio puntaje: ver docs/sql/estadisticas.sql).
+-- Se mantiene la forma de las columnas para no tocar est_detal ni est_detal_puntajes.
+-- "ritmo" ya no es parte de la fórmula: lleva lo que resta por los días sin abonar (0 = no resta).
+CREATE OR REPLACE FUNCTION public.est_puntaje_clientes()
+ RETURNS TABLE(cliente_id uuid, evaluadas bigint, a_tiempo bigint, atraso_prom numeric, puntualidad numeric, ritmo integer, puntaje numeric, letra text)
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public'
+AS $function$
+  SELECT cliente_id, evaluadas::bigint, a_tiempo::bigint, atraso_prom, puntualidad, resta_sin_abonar, puntaje::numeric, letra
+  FROM public.cli_calificacion_base();
+$function$;
+
+CREATE OR REPLACE FUNCTION public.est_reglas_puntaje()
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'public'
+AS $function$
+  SELECT public.cli_reglas_calificacion() || jsonb_build_object('min_cuentas_puntuales', 2);  -- para el top de más puntuales
+$function$;
+
+REVOKE EXECUTE ON FUNCTION public.est_puntaje_clientes() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.est_reglas_puntaje() FROM PUBLIC, anon, authenticated;

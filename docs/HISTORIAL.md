@@ -336,7 +336,23 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - El apartado muestra lo abonado al crearlo, la deuda, la fecha límite y quién lo creó (`created_by`).
   - Probado con datos simulados.
 - **Créditos, Top deudores separado en créditos y apartados (2026-10-31, `?v=20261031d`):** a pedido de Kinan. La pestaña Estadísticas muestra dos listas, "Top deudores de créditos" y "Top deudores de apartados", con los 10 que más deben de cada tipo y su porcentaje de la deuda de ese tipo. Antes era una sola lista que sumaba las dos cosas. El reporte PDF diario sigue con la lista junta. Probado con datos simulados.
-- **Calificación real de clientes, paso 1: la función en la base (2026-10-31, en revisión con Kinan):** respaldo `respaldo_20261031` (70 tablas, 18.069 filas). Se crearon `cli_reglas_calificacion()`, `cli_tramo()` y `cli_calificacion_base()`, sin ejecución para `anon` ni `authenticated`. Copia en `docs/sql/calificacion_clientes.sql`, diseño en `docs/plan_calificacion_clientes.md`.
-  - Letras A–E y N, con razones y tope. Solo lee: no cambia montos.
-  - Cambio sobre el plan: la nota sale de la historia (puntualidad 70%, intereses 15%, cuentas terminadas 15%) y lo de hoy solo resta (vencido hasta −30, días sin abonar hasta −15). Así, no deber nada hoy no regala puntos. Con 1 cuenta terminada, máximo B; sin ninguna, máximo C.
-  - Todavía no lo usa ninguna app: falta que Kinan revise los ejemplos. Después vienen las funciones con guardia para Créditos, la interfaz y el cambio de `est_puntaje_clientes` para que Estadísticas diga lo mismo.
+- **Calificación real de clientes y tope de crédito (2026-10-31, `?v=20261031e`):** pendiente 2. Diseño en `docs/plan_calificacion_clientes.md`; copia del SQL en `docs/sql/calificacion_clientes.sql`. Respaldo `respaldo_20261031` (70 tablas, 18.069 filas). Solo lee y califica: no cambia montos.
+  - **Base:**
+    - `cli_reglas_calificacion()` (todas las reglas), `cli_tramo()` y `cli_calificacion_base()` (función de origen, sin acceso desde la API).
+    - Para la app, con guardia `es_staff()`: `cli_calificaciones()` (lista corta de todos: letra, nota, tope y lo que puede sacar) y `cli_calificacion(cliente)` (ficha con razones; un cliente sin cuentas sale N).
+    - `est_puntaje_clientes()` y `est_reglas_puntaje()` ahora salen de la misma calificación, así Estadísticas y Créditos dicen lo mismo. La columna `ritmo` lleva lo que resta por días sin abonar.
+  - **Reglas (ajustadas con Kinan):**
+    - La historia vale puntualidad 70%, intereses 15% y cuentas terminadas 15%. Lo de hoy solo resta: vencido hasta −30 y días sin abonar hasta −15.
+    - Cuenta terminada a tiempo (hasta 5 días): 100. Terminada tarde **sin** interés: 90, 75, 55 o 40 según los días. Si Kinan cobró interés, como máximo 60 ("tarde con interés = regular").
+    - Con 1 cuenta terminada, máximo B; sin ninguna, máximo C. Nunca pagó y tiene una vencida: E.
+    - Tope: la cuenta más grande que terminó de pagar (sin intereses) × 1,5 / 1,2 / 1,0 / 0,5 / 0 (A a E), menos lo que debe. N no tiene tope: decide el admin según el fiador.
+    - Calibrado con ORLANDO PEREZ (A) y ALEXIS VEGA (B), que pagan unos días tarde sin interés.
+    - Quedó: 127 A, 439 B, 65 C, 28 D, 55 E y 104 N.
+  - **Créditos (`Apartados_Yumana_App.html`):**
+    - `loadData` trae `cli_calificaciones` en `CALIF`. Si falla, las letras salen "–" y la app sigue igual.
+    - Lista de clientes y Cobranza con la letra real. La ficha muestra una tarjeta con nota, lo que puede sacar, el tope y hasta 4 razones (`pintarCalif`).
+    - Formulario de crédito nuevo: tarjeta al elegir el cliente (`mostrarCalifCredito`). El admin recibe un aviso (`avisoCalifCredito`) si el cliente es D o E, o si el crédito pasa lo que puede sacar. La cajera no: su crédito ya queda esperando aprobación.
+    - Solicitud por aprobar: tarjeta con la nota y si este crédito cabe o no, y el fiador si es N.
+    - `clientes.score` ya no se usa: la exportación a Excel lleva la columna "Nota".
+  - **Estadísticas:** la explicación se arma con las reglas nuevas, con letras E y N; se quitó la columna "Ritmo".
+  - Probado con datos simulados: 39 revisiones (390 y 1280 px, admin, cajera y la base caída).
