@@ -433,3 +433,11 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - #222 del 02/11, colchones, congeladores, lavadoras y cocinas: $3.230.
 
   Un solo abono Zelle de $8.058,33 con fecha 07/11/2026: varios pagos que Kinan recopiló; desde ahora carga cada pago por separado. Total facturado $9.373,47; debe $1.315,14, todo de la #222, que vence el 02/12. "227lr" de la nota se cargó como 227lt. Los productos que no están en el catálogo van como texto: colchones Milano, Imperio linaje y Bambo, colchonetas y Lavadora Sam 11Kg.
+- **Revisión de seguridad (2026-11-07):** a pregunta de Kinan ("¿cualquiera se puede meter?").
+  - Las 71 tablas tienen RLS. Las funciones `SECURITY DEFINER` que puede llamar alguien con cuenta revisan quién es; la única que no es `prov_recalc_abonado`, que es un disparador y no se puede llamar suelta.
+  - Las 9 cuentas son conocidas: 7 de Yumana (5 activas, 2 inactivas) y 2 de JABELLA. En las últimas 24 horas no hubo intentos de entrada fallidos.
+  - **Cerrado:** un visitante sin cuenta podía leer el catálogo con precios, y con el Excel de Valery iba a ver también los costos. Política restrictiva nueva `anon_no_lee` en `inv_productos`. Probado: sin cuenta ve 0 productos y Kinan ve 2.840.
+  - **Queda para Kinan:**
+    - activar "leaked password protection" en Supabase Auth (pendiente 5c);
+    - decidir si se desactivan los admin que no entran desde junio (Rami y Bassma);
+    - apagar el registro público con una función del servidor (pendiente 5b; hoy la cuenta nueva nace inactiva y sin acceso).
