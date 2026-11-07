@@ -423,3 +423,13 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
 - **Mayorista: "Bolívares" como única forma de pago en bolívares; Créditos y mayorista: botón "Volver al sistema" en los documentos (2026-11-07, Créditos `?v=20261107b`, mayorista `?v=20261107c`):** pedidos de Kinan.
   - **Formas de pago (mayorista):** Pago Móvil y Transferencia son lo mismo para Kinan. `METODOS_PAGO` queda Efectivo USD, Zelle, USDT y Bolívares. Los 41 abonos viejos con "Pago Móvil" o "Transferencia" (40 vivos y 1 en la Papelera) pasaron a "Bolívares". Solo cambió el nombre del método, no el monto, y queda rastro de cada uno en `historial_auditoria`. Ahora hay 80 abonos vivos en Bolívares por $12.578,15, la misma suma de antes. El disparador `trg_may_abonos_metodo_bolivares` convierte el nombre viejo si llega desde una página en caché, la caja o el conector. Créditos y Proveedores no se tocaron.
   - **Volver al sistema:** en el iPhone o iPad, el estado de cuenta (y todo documento que se abre en otra pestaña) se comparte por WhatsApp desde el cuadro de imprimir. Al regresar, Kinan quedaba en la pestaña del documento sin forma de volver. Ahora cada documento trae arriba una barra con "Volver al sistema" (cierra la pestaña; si el navegador no deja cerrarla, vuelve a cargar la app) y "Compartir o imprimir". La barra no sale en el papel ni en el PDF. Helper `conBarraVolver(html)` en las 7 ventanas de Créditos y las 3 del mayorista.
+- **Mayorista, cliente nuevo MAX OFERTAS — DANIEL PÉREZ (2026-11-07):** Socopó, 30 días. La cédula, el teléfono y el grupo de WhatsApp están solo en la base, no en este repo público. Datos de una nota de Kinan; cada total de la nota cuadra con la suma de sus renglones. Facturas `carga_inicial`:
+  - #216 del 12/10, deuda vieja: $2.088,47.
+  - #217 del 12/10, aire split Salcar: $420.
+  - #218 del 21/10, colchón Milano: $250.
+  - #219 del 21/10, congeladores y cocinas: $2.855.
+  - #220 del 25/10, cocinas KR: $270.
+  - #221 del 29/10, colchonetas: $260.
+  - #222 del 02/11, colchones, congeladores, lavadoras y cocinas: $3.230.
+
+  Un solo abono Zelle de $8.058,33 con fecha 07/11/2026: varios pagos que Kinan recopiló; desde ahora carga cada pago por separado. Total facturado $9.373,47; debe $1.315,14, todo de la #222, que vence el 02/12. "227lr" de la nota se cargó como 227lt. Los productos que no están en el catálogo van como texto: colchones Milano, Imperio linaje y Bambo, colchonetas y Lavadora Sam 11Kg.
