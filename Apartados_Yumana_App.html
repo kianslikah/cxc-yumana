@@ -4017,7 +4017,7 @@ function audExportarPDF() {
   html += '</body></html>';
   var w = window.open('', '_blank');
   if (!w) { toast('Permite ventanas emergentes para exportar PDF', 'e'); return; }
-  w.document.write(html);
+  w.document.write(conBarraVolver(html));
   w.document.close();
   setTimeout(function(){ w.print(); }, 300);
 }
@@ -4227,7 +4227,7 @@ function imprimirInventario() {
 
   var win = window.open('', '_blank');
   if (!win) return toast('Permite ventanas emergentes', 'e');
-  win.document.write(html);
+  win.document.write(conBarraVolver(html));
   win.document.close();
   setTimeout(function(){ win.print(); }, 400);
 }
@@ -4286,7 +4286,7 @@ function imprimirListaProductos(a) {
 
   var w = window.open('', '_blank');
   if (!w) return toast('Permite ventanas emergentes', 'e');
-  w.document.write(html);
+  w.document.write(conBarraVolver(html));
   w.document.close();
   setTimeout(function(){ w.print(); }, 400);
 }
@@ -7866,7 +7866,7 @@ function generarEstadoCuenta(tipo, obj) {
   // Faltaba abrir la ventana: el botón "PDF" de un crédito o apartado no mostraba nada (2026-10-23)
   var win = window.open('', '_blank');
   if (!win) return toast('Permite ventanas emergentes para generar el PDF', 'e');
-  win.document.write(html);
+  win.document.write(conBarraVolver(html));
   win.document.close();
 
   // Auto-trigger print después de cargar
@@ -7981,7 +7981,7 @@ function generarHistorialCliente(clienteId) {
 
   var win = window.open('', '_blank');
   if (!win) return toast('Permite ventanas emergentes para generar el PDF', 'e');
-  win.document.write(html);
+  win.document.write(conBarraVolver(html));
   win.document.close();
   setTimeout(function(){ win.focus(); win.print(); }, 500);
 }
@@ -8262,7 +8262,7 @@ function abrirTicket80(titulo, cuerpo) {
     encabezadoRecibo80() + cuerpo + '</body></html>';
   var win = window.open('', '_blank', 'width=400,height=700');
   if (!win) return toast('Permite ventanas emergentes para imprimir', 'e');
-  win.document.write(html);
+  win.document.write(conBarraVolver(html));
   win.document.close();
   setTimeout(function(){
     win.focus();
@@ -8276,6 +8276,20 @@ function abrirTicket80(titulo, cuerpo) {
 function cerrarTrasImprimir(win) {
   if (!/Windows/.test(navigator.userAgent)) return;
   setTimeout(function(){ try { win.close(); } catch (e) {} }, 1500);
+}
+// Barra "Volver al sistema" de los documentos que se abren en otra pestaña (estados de cuenta, recibos, reportes).
+// Pedido de Kinan, 2026-11-07: en el iPhone o iPad, después de compartir el PDF por WhatsApp quedaba en la pestaña
+// del documento sin forma de volver. La barra no sale en el papel ni en el PDF (@media print).
+function conBarraVolver(html){
+  var url = location.href.split('#')[0];
+  var barra = '<style>.yu-barra{position:sticky;top:0;z-index:2147483647;display:flex;flex-wrap:wrap;gap:8px;padding:10px;margin:0 0 12px;background:#0d0f14;border-radius:10px;}' +
+    '.yu-barra button{flex:1 1 140px;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid #d4a24e;background:#d4a24e;color:#1a1206;font:600 15px/1.2 -apple-system,Segoe UI,Arial,sans-serif;cursor:pointer;}' +
+    '.yu-barra button.sec{background:transparent;color:#e8c583;}' +
+    '@media print{.yu-barra{display:none!important;}}</style>' +
+    '<div class="yu-barra"><button type="button" onclick="yuVolver()">Volver al sistema</button><button type="button" class="sec" onclick="window.print()">Compartir o imprimir</button></div>' +
+    '<script>function yuVolver(){try{if(window.opener&&!window.opener.closed)window.opener.focus();}catch(e){}window.close();' +
+    'setTimeout(function(){if(!window.closed)location.replace(' + JSON.stringify(url) + ');},400);}<\/script>';
+  return String(html).replace(/<body([^>]*)>/i, function(m){ return m + barra; });
 }
 
 // Comprobante de un crédito o un apartado nuevo (pedido de Kinan, 2026-10-31): lo que se llevó, el total, lo pagado
@@ -10817,7 +10831,7 @@ function exportarPdfEjecutivo() {
 
   var win = window.open('', '_blank');
   if (!win) return toast('Permite ventanas emergentes para generar el PDF', 'e');
-  win.document.write(html);
+  win.document.write(conBarraVolver(html));
   win.document.close();
   setTimeout(function(){ win.print(); }, 400);
   toast('Reporte generado · Usa "Guardar como PDF"', 's');

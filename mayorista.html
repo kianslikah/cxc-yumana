@@ -898,8 +898,10 @@ var CAJA_ULTIMO_PAGO = null;    // datos del pago recién registrado (recibo y W
 var CAJA_LIMITES = { DIAS_ATRAS_PAGO: 7, DIAS_REGISTROS: 7, MONTO_MAX: 100000, RENGLONES_MAX: 60, CANTIDAD_MAX: 10000, DESC_MAX: 300, LISTA: 80 };
 // Formas de pago de los botones (admin y caja). La caja acepta exactamente esta lista: espejo de la lista
 // de may_caja_registrar_abono en la base. "Descuento/devolución" no es dinero y no va en los botones.
-var METODOS_PAGO = ['Efectivo USD', 'Zelle', 'USDT', 'Bolívares', 'Pago Móvil'];
-var METODOS_EN_BOLIVARES = ['Bolívares', 'Pago Móvil'];
+// Kinan (2026-11-07): Pago Móvil y Transferencia son lo mismo, pago en bolívares. Una sola forma, "Bolívares";
+// en la base, trg_may_abonos_metodo_bolivares convierte el nombre viejo si llega de una página en caché.
+var METODOS_PAGO = ['Efectivo USD', 'Zelle', 'USDT', 'Bolívares'];
+var METODOS_EN_BOLIVARES = ['Bolívares'];
 var METODO_NO_DINERO = 'Descuento/devolución';
 function esDinero(metodo){ return metodo !== METODO_NO_DINERO; }
 var ESTADO_ULTIMOS_ABONOS = 10;   // estado por WhatsApp: igual que may_caja_cuenta (LIMIT 10)
@@ -2756,7 +2758,7 @@ function generarNotaFactura(facturaId){
     '</body></html>';
   var win = window.open('', '_blank');
   if(!win) return toast('Permite ventanas emergentes para el PDF', 'e');
-  win.document.write(html); win.document.close();
+  win.document.write(conBarraVolver(html)); win.document.close();
   setTimeout(function(){ win.focus(); win.print(); }, 500);
 }
 
@@ -2840,7 +2842,8 @@ function tablaMovimientos(clienteId, debe){
       '<td class="num sal">' + textoSaldoMov(saldo) + '</td></tr>';
   }).join('');
   var cuadra = Math.abs(saldo / 100 - debe) < 0.01;
-  return '<h2>Movimientos de la cuenta (' + movs.length + ': ' + (movs.length - nAbonos) + ' facturas y ' + nAbonos + ' abonos)</h2>' +
+  var nFac = movs.length - nAbonos;
+  return '<h2>Movimientos de la cuenta (' + nFac + ' factura' + (nFac === 1 ? '' : 's') + ' y ' + nAbonos + ' abono' + (nAbonos === 1 ? '' : 's') + ')</h2>' +
     '<table class="abonos mov"><thead><tr><th>Fecha</th><th>Movimiento</th><th class="num">Factura</th><th class="num">Abono</th><th class="num">Saldo</th></tr></thead>' +
     '<tbody>' + (filas || '<tr><td colspan="5" style="color:#999;">Sin movimientos.</td></tr>') + '</tbody>' +
     '<tfoot><tr><td colspan="2">Totales</td><td class="num">' + fmt(cargos / 100) + '</td><td class="num">' + fmt(abonos / 100) + '</td><td class="num">' + textoSaldoMov(saldo) + '</td></tr></tfoot></table>' +
@@ -2947,7 +2950,7 @@ function generarEstadoCuentaCliente(clienteId, completo){
     '</body></html>';
   var win = window.open('', '_blank');
   if(!win) return toast('Permite ventanas emergentes para el PDF', 'e');
-  win.document.write(html); win.document.close();
+  win.document.write(conBarraVolver(html)); win.document.close();
   setTimeout(function(){ win.focus(); win.print(); }, 500);
 }
 
@@ -3449,7 +3452,7 @@ function abrirVentanaImpresion(){
 }
 function imprimirEnVentana(win, html){
   if(!win) return;
-  win.document.open(); win.document.write(html); win.document.close();
+  win.document.open(); win.document.write(conBarraVolver(html)); win.document.close();
   setTimeout(function(){ try { win.focus(); win.print(); cerrarTrasImprimir(win); } catch(e){} }, 500);
 }
 function cerrarVentana(win){ try { if(win) win.close(); } catch(e){} }
@@ -3459,6 +3462,20 @@ function cerrarVentana(win){ try { if(win) win.close(); } catch(e){} }
 function cerrarTrasImprimir(win){
   if(!/Windows/.test(navigator.userAgent)) return;
   setTimeout(function(){ cerrarVentana(win); }, 1500);
+}
+// Barra "Volver al sistema" de los documentos que se abren en otra pestaña (estados de cuenta, recibos, reportes).
+// Pedido de Kinan, 2026-11-07: en el iPhone o iPad, después de compartir el PDF por WhatsApp quedaba en la pestaña
+// del documento sin forma de volver. La barra no sale en el papel ni en el PDF (@media print).
+function conBarraVolver(html){
+  var url = location.href.split('#')[0];
+  var barra = '<style>.yu-barra{position:sticky;top:0;z-index:2147483647;display:flex;flex-wrap:wrap;gap:8px;padding:10px;margin:0 0 12px;background:#0d0f14;border-radius:10px;}' +
+    '.yu-barra button{flex:1 1 140px;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid #d4a24e;background:#d4a24e;color:#1a1206;font:600 15px/1.2 -apple-system,Segoe UI,Arial,sans-serif;cursor:pointer;}' +
+    '.yu-barra button.sec{background:transparent;color:#e8c583;}' +
+    '@media print{.yu-barra{display:none!important;}}</style>' +
+    '<div class="yu-barra"><button type="button" onclick="yuVolver()">Volver al sistema</button><button type="button" class="sec" onclick="window.print()">Compartir o imprimir</button></div>' +
+    '<script>function yuVolver(){try{if(window.opener&&!window.opener.closed)window.opener.focus();}catch(e){}window.close();' +
+    'setTimeout(function(){if(!window.closed)location.replace(' + JSON.stringify(url) + ');},400);}<\/script>';
+  return String(html).replace(/<body([^>]*)>/i, function(m){ return m + barra; });
 }
 
 // ===== "Pago registrado" (solo la caja; el admin usa los botones del historial): Imprimir recibo / WhatsApp / Listo =====
