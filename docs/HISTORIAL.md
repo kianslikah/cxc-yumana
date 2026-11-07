@@ -23,14 +23,14 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
 - **Mapa: foco en lo nuestro + guía "Qué mirar" (2026-10-08, v12):** a pedido de Kinan ("lo de alrededor tapa lo de adentro"). Fuera del mapa: edificios vecinos, galpón vecino, local atravesado y árboles; los galpones del Hospital quedan como letrero al borde de la calle; colchones, muebles y la propiedad adyacente solo en Fase 2 (recorte en el bloque v12 al final de `layout.js`, `L.foco`). Abre limpio: solo nombres, ninguna ruta, controles plegados; la capa Personas ahora oculta también las figuras; los letreros de lo lejano salen solo con una ruta, el dinero o los avisos a la vista. Cámara: General y 3D encuadran tienda + depósito + Yeida; `enfocar(id, { soloCamara, distancia })`. Guía de 6 pasos (`GUIA` en `ui.js`): cada paso mueve la cámara y prende solo lo necesario; se abre sola la primera vez (`yumana_mapa_guia_vista_v1`). Los indicadores no cambian (salen de `contenido.js`).
 - **Resto del sistema de cobros anterior + grupo de WhatsApp (2026-10-09):** desde la copia del 2026-10-07 se cargaron los otros 9 clientes (ELECTROHOGAR CAPITANEJO, FRANKLIN PERNIA, CARMEN ELOISA, DIEGO SILVA, SAYEL ALBOUNAY, ADRIANA MORA, MULTIINVERSIONES YESSIMAR, DANIEL MEGA OFERTA, YAQUELIN CONDE), mismo método y verificación. La factura de DIEGO SILVA no tenía fecha: quedó el 2026-10-05 con nota. El sistema viejo ya está completo en el mayorista (11 clientes, $167.713,90 por cobrar). Columna nueva `may_clientes.whatsapp_grupo` (nombre del grupo): campo en el formulario de cliente, se muestra en el detalle, y `abrirEnviar(texto, telefono, grupo)` pone primero "Enviar al grupo X" (abre la hoja de compartir con el mensaje escrito; WhatsApp no deja abrir un grupo por número). Al registrar un abono se ofrece el mensaje "Pago recibido" con el saldo que queda (`mensajeAbono`). Respaldo previo `respaldo_20261009`.
 - **Retiro de los 9 clientes (2026-10-09, a pedido de Kinan):** no quería esos clientes desde el documento viejo; los pasará detallados. Se marcaron con `deleted_at` (clientes, 25 facturas con sus renglones y 9 abonos), con nota "Retirado el 2026-10-09 a pedido de Kinan". En el mayorista quedan solo DANIEL Y FRAN — SOCOPÓ y PEDRAZA. El grupo de WhatsApp por cliente y el aviso de pago al grupo se mantienen.
-- **Cliente nuevo cargado a mano (2026-10-09): ELECTROHOGAR — NESTOR ROSALES** (Capitanejo, tel. 04125113475, plazo 30). Desde la nota de Kinan: saldo pendiente al 31/07 $1.517,93 + 11 facturas del 05/08 al 06/10; total $25.032,93, sin abonos. `origen='carga_inicial'`.
-- **Cliente nuevo (2026-10-09): EL BOUNNAY ALMACÉN SIRIA — TÍO BADIA** (RIF V-19491715-1, plazo 30 provisional). Factura #124 del 07/10 = nota de entrega Valery 0000031039, 20 renglones (15 enlazados a `inv_productos` por `codigo_valery`; TV Royal 43', aire Khaled 8mil, lavadora SAM 9kg, exhibidor Mystic 290L y vajilla Contihome sin código en el catálogo), $9.673 con IVA incluido. Factura #125: 4 mesas MOSERPLAS a $18 = $72 (fecha no indicada, se puso 07/10). Abonos: 228,80 Zelle 01/10; 1.000 Zelle 02/10; 1.000 Zelle 04/10; 374 Zelle 07/10; 2.000 efectivo 08/10 = $4.602,80. Debe $5.142,20.
-- **Cliente nuevo (2026-10-09): WUALTER AL BOUNAY** (se factura a nombre de FADEL EL BOUNAY V-13637905, tel. 04147495698, Santa Bárbara; el sello de la nota de julio es de ALMACÉN ROMA). Factura #126 del 30/07 = nota 0000027613, 15 renglones, $4.866. Factura #127 del 07/10 = nota 0000031038 ($8.879) modificada: −1 lavadora NEWKOOL 12kg defectuosa ($215) y +1 exhibidor JAGUAR 330L negro ($545) = $9.209. Abono 24/09 $2.590 efectivo. Debe $11.485. **Precios:** las notas de Valery muestran IVA, pero el precio real es el unitario en $ (ya incluye el IVA y suma el total de la nota); así se cargan siempre.
+- **Cliente nuevo cargado a mano (2026-10-09): ELECTROHOGAR — NESTOR ROSALES** (Capitanejo, plazo 30). Desde la nota de Kinan: saldo pendiente al 31/07 $1.517,93 + 11 facturas del 05/08 al 06/10; total $25.032,93, sin abonos. `origen='carga_inicial'`.
+- **Cliente nuevo (2026-10-09): EL BOUNNAY ALMACÉN SIRIA — TÍO BADIA** (plazo 30 provisional). Factura #124 del 07/10 = nota de entrega Valery 0000031039, 20 renglones (15 enlazados a `inv_productos` por `codigo_valery`; TV Royal 43', aire Khaled 8mil, lavadora SAM 9kg, exhibidor Mystic 290L y vajilla Contihome sin código en el catálogo), $9.673 con IVA incluido. Factura #125: 4 mesas MOSERPLAS a $18 = $72 (fecha no indicada, se puso 07/10). Abonos: 228,80 Zelle 01/10; 1.000 Zelle 02/10; 1.000 Zelle 04/10; 374 Zelle 07/10; 2.000 efectivo 08/10 = $4.602,80. Debe $5.142,20.
+- **Cliente nuevo (2026-10-09): WUALTER AL BOUNAY** (se factura a nombre de FADEL EL BOUNAY, Santa Bárbara; el sello de la nota de julio es de ALMACÉN ROMA). Factura #126 del 30/07 = nota 0000027613, 15 renglones, $4.866. Factura #127 del 07/10 = nota 0000031038 ($8.879) modificada: −1 lavadora NEWKOOL 12kg defectuosa ($215) y +1 exhibidor JAGUAR 330L negro ($545) = $9.209. Abono 24/09 $2.590 efectivo. Debe $11.485. **Precios:** las notas de Valery muestran IVA, pero el precio real es el unitario en $ (ya incluye el IVA y suma el total de la nota); así se cargan siempre.
 - **`may_guardar_factura` calcula el vencimiento (2026-10-09):** si no viene `fecha_vencimiento`, pone fecha + `plazo_dias` del cliente (migración `may_guardar_factura_vencimiento_por_plazo`). Las facturas #124–#127, cargadas antes sin vencimiento, se corrigieron.
 - **Plazo de WUALTER AL BOUNAY a 60 días (2026-10-09)** y vencimientos recalculados (#126 → 28/09, #127 → 06/12). **Cambiar el plazo de un cliente** desde Editar ahora pregunta si aplicar el plazo nuevo a sus facturas pendientes (RPC `may_aplicar_plazo(cliente, plazo)`: vencimiento = fecha + plazo).
 - **Ajustes (2026-10-09):** ALMACÉN ROMA — WUALTER AL BOUNAY vuelve a plazo normal 30 días para facturas nuevas (las #126 y #127 quedan a 60 días). Zona de Tío Badia y de Wualter: Santa Bárbara de Barinas (campo `direccion`); Kinan pide tener la zona de cada cliente para usarla después.
-- **Cliente nuevo (2026-10-09): SAMER EL BOUNNAY** (V-19491715, tel. 04147585020, Santa Bárbara de Barinas, plazo 30, sin grupo). Factura #128 del 08/10 = nota 0000031054, 6 renglones, $2.483, sin abonos. Su cédula 19491715 es la misma persona del RIF de Tío Badia (V-19491715-1): Kinan confirmó que se llevan como cuentas separadas. Se enlazó al catálogo el exhibidor Mystic 290L de la factura #124 (MY-ENF290FCU).
-- **Cliente nuevo (2026-10-09): ZYAD MAN AL DEN** (E-84567607, tel. 04261735555, hijo LEITH 04261033635, Santa Bárbara de Barinas, plazo 30, sin grupo). Antes se le llevaba la cuenta en un cuaderno; se cargó la historia completa:
+- **Cliente nuevo (2026-10-09): SAMER EL BOUNNAY** (Santa Bárbara de Barinas, plazo 30, sin grupo). Factura #128 del 08/10 = nota 0000031054, 6 renglones, $2.483, sin abonos. Es la misma persona del RIF de Tío Badia: Kinan confirmó que se llevan como cuentas separadas. Se enlazó al catálogo el exhibidor Mystic 290L de la factura #124 (MY-ENF290FCU).
+- **Cliente nuevo (2026-10-09): ZYAD MAN AL DEN** (Santa Bárbara de Barinas, plazo 30, sin grupo; también trata con su hijo LEITH). Antes se le llevaba la cuenta en un cuaderno; se cargó la historia completa:
   - **#129** (08/09): saldo anterior del cuaderno, $6.707. El cuaderno no trae la fecha; se puso 08/09 (Kinan la dio por buena).
   - **#130** (13/09): $608.
   - **#131** (24/09): $359.
@@ -38,13 +38,13 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - **#132** (04/10, cuaderno): $3.952, almohadas incluidas, de modo que la deuda del cuaderno queda en $5.275. Quien escribe ese cuaderno hace el 1 parecido al 7: el split Says es $215, no $275. Al principio lo leí como $275 y dejé fuera las almohadas; se corrigió el mismo día, con rastro en `historial_auditoria`, y el total no cambió.
   - **#133** (08/10): nota Valery 0000031053, $7.190. 12 renglones enlazados al catálogo; el aire Khaled 220v (AW12CM2FMC) y la nevera Hamilton Beach (HBR8TSV26D) no están en el catálogo y van como texto.
   - Deuda total: $12.465.
-- **Cliente nuevo (2026-10-09): CREDIMUEBLES — ANDERSON** (tel. 04147591679, Socopó, plazo 60, grupo "Pagos CREDIMUEBLES", donde también está Hugo). Datos del mensaje fijado en el grupo, sin detalle de productos:
+- **Cliente nuevo (2026-10-09): CREDIMUEBLES — ANDERSON** (Socopó, plazo 60, grupo "Pagos CREDIMUEBLES", donde también está Hugo). Datos del mensaje fijado en el grupo, sin detalle de productos:
   - Facturas: #134 del 11/07 por $3.478, #135 del 08/08 por $8.122 y #136 del 19/08 por $28.850.
   - Abonos: Zelle $1.000 el 23/09, USDT $2.000 el 08/10 y Zelle $500 el 08/10.
   - Debe $36.950.
 - **Ajustes (2026-10-09):**
   - "Franklin Solano" era un cliente de prueba y quedó en la papelera. Tenía como teléfono el número de Fran.
-  - Las dos cuentas de Daniel y Fran llevan los dos teléfonos: `Fran 04127734302 / Daniel 04162684726`.
+  - Las dos cuentas de Daniel y Fran llevan los teléfonos de los dos (en la base).
   - Las 4 mesas MOSERPLAS de Tío Badia quedan en su factura aparte (#125) del 07/10: Kinan confirmó la fecha. No se juntaron con la #124 para que esa siga igual a la nota de Valery.
 - **Mayorista, entrega del 2026-10-09 (`?v=20261009c`):**
   - **Barra lateral:** ya no es `position:fixed`. En iPad y escritorio, la página queda quieta y solo se desplaza el contenido (`.layout` de alto 100dvh y `.layout-main` con su propio scroll). Antes, en el iPad, después de desplazar la página el mouse marcaba una opción distinta de la que tenía debajo. En el teléfono sigue igual: cajón con `.scrim`.
@@ -59,18 +59,18 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - Las dos funciones son `SECURITY DEFINER` con `EXECUTE` para anon, igual que los demás `may_*`, mientras el mayorista siga con su login propio.
   - Se reemplazaron por íconos SVG la luna y el sol del tema y el aviso de facturas vencidas.
 - **Más clientes (2026-10-09):**
-  - **KEILA JAIME:** particular, tel. 04242288746, Socopó, plazo 30. Facturas del 29/09: #141, saldo anterior de $411, y #142, cocina SJ 4H inox de $160. Abono en efectivo de $200 el 07/10. Debe $371. Kinan la anotó con "(Yaquelin Conde)", pero es otra clienta.
-  - **YAQUELIN CONDE:** particular, V-16515542, tel. 04122377935, Socopó, plazo 30.
+  - **KEILA JAIME:** particular, Socopó, plazo 30. Facturas del 29/09: #141, saldo anterior de $411, y #142, cocina SJ 4H inox de $160. Abono en efectivo de $200 el 07/10. Debe $371. Kinan la anotó con "(Yaquelin Conde)", pero es otra clienta.
+  - **YAQUELIN CONDE:** particular, Socopó, plazo 30.
     - #143 del 07/09: saldo anterior de $1.919.
     - #144 del 01/10: nota Valery 0000030735, $610. La nota dice 6 ventiladores Omega a $70, pero ese renglón suma $350, así que se cargaron 5. El sello "PAGADO / CONTADO" es solo el justificante para el traslado.
     - Abonos: $180 y $650 por Zelle el 30/09, y $50 en efectivo el 01/10.
     - Debe $1.649.
-  - **FRANKLIN PERNIA:** particular, V-1654017, tel. 04122477023, Socopó, plazo 60. #145 del 30/05 por $2.780 y Zelle de $810 el 06/06. Debe $1.970. **No venderle más** cuando termine de pagar: tiene `no_vender = true`.
-  - **YONDER PERNIA:** particular, V-18989358, tel. 04125457658, Socopó, delante de la bomba Villarreal.
+  - **FRANKLIN PERNIA:** particular, Socopó, plazo 60. #145 del 30/05 por $2.780 y Zelle de $810 el 06/06. Debe $1.970. **No venderle más** cuando termine de pagar: tiene `no_vender = true`.
+  - **YONDER PERNIA:** particular, Socopó.
     - Plazo normal 30; la factura #146 del 27/08 tiene 60 y vence el 26/10.
     - Es el pedido de WhatsApp. Se entregaron 19 sillas playeras, no 20, así que el total es $2.931 y no $2.945.
-  - **ADRIANA MORA:** negocio, V-19056774, Guayanito, plazo 60, grupo "Pagos Adriana". En Valery figura como ADRIANA SOFIA MORA CONTRERAS.
-    - Teléfonos: `Adriana 04262689370 / Tatiana 04161366484`. Tatiana trabaja con ella.
+  - **ADRIANA MORA:** negocio, Guayanito, plazo 60, grupo "Pagos Adriana". En Valery figura como ADRIANA SOFIA MORA CONTRERAS.
+    - Lleva dos teléfonos (en la base): el de Adriana y el de Tatiana, que trabaja con ella.
     - #148 del 25/06: saldo pendiente de $1.788,08.
     - #149 del 16/07 ($1.681), #150 del 21/07 ($5.530), #151 del 10/08 ($9.604), #152 del 17/08 ($2.085) y #153 del 22/08 ($1.706): salen del resumen del grupo y no traen detalle.
     - #154 del 09/09: nota Valery 0000029716, 37 renglones, $10.380. 33 están enlazados al catálogo.
@@ -78,7 +78,7 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - **Abonos:** la recopilación del grupo, sin fechas individuales, cargada como 4 totales con fecha 30/09: Bs $4.941,23, Zelle $8.369, USDT $342, y $455 de "Descuento/devolución" (no es dinero: aire SJ 14mil $230, TV 32 $105, colchón $20, cama $20 y ollas $80).
     - Pagan completas la #148, la #149 y la #150, y $5.108,15 de la #151, que queda debiendo $4.495,85, como en el resumen del grupo.
     - Debe $20.216,85.
-  - **MULTIINVERSIONES YESSIMAR 121:** negocio, J-40745422-6, Cantón, tel. 04145611836, plazo 60, grupo "Pagos Yessimar" (ahí está Luis Omar).
+  - **MULTIINVERSIONES YESSIMAR 121:** negocio, Cantón, plazo 60, grupo "Pagos Yessimar" (ahí está Luis Omar).
     - #157 del 11/06 ($11.004) y #158 del 09/07 ($15.022): salen del resumen y quedan pagadas.
     - #159 del 11/08: nota Valery 0000028284, $13.481 (Valery dice $13.480,99 por redondeo). Debe $12.434.
     - #160 del 22/08: nota 0000028887, $5.830.
@@ -128,7 +128,7 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - **Cómo se sabe qué abono pagó qué factura:** la base no lo guarda. `repartoAbonos` reparte los abonos del más viejo al más nuevo entre las facturas de la más vieja a la más nueva, en centavos, y da exactamente el `monto_pagado` de cada factura (probado con 50 facturas y 132 abonos). Si un abono se repartió entre una factura que sale y una que no, se muestra la parte que fue a la que sale ("$400 de $1.000"). El modelo está en `modeloEstadoCuenta(cliente, pagadasRecientes)`.
   - En el cliente de prueba, el PDF pasó de 22 hojas a 4.
 - **Mayorista, 2026-10-10 (`?v=20261010e`):** el **Estado por WhatsApp** quedó corto, a pedido de Kinan. Trae cada factura pendiente como "#número · fecha · lo que se debe", los últimos 10 abonos (fecha · forma de pago · monto) y al final solo el total pendiente. Ya no lleva vencimientos ni los totales de compras y abonos de toda la historia.
-- **Cliente nuevo (2026-10-10): REYEN AL BOUNAY**, negocio, V-25437791, tel. 04141594611, Santa Bárbara de Barinas, plazo 30.
+- **Cliente nuevo (2026-10-10): REYEN AL BOUNAY**, negocio, Santa Bárbara de Barinas, plazo 30.
   - #166, del 01/09: deuda anterior de $8.254. La fecha es aproximada porque el chat no la trae.
   - Abonos a esa deuda: $1.000, $251, $45 y $100. Se cargaron como efectivo con fecha 30/09 porque el chat no trae ni la fecha ni la forma de pago.
   - #167, del 07/10: pedido de Notas por $2.333 (14 renglones).
@@ -158,14 +158,14 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - Hay otros 2 pagos registrados después de las 8 pm, del 28/06. No se tocaron porque tienen la fecha puesta a mano y está bien.
   - Respaldo previo: `respaldo_20261010b` (60 tablas, 13.872 filas, conteos verificados, sin acceso para anon ni authenticated).
 - **Pendientes cerrados por Kinan (2026-10-10):** los abonos que parecían repetidos (#62 Pascual Rodríguez y PEDRAZA) son reales. Las devoluciones de Salcar y Gtronic están resueltas. Las fechas aproximadas de Reyen y Adriana se quedan así.
-- **Cliente nuevo (2026-10-10): ZIGAM LIBERTAD**, negocio, Libertad de Barinas, tel. 04165708020, plazo 60. Se factura a nombre de NEDAM ABOU ALJOUD ALHENNAWI, RIF E-83114251-3.
+- **Cliente nuevo (2026-10-10): ZIGAM LIBERTAD**, negocio, Libertad de Barinas, plazo 60. Se factura a nombre de NEDAM ABOU ALJOUD ALHENNAWI (el RIF está en la base).
   - #168, del 03/09: nota Valery 0000029419, $8.323,97 (33 renglones, 28 enlazados). Valery dice $8.323,98 por redondeo. Vence el 02/11.
   - #169, del 10/09: nota Valery 0000029788, $258 (aire NEWKOOL $90 y 12 ventiladores $168). Vence el 09/11.
   - Abonos: $320 por Zelle el 04/09; $90 el 10/09, que es el pago del aire hecho el mismo día y que se cargó como efectivo porque no se indicó la forma; $500 por Zelle el 21/09 y $1.500 por Zelle el 07/10. Ese último se cargó primero por $1.000 y Kinan lo corrigió; el rastro quedó en `historial_auditoria`.
   - Kinan le cobró la #168 redondeada a $8.320. Se cargó un descuento de $3,97 el 03/09, con método 'Descuento/devolución' (no es dinero), y quedó rastro en `historial_auditoria`.
   - Debe $6.168 (8.581,97 − 2.410 cobrado − 3,97 de descuento), igual que la cuenta de Kinan. Por la regla de lo más viejo primero, en la app el abono del aire baja la #168 y la #169 sale completa.
   - Sin enlace al catálogo, porque no están en la foto de junio: TV 43" Universal Royal, aire AIWA 5mil manual, split HYUNDAI 12mil inverter, lavadora SAM 9kg y cocina MYSTIC 4H Agata Plus con tapa. Las camas CAMA1.40M y CAMA1.00M se enlazaron a CAMA1,40M y CAMA1,00M (en el catálogo están con coma).
-- **Cliente nuevo (2026-10-10): ELECTROCENTER — SAYEL AL BOUNNAY**, tienda ELECTROCENTER E.C C.A, Guasdualito, RIF J-50379027-0, tel. 04267769989 (de la nota), plazo 60. Tiene **No venderle**: Kinan espera que termine de pagar para sacarlo de los clientes.
+- **Cliente nuevo (2026-10-10): ELECTROCENTER — SAYEL AL BOUNNAY**, tienda ELECTROCENTER E.C C.A, Guasdualito, plazo 60 (RIF y teléfono de la nota, en la base). Tiene **No venderle**: Kinan espera que termine de pagar para sacarlo de los clientes.
   - #170, del 13/02: nota Valery 0000019984, $24.172 (27 renglones, 26 enlazados; el TV 32' ROYAL, código RR-32, no está en el catálogo). Valery dice $24.172,03 por redondeo. Venció el 14/04.
   - Devolución de 1 exhibidor heladero SAYS 233L ($360), que no entró en el camión. Va con método 'Descuento/devolución' el 13/02.
   - Abonos: $2.000 por Zelle el 05/04, $1.664 por Zelle el 06/04, $10.000 en efectivo el 14/04, $2.000 por Zelle el 16/05, y $530 y $1.770 por Zelle el 19/05.
@@ -269,13 +269,13 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - Funciones nuevas en `Apartados_Yumana_App.html`: `movimientosPdf`, `tablaMovimientosPdf`, `detallePagoPdf`, `etiquetaCuentaPdf`, `fmtSaldoPdf`, `escPdf` y `CSS_MOVS_PDF`.
   - Probado con las funciones reales y los datos de HARRISON HERNANDEZ: 8 pagos, cargos $1.210, pagos $960, saldo $250, igual que "Debe actualmente".
 - **Clientes nuevos del mayor (2026-10-26): MARY SOLANO, DEIVER SOLANO y SUSU ALBOUNAY.** Kinan pidió guardar solo la deuda final de cada uno y facturar en el sistema lo nuevo que se lleven. Cada cliente lleva un renglón de "Saldo pendiente" y aparte lo entregado últimamente, con sus productos. Todo va con `origen='carga_inicial'` y sin abonos, porque ya están descontados del saldo.
-  - **MARY SOLANO:** V-17204680, tel. 04264725535, cotera de Socopó y Pedraza (en Valery: Ciudad Bolivia, Pedraza), grupo "Pagos MARY", plazo máximo 60. Es la mamá de Deiver. **Debe $14.683,65.**
+  - **MARY SOLANO:** cotera de Socopó y Pedraza (en Valery: Ciudad Bolivia, Pedraza), grupo "Pagos MARY", plazo máximo 60. Es la mamá de Deiver. **Debe $14.683,65.**
     - #189, del 15/10: saldo de $13.068,65 según el grupo (12.306,65 + 762). Los $12.306,65 vienen de las notas Valery 0000031351 ($14.544) y 0000031370 ($1.560) del 15/10, menos lo abonado. Los $762 son la lista del grupo: UPS, ventiladores e hidrojet.
     - #190, del 26/10: lo entregado esta semana, $1.615 (9 renglones, 8 enlazados; el dispensador MABE no está en el catálogo).
-  - **DEIVER SOLANO** (Kinan lo llama "Deiber"): V-28247621, tel. 04245841878, cotero de Socopó y Pedraza, grupo "Deiber pagos (Mercantil Yumana)", plazo máximo 60. El "+100$" fijado en el grupo se refiere al pago por Zelle; no es un abono. **Debe $6.853,22.**
+  - **DEIVER SOLANO** (Kinan lo llama "Deiber"): cotero de Socopó y Pedraza, grupo "Deiber pagos (Mercantil Yumana)", plazo máximo 60. El "+100$" fijado en el grupo se refiere al pago por Zelle; no es un abono. **Debe $6.853,22.**
     - #191, del 15/10: saldo de $6.263,22 = deuda anterior $2.894 − $2.314 (del efectivo de $3.250 que entregó Mary) + nota Valery 0000031369 del 15/10 ($5.838) − abonos de $36,38, $10,40 y $108.
     - #192, del 26/10: lo entregado, $590 (congelador Mystic 200L $220, aire Frigilux 12mil 220v $220 y congelador Mystic 100L $150; se anotó en $160 y Kinan lo bajó $10).
-  - **SUSU ALBOUNAY:** Santa Bárbara de Barinas, tel. 04147519260, sin grupo (chat directo "Susu Albonay MAYOR"), plazo 30. **Debe $2.423.**
+  - **SUSU ALBOUNAY:** Santa Bárbara de Barinas, sin grupo (chat directo "Susu Albonay MAYOR"), plazo 30. **Debe $2.423.**
     - #193, del 17/09: saldo de $1.306 (910 + 896 − abono de 500). No se sabe la fecha de esas compras y se puso la de la entrega.
     - #194, del 17/09: lo entregado ese día, $1.117. Los productos suman $1.113; Kinan reconoció el error de suma y decidió dejar la cuenta en $1.117, así que va un renglón de ajuste de $4.
   - Al primer intento, el conector de Supabase pidió una confirmación que nadie respondió y se cortó. No quedó nada a medias, porque cada carga es un solo bloque `DO` con verificación del total. Al segundo intento entraron los tres sin problema.

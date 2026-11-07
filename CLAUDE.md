@@ -133,7 +133,7 @@ Kinan manda nombre, zona, teléfono(s), cédula o RIF, plazo (30 o 60 días) y f
    - `may_registrar_abono(...)` por cada abono.
    - `may_recalcular_cliente`.
    - Verificar facturado, abonado y lo que debe.
-4. Anotar el cliente en `docs/HISTORIAL.md` y hacer commit. Corregir montos de algo ya cargado deja rastro en `historial_auditoria`.
+4. Anotar el cliente en `docs/HISTORIAL.md` y hacer commit, **sin cédula, RIF, teléfonos, grupo de WhatsApp ni dirección exacta**: el repo es público y esos datos van solo en la base (quitados del historial el 2026-11-07 a pedido de Kinan). Corregir montos de algo ya cargado deja rastro en `historial_auditoria`.
 5. Las pruebas dentro de transacciones que se deshacen igual gastan números de factura: después, `setval('may_facturas_numero_seq', max(numero))`.
 
 ## Pendientes conocidos
