@@ -5905,7 +5905,9 @@ protegerBoton('btnSaveAp', async function(){
       closeModal('mNewAp');
       toast('Apartado #' + ap.numero + ' creado con ' + validProds.length + ' producto(s)', 's');
       await loadData();
-      ofrecerComprobante('apartado', ap.id);
+      // Entra de una vez al apartado nuevo (pedido de Kinan, 2026-11-07, en vez de la ventanita de "¿Imprimir comprobante?"):
+      // desde su detalle se imprime el comprobante o se manda el WhatsApp.
+      goDetail(ap.id);
     }
   } catch (e) {
     toast('Error: ' + e.message, 'e');
@@ -6538,8 +6540,9 @@ protegerBoton('btnSaveCr', async function(){
 
       await loadData();
 
-      // Comprobante para que el cliente se lo lleve, aunque no haya dado abono (las solicitudes esperan aprobación)
-      if (esAdmin) ofrecerComprobante('credito', cr.id);
+      // Entra de una vez al crédito nuevo (pedido de Kinan, 2026-11-07, en vez de la ventanita de "¿Imprimir comprobante?"):
+      // desde su detalle se imprime el comprobante (si ya está aprobado) o se manda el WhatsApp.
+      goDetailCredito(cr.id);
     }
   } catch (e) {
     toast('Error: ' + e.message, 'e');
@@ -8309,15 +8312,6 @@ function imprimirComprobanteCuenta(tipo, obj) {
     '<div class="center" style="font-size:10px;font-weight:600;">Mercantil Yumana © 2026</div>' +
     '<div style="height: 20mm;"></div>';
   abrirTicket80('Comprobante', cuerpo);
-}
-// Al terminar de crear la cuenta: pregunta si se imprime el comprobante
-function ofrecerComprobante(tipo, id) {
-  var obj = (tipo === 'apartado' ? APARTADOS : CREDITOS).find(function(x){ return x.id === id; });
-  if (!obj) return;
-  var cli = CLIENTES.find(function(x){ return x.id === obj.cliente_id; });
-  confirmAction('¿Imprimir comprobante?', 'Imprime el comprobante para que el cliente se lo lleve.',
-    (tipo === 'apartado' ? 'Apartado #' : 'Crédito #') + obj.numero + (cli ? ' · ' + cli.nombre : '') + ' · ' + fmt(obj.monto_total),
-    function(){ imprimirComprobanteCuenta(tipo, obj); }, { btn: 'Imprimir comprobante', clase: 'btn-primary' });
 }
 
 

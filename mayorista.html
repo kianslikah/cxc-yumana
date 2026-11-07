@@ -194,8 +194,6 @@ input[type="date"]::-webkit-date-and-time-value{ text-align:left; margin:0; }
 .bc-item{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 12px; border-bottom:1px solid var(--border-soft); cursor:pointer;}
 .bc-item.sel{background:rgba(212,162,78,0.10);}
 .zona-eliminar{margin-top:44px; padding:14px 16px; border:1px dashed rgba(232,93,76,0.35); border-radius:12px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
-.ec-completo{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:4px 2px 12px; margin-bottom:6px; border-bottom:1px solid var(--border);}
-.ec-completo span{flex:1 1 220px; font-size:13px; color:var(--muted);}
 .zona-eliminar p{flex:1 1 240px; font-size:13px; color:var(--muted); line-height:1.4;}
 /* Productos dentro de la tarjeta de factura: Cantidad → Producto → Precio → Subtotal */
 .fp-plegable{margin:8px 0 2px;}
@@ -2169,9 +2167,21 @@ function facturasDeCliente(clienteId){
   return FACTURAS.filter(function(f){ return f.cliente_id === clienteId; })
     .sort(function(a,b){ return new Date(a.fecha) - new Date(b.fecha); });
 }
+// Orden de los abonos en pantalla, en el WhatsApp y en los estados de cuenta: el día más reciente primero y, dentro de
+// un mismo día, en el orden en que se registraron (pedido de Kinan, 2026-11-07: los pagos del mismo día salían revueltos).
+function horaRegistro(a){ var t = a && a.creado_en ? new Date(a.creado_en).getTime() : 0; return isNaN(t) ? 0 : t; }
+function ordenAbonos(a, b){
+  if(a.fecha !== b.fecha) return a.fecha < b.fecha ? 1 : -1;
+  return horaRegistro(a) - horaRegistro(b);
+}
 function abonosDeCliente(clienteId){
+  return ABONOS.filter(function(a){ return a.cliente_id === clienteId; }).sort(ordenAbonos);
+}
+// Los n abonos más recientes (por fecha y, en el mismo día, los últimos registrados), mostrados con ordenAbonos
+function ultimosAbonos(clienteId, n){
   return ABONOS.filter(function(a){ return a.cliente_id === clienteId; })
-    .sort(function(a,b){ return new Date(b.fecha) - new Date(a.fecha); });
+    .sort(function(a, b){ return a.fecha !== b.fecha ? (a.fecha < b.fecha ? 1 : -1) : horaRegistro(b) - horaRegistro(a); })
+    .slice(0, n).sort(ordenAbonos);
 }
 function itemsDeFactura(facturaId){
   // En el mismo orden de la nota: la columna orden (1, 2, 3…) la pone may_guardar_factura según llegan los renglones
@@ -2251,6 +2261,7 @@ function renderDetalle(){
         '<button class="btn btn-primary" id="btnAbonarCli">+ Abono</button>' +
         '<button class="btn btn-ghost" id="btnFacturaCli" style="border-color:var(--gold); color:var(--gold);">+ Factura</button>' +
         '<button class="btn btn-ghost" id="btnEstadoCuentaCli" style="border-color:var(--purple); color:var(--purple);">Estado cuenta PDF</button>' +
+        '<button class="btn btn-ghost" id="btnEstadoCompletoCli" style="border-color:var(--purple); color:var(--purple);">Estado completo PDF</button>' +
         '<button class="btn btn-ghost" id="btnEstadoWaCli" style="border-color:var(--green); color:var(--green-soft);">Estado por WhatsApp</button>' +
         '<button class="btn btn-ghost" id="btnEstado80Cli">Imprimir estado (80 mm)</button>' +
         '<button class="btn btn-ghost" id="btnRecordarCli" style="border-color:var(--green); color:var(--green-soft);">Recordatorio</button>' +
@@ -2268,8 +2279,6 @@ function renderDetalle(){
     (pendientes.length ? pendientes.map(filaFactura).join('') : '<div style="color:var(--muted); font-size:13px; padding:10px;">No tiene facturas pendientes.</div>') +
     // Pagadas e historial de abonos plegados: con cuentas grandes (50+ facturas, 100+ abonos) la pantalla se hacía eterna
     '<details class="det-plegable"><summary>Facturas pagadas (' + pagadas.length + ')</summary>' +
-    (pagadas.length ? '<div class="ec-completo"><span>Toda la historia del cliente, con todas las facturas y todos los abonos.</span>' +
-      '<button class="btn btn-ghost" id="btnEstadoCompletoCli" style="border-color:var(--purple); color:var(--purple);">Estado de cuenta completo (PDF)</button></div>' : '') +
     (pagadas.length ? pagadas.slice().reverse().map(filaFactura).join('') : '<div style="color:var(--muted); font-size:13px; padding:10px;">Aún no tiene facturas pagadas.</div>') +
     '</details>' +
     '<details class="det-plegable"><summary>Historial de abonos (' + abonos.length + ' · ' + fmt(totalPagado) + ')</summary>' +
@@ -2636,7 +2645,7 @@ function repartoAbonos(clienteId){
   var fs = facturasDeCliente(clienteId).slice().sort(function(a, b){
     return a.fecha < b.fecha ? -1 : (a.fecha > b.fecha ? 1 : (a.numero - b.numero)); });
   var as = abonosDeCliente(clienteId).slice().sort(function(a, b){
-    return a.fecha < b.fecha ? -1 : (a.fecha > b.fecha ? 1 : String(a.creado_en || '').localeCompare(String(b.creado_en || ''))); });
+    return a.fecha < b.fecha ? -1 : (a.fecha > b.fecha ? 1 : horaRegistro(a) - horaRegistro(b)); });
   var resta = fs.map(function(f){ return Math.round(parseFloat(f.monto_total || 0) * 100); });
   var i = 0, aplic = [];
   as.forEach(function(a){
@@ -2668,7 +2677,7 @@ function modeloEstadoCuenta(clienteId, pagadasRecientes){
       (porAbono[x.abono.id] = porAbono[x.abono.id] || { abono: x.abono, cent: 0 }).cent += x.cent;
     });
     abonos = Object.keys(porAbono).map(function(k){ return porAbono[k]; })
-      .sort(function(a, b){ return a.abono.fecha < b.abono.fecha ? 1 : (a.abono.fecha > b.abono.fecha ? -1 : 0); });
+      .sort(function(a, b){ return ordenAbonos(a.abono, b.abono); });
   }
   var tot = totalesCliente(clienteId);
   return {
@@ -2684,7 +2693,40 @@ function montoAbonoEC(x){
   return fmt(x.cent / 100) + (x.cent < total ? ' de ' + fmt(total / 100) : '');
 }
 
-// completo: true = toda la historia (botón dentro de "Facturas pagadas"); si no, el resumido
+// Movimientos de la cuenta para el estado completo (pedido de Kinan, 2026-11-07: ver TODOS los pagos para revisar que se
+// cargaron bien). Cada factura suma y cada abono resta, del más viejo al más nuevo; en un mismo día van primero las
+// facturas y luego los abonos en el orden en que se registraron. El saldo final sale de las mismas sumas que
+// totalesCliente; si no diera lo mismo que "debe", se avisa en el papel.
+function tablaMovimientos(clienteId, debe){
+  var movs = facturasDeCliente(clienteId).map(function(f){
+    return { fecha: f.fecha, tipo: 0, orden: f.numero, texto: 'Factura #' + f.numero, cent: Math.round(parseFloat(f.monto_total || 0) * 100) };
+  }).concat(abonosDeCliente(clienteId).map(function(a){
+    var txt = esDinero(a.metodo) ? 'Abono · ' + prEsc(a.metodo) : prEsc(a.metodo);
+    return { fecha: a.fecha, tipo: 1, orden: horaRegistro(a), texto: txt + (a.notas ? ' · ' + prEsc(a.notas) : ''), cent: -Math.round(parseFloat(a.monto || 0) * 100) };
+  }));
+  movs.sort(function(a, b){
+    if(a.fecha !== b.fecha) return a.fecha < b.fecha ? -1 : 1;
+    return a.tipo !== b.tipo ? a.tipo - b.tipo : a.orden - b.orden;
+  });
+  var saldo = 0, cargos = 0, abonos = 0, nAbonos = 0;
+  var filas = movs.map(function(x){
+    saldo += x.cent;
+    if(x.tipo === 0) cargos += x.cent; else { abonos -= x.cent; nAbonos++; }
+    return '<tr' + (x.tipo === 0 ? ' class="fac"' : '') + '><td>' + fmtDate(x.fecha) + '</td><td>' + x.texto + '</td>' +
+      '<td class="num">' + (x.tipo === 0 ? fmt(x.cent / 100) : '') + '</td><td class="num">' + (x.tipo === 1 ? fmt(-x.cent / 100) : '') + '</td>' +
+      '<td class="num sal">' + textoSaldoMov(saldo) + '</td></tr>';
+  }).join('');
+  var cuadra = Math.abs(saldo / 100 - debe) < 0.01;
+  return '<h2>Movimientos de la cuenta (' + movs.length + ': ' + (movs.length - nAbonos) + ' facturas y ' + nAbonos + ' abonos)</h2>' +
+    '<table class="abonos mov"><thead><tr><th>Fecha</th><th>Movimiento</th><th class="num">Factura</th><th class="num">Abono</th><th class="num">Saldo</th></tr></thead>' +
+    '<tbody>' + (filas || '<tr><td colspan="5" style="color:#999;">Sin movimientos.</td></tr>') + '</tbody>' +
+    '<tfoot><tr><td colspan="2">Totales</td><td class="num">' + fmt(cargos / 100) + '</td><td class="num">' + fmt(abonos / 100) + '</td><td class="num">' + textoSaldoMov(saldo) + '</td></tr></tfoot></table>' +
+    (cuadra ? '' : '<p class="descuadre">Revisar: el saldo de los movimientos (' + textoSaldoMov(saldo) + ') no da lo mismo que lo que debe la cuenta (' + fmt(debe) + ').</p>');
+}
+// Saldo de una fila de movimientos (en centavos): lo que debe, o "a favor" si pagó de más
+function textoSaldoMov(cent){ return cent < -0.5 ? fmt(-cent / 100) + ' a favor' : fmt(Math.max(cent, 0) / 100); }
+
+// completo: true = toda la historia (botón "Estado completo PDF"); si no, el resumido
 var EC_PAGADAS_RECIENTES = 2;
 function generarEstadoCuentaCliente(clienteId, completo){
   var c = CLIENTES.find(function(x){ return x.id === clienteId; });
@@ -2720,6 +2762,7 @@ function generarEstadoCuentaCliente(clienteId, completo){
     var a = x.abono;
     return '<tr><td>' + fmtDate(a.fecha) + '</td><td>' + prEsc(a.metodo) + '</td><td>' + prEsc(a.notas||'') + '</td><td class="num"><b>' + montoAbonoEC(x) + '</b></td></tr>';
   }).join('') : '<tr><td colspan="4" style="color:#999;">Sin abonos.</td></tr>';
+  var htmlMovimientos = m.completo ? tablaMovimientos(c.id, debe) : '';
   // Aclaración del resumido: qué se dejó fuera (para el cliente, sin tecnicismos)
   var notaResumen = (!m.completo && m.ocultas > 0)
     ? '<p class="nota-ec">Se muestran las facturas pendientes' + (EC_PAGADAS_RECIENTES ? ' y las ' + EC_PAGADAS_RECIENTES + ' últimas pagadas' : '') +
@@ -2754,6 +2797,9 @@ function generarEstadoCuentaCliente(clienteId, completo){
     '.fac-tot { padding:9px 14px; font-size:12.5px; background:' + GOLD_SOFT + '; border-radius:0 0 5px 5px; page-break-before:avoid; break-before:avoid; }' +
     'h2 { font-size:14px; margin:20px 0 8px; color:' + GOLD + '; border-bottom:2px solid ' + GOLD + '; padding-bottom:4px; text-transform:uppercase; letter-spacing:0.5px; }' +
     'table.abonos { width:100%; border-collapse:collapse; border:1px solid #ddd; } table.abonos th { text-align:left; font-size:10px; text-transform:uppercase; color:#fff; background:' + GOLD + '; padding:7px 10px; } table.abonos td { padding:7px 10px; border-bottom:1px solid #f0ece1; font-size:12.5px; }' +
+    'table.abonos th.num { text-align:right; } table.abonos tr { page-break-inside:avoid; break-inside:avoid; } table.abonos thead { display:table-header-group; }' +
+    'table.mov tr.fac td { background:#fdfaf3; } table.mov td.sal { font-weight:800; } table.mov tfoot td { font-weight:900; background:' + GOLD_SOFT + '; border-top:2px solid ' + GOLD + '; }' +
+    '.descuadre { margin:8px 0 0; padding:8px 12px; border:1px solid #b00020; color:#b00020; border-radius:4px; font-weight:700; }' +
     '.pie { margin-top:20px; font-size:10px; color:#999; text-align:center; border-top:1px solid #eee; padding-top:10px; }' +
     '.nota-ec { margin:-8px 0 16px; font-size:11.5px; color:#777; }' +
     '@media print { body { padding:0; } }</style></head><body>' +
@@ -2768,10 +2814,12 @@ function generarEstadoCuentaCliente(clienteId, completo){
       '<div class="rdebe">' + (estadoSaldo(debe) === 'favor' ? '<span>Saldo a favor</span><b style="color:#1a7a3c;">' + fmt(Math.abs(debe)) + '</b>' : '<span>Debe</span><b>' + fmt(debe) + '</b>') + '</div>' +
     '</div>' +
     notaResumen +
+    htmlMovimientos +
     '<h2>Facturas (' + facturas.length + ')</h2>' +
     htmlFacturas +
-    '<h2>' + (m.completo ? 'Abonos realizados' : 'Abonos a estas facturas') + ' (' + m.abonos.length + ')</h2>' +
-    '<table class="abonos"><thead><tr><th>Fecha</th><th>Método</th><th>Notas</th><th class="num">Monto</th></tr></thead><tbody>' + htmlAbonos + '</tbody></table>' +
+    (m.completo ? '' :
+      '<h2>Abonos a estas facturas (' + m.abonos.length + ')</h2>' +
+      '<table class="abonos"><thead><tr><th>Fecha</th><th>Método</th><th>Notas</th><th class="num">Monto</th></tr></thead><tbody>' + htmlAbonos + '</tbody></table>') +
     '<div class="pie">Mercantil Yumana · Documento informativo · ' + new Date().toLocaleDateString('es-VE') + '</div>' +
     '</body></html>';
   var win = window.open('', '_blank');
@@ -2781,17 +2829,17 @@ function generarEstadoCuentaCliente(clienteId, completo){
 }
 
 // ===== ESTADO DE CUENTA POR WHATSAPP (mensaje de texto) =====
-// Corto, a pedido de Kinan (clientes con muchas facturas chicas): cada factura pendiente con su número, fecha,
-// el monto original de la factura y lo que queda pendiente (Kinan, 2026-10-14), los últimos 10 abonos, y al final
-// solo el total pendiente. Sin vencimientos ni totales históricos.
+// Corto, a pedido de Kinan (clientes con muchas facturas chicas): cada factura pendiente en una línea, con su número y
+// lo que queda pendiente de ella (Kinan, 2026-11-07; antes llevaba también la fecha y el monto original), los últimos
+// 10 abonos, y al final solo el total pendiente. Sin vencimientos ni totales históricos.
 // Sale por el modal de envío (grupo, teléfonos o compartir) y se puede editar antes de mandarlo.
 function estadoCuentaWhatsApp(clienteId){
   var c = CLIENTES.find(function(x){ return x.id === clienteId; });
   if(!c) return;
   var m = modeloEstadoCuenta(c.id, 0); // solo las pendientes, de la más vieja a la más nueva
   var pendientes = m.facturas.map(function(f){ return { numero: f.numero, fecha: f.fecha, monto_total: f.monto_total, pendiente: saldoFactura(f) }; });
-  var abonos = abonosDeCliente(c.id); // más recientes primero
-  abrirEnviar(textoEstadoCuenta(c.nombre, pendientes, abonos.slice(0, ESTADO_ULTIMOS_ABONOS), abonos.length, m.debe), c.telefono || null, c.whatsapp_grupo || null);
+  var total = abonosDeCliente(c.id).length;
+  abrirEnviar(textoEstadoCuenta(c.nombre, pendientes, ultimosAbonos(c.id, ESTADO_ULTIMOS_ABONOS), total, m.debe), c.telefono || null, c.whatsapp_grupo || null);
 }
 // El texto en sí (lo usan el admin y la caja, que lo arma con may_caja_cuenta):
 // pendientes = [{numero, fecha, monto_total, pendiente}] de la más vieja a la más nueva; ultimos = los abonos más
@@ -2801,7 +2849,7 @@ function textoEstadoCuenta(nombre, pendientes, ultimos, totalAbonos, debe){
   if(pendientes.length){
     msg += '\n*Facturas pendientes (' + pendientes.length + ')*\n';
     pendientes.forEach(function(f){
-      msg += '• #' + f.numero + ' · ' + fmtDate(f.fecha) + '\n   Factura: ' + fmt(f.monto_total) + ' · Pendiente: ' + fmt(f.pendiente) + '\n';
+      msg += '• #' + f.numero + ' · ' + fmt(f.pendiente) + '\n';
     });
   } else {
     msg += '\nNo tiene facturas pendientes.\n';
@@ -3342,7 +3390,7 @@ function imprimirEstado80Admin(clienteId){
   var win = abrirVentanaImpresion();
   if(!win) return;
   imprimirEnVentana(win, htmlEstado80({
-    cliente: datosClienteRecibo(c), debe: m.debe, pagos: abonosDeCliente(c.id).slice(0, ESTADO80_ULTIMOS_PAGOS),
+    cliente: datosClienteRecibo(c), debe: m.debe, pagos: ultimosAbonos(c.id, ESTADO80_ULTIMOS_PAGOS),
     facturas: m.facturas.map(function(f){ return { numero: f.numero, fecha: f.fecha, monto_total: f.monto_total, pendiente: saldoFactura(f) }; })
   }));
 }

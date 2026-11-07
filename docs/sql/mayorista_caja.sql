@@ -200,14 +200,15 @@ BEGIN
   FROM may_facturas f
   WHERE f.cliente_id = p_cliente_id AND f.deleted_at IS NULL AND f.monto_total - f.monto_pagado > 0.01;
 
-  -- Los 10 abonos más recientes, en el mismo orden que el historial de la app (fecha, y luego id)
+  -- Los 10 abonos más recientes, en el mismo orden que la app (ultimosAbonos / ordenAbonos de mayorista.html):
+  -- el día más reciente primero y, dentro de un mismo día, en el orden en que se registraron (2026-11-07).
   SELECT coalesce(jsonb_agg(jsonb_build_object(
            'fecha', x.fecha, 'metodo', x.metodo, 'monto', round(x.monto, 2),
            'es_dinero', x.metodo IS DISTINCT FROM 'Descuento/devolución')
-         ORDER BY x.fecha DESC, x.id), '[]'::jsonb) INTO v_abo
-  FROM (SELECT a.id, a.fecha, a.metodo, a.monto FROM may_abonos a
+         ORDER BY x.fecha DESC, x.creado_en, x.id), '[]'::jsonb) INTO v_abo
+  FROM (SELECT a.id, a.fecha, a.metodo, a.monto, a.creado_en FROM may_abonos a
         WHERE a.cliente_id = p_cliente_id AND a.deleted_at IS NULL
-        ORDER BY a.fecha DESC, a.id LIMIT 10) x;
+        ORDER BY a.fecha DESC, a.creado_en DESC, a.id LIMIT 10) x;
 
   -- Pedidos de la caja que faltan facturar (para no anotar dos veces lo mismo). Sin precios.
   SELECT coalesce(jsonb_agg(jsonb_build_object('creado_en', p.creado_en, 'items', p.items, 'notas', p.notas)
