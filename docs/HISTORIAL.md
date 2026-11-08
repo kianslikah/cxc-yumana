@@ -441,3 +441,4 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
     - activar "leaked password protection" en Supabase Auth (pendiente 5c);
     - decidir si se desactivan los admin que no entran desde junio (Rami y Bassma);
     - apagar el registro público con una función del servidor (pendiente 5b; hoy la cuenta nueva nace inactiva y sin acceso).
+- **Mayorista, estado por WhatsApp con la fecha de entrega (2026-11-08, `?v=20261108`):** pedido de Kinan. Cada factura pendiente sale con su número, lo pendiente y la fecha en que se entregó (`• #102 · $390.00 · del 20/10/2026`), para que se vea el tiempo. Es la fecha de la factura, no la de vencimiento. Sirve igual para la caja (`textoEstadoCuenta`).

@@ -2955,9 +2955,9 @@ function generarEstadoCuentaCliente(clienteId, completo){
 }
 
 // ===== ESTADO DE CUENTA POR WHATSAPP (mensaje de texto) =====
-// Corto, a pedido de Kinan (clientes con muchas facturas chicas): cada factura pendiente en una línea, con su número y
-// lo que queda pendiente de ella (Kinan, 2026-11-07; antes llevaba también la fecha y el monto original), los últimos
-// 10 abonos, y al final solo el total pendiente. Sin vencimientos ni totales históricos.
+// Corto, a pedido de Kinan (clientes con muchas facturas chicas): cada factura pendiente en una línea, con su número,
+// lo que queda pendiente de ella y la fecha en que se entregó, para que se vea el tiempo (Kinan, 2026-11-07 y 2026-11-08;
+// sin el monto original ni el vencimiento), los últimos 10 abonos, y al final solo el total pendiente.
 // Sale por el modal de envío (grupo, teléfonos o compartir) y se puede editar antes de mandarlo.
 function estadoCuentaWhatsApp(clienteId){
   var c = CLIENTES.find(function(x){ return x.id === clienteId; });
@@ -2975,7 +2975,7 @@ function textoEstadoCuenta(nombre, pendientes, ultimos, totalAbonos, debe){
   if(pendientes.length){
     msg += '\n*Facturas pendientes (' + pendientes.length + ')*\n';
     pendientes.forEach(function(f){
-      msg += '• #' + f.numero + ' · ' + fmt(f.pendiente) + '\n';
+      msg += '• #' + f.numero + ' · ' + fmt(f.pendiente) + ' · del ' + fmtDate(f.fecha) + '\n';
     });
   } else {
     msg += '\nNo tiene facturas pendientes.\n';
