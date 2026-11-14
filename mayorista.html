@@ -3263,7 +3263,11 @@ function mensajeFactura(facturaId){
   var msg = '*MERCANTIL YUMANA*\n';
   msg += 'Factura #' + f.numero + ' · ' + fmtDate(f.fecha) + '\n';
   msg += (cli ? cli.nombre : '') + '\n\n';
-  items.forEach(function(it){ msg += '• ' + it.cantidad + 'x ' + it.descripcion + ' — ' + fmt(it.subtotal) + '\n'; });
+  // Con más de una unidad va también el precio de cada una (pedido de Kinan, 2026-11-14): "3x Cojines — $10.00 c/u = $30.00"
+  items.forEach(function(it){
+    var cant = parseFloat(it.cantidad) || 1;
+    msg += '• ' + it.cantidad + 'x ' + it.descripcion + ' — ' + (cant > 1 ? fmt(it.precio_unitario) + ' c/u = ' : '') + fmt(it.subtotal) + '\n';
+  });
   msg += '\n*Total: ' + fmt(f.monto_total) + '*';
   if(saldo > 0.01 && (f.monto_pagado||0) > 0.01) msg += '\nPagado: ' + fmt(f.monto_pagado) + ' · Pendiente: ' + fmt(saldo);
   else if(saldo <= 0.01) msg += '\n(Pagada)';
