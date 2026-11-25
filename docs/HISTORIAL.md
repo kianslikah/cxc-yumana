@@ -453,3 +453,7 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - En la nota 32406, las camas de 1,00m son 3: el 2 estaba corregido a mano y el total da $330.
   - Los sellos CONTADO y PAGADO no se tomaron como pago.
   - La cuenta pasó de deber $3.110 a $8.901. La factura vence el 10/01/2027 (plazo 60).
+- **Mayorista, factura #258 de ADRIANA MORA (2026-11-25):** pedido de Notas de Kinan, entregado ese día. 34 renglones por $10.313.
+  - "2 - Cocina 4H JD Negra 145*3=435": Kinan confirmó 2 cocinas, $290.
+  - Los productos que estaban en el catálogo quedaron enlazados; los dudosos y los que no están, como texto.
+  - La cuenta pasó de deber $22.714,62 a $33.027,62. La factura vence el 09/01/2027 (plazo 45).
