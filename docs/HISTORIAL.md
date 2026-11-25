@@ -447,3 +447,9 @@ Detalle de lo que ya está hecho. El CLAUDE.md solo guarda las reglas; consultar
   - **GABRIELA VILLAFAÑE — PERSONAL:** #237, deuda anterior desde el 09/09 por $4.524,12 (vencida desde el 09/10), y #238 del 14/11 por $870 (cama 2.00m, colchón Imperio Linaje 2.00m y congelador Says 200lt). Debe $5.394,12.
 - **Mayorista, factura por WhatsApp con precio por unidad (2026-11-14, `?v=20261114`):** pedido de Kinan. Cuando un renglón tiene más de una unidad, sale también el precio de cada una: `• 3x Cojines gris — $10.00 c/u = $30.00`. Con una sola unidad queda igual (`mensajeFactura`).
 - **Mayorista, factura #246 de DANIEL Y FRAN — PEDRAZA (2026-11-18):** nota de entrega Valery 0000032733, 31 renglones. Dos lavadoras se cambiaron a mano en la nota: la Sam 11kg ($220) pasó a Aiwa 11kg a $230 (precio de Kinan), y la Esfera 13kg pasó a Mabe 13kg a $230. Total $5.050 (la nota decía $5.040). Los productos se enlazaron por `codigo_valery`; las dos lavadoras cambiadas, a los productos Aiwa 11kg (764) y Mabe 13kg (68). El sello CONTADO no es pago. La cuenta pasó de deber $37.044,63 a $42.094,63; la factura vence el 17/01/2027 (plazo 60).
+- **Mayorista, factura #257 de ZIGAM LIBERTAD (2026-11-11, cargada el 2026-11-25):** a pedido de Kinan, tres notas del mismo día unidas en una sola factura de 28 renglones por $5.791.
+  - Notas: la Valery 0000032406 ($5.179) sin el Tope SAYS 4H inox de $100, que venía marcado "No"; la 0000032411 ($600); y el ticket 0000032414 con 4 cocinas de mesa Amira 3H ($112).
+  - Los productos repetidos entre notas quedaron en un solo renglón: 3 split Hyundai, 4 cocinas de mesa Says y 12 mini UPS POE.
+  - En la nota 32406, las camas de 1,00m son 3: el 2 estaba corregido a mano y el total da $330.
+  - Los sellos CONTADO y PAGADO no se tomaron como pago.
+  - La cuenta pasó de deber $3.110 a $8.901. La factura vence el 10/01/2027 (plazo 60).
